@@ -43,20 +43,61 @@ class CueRun:
     authors: set[str] = field(default_factory=set)
     first_on: str = ""
     last_on: str = ""
+    # (week, rung level) per appearance, for working out which way it is going.
+    points: list[tuple[int, int]] = field(default_factory=list)
 
     @property
     def span_weeks(self) -> int:
         return (max(self.weeks) - min(self.weeks)) if len(self.weeks) > 1 else 0
 
     @property
-    def is_chronic(self) -> bool:
-        """Back three or more times, over at least two months.
+    def weeks_present(self) -> int:
+        return len(set(self.weeks))
 
-        The curriculum rotates every four weeks, so three appearances of the
-        same cue is not three reminders — it is the same unresolved problem
-        surviving two full passes through the shot.
+    @property
+    def rung_trend(self) -> float | None:
+        """How far up the ladder this cue has moved, first half to second.
+
+        A cue being worked at block in August and holding in conditioned games
+        by October has gone somewhere. One still being written about at the
+        same rung after eleven weeks has not. Positive is climbing, zero is
+        flat, negative is going backwards. None when there is too little to
+        say.
         """
-        return self.count >= 3 and self.span_weeks >= 8
+        runged = [(w, lvl) for w, lvl in self.points if lvl is not None]
+        if len(runged) < 4:
+            return None
+        runged.sort()
+        half = len(runged) // 2
+        first = sum(lvl for _, lvl in runged[:half]) / half
+        second = sum(lvl for _, lvl in runged[half:]) / (len(runged) - half)
+        return round(second - first, 2)
+
+    @property
+    def direction(self) -> str:
+        trend = self.rung_trend
+        if trend is None:
+            return "unclear"
+        if trend >= 0.6:
+            return "climbing"
+        if trend <= -0.4:
+            return "slipping"
+        return "flat"
+
+    @property
+    def is_chronic(self) -> bool:
+        """Still being written about, at the same level, after months of it.
+
+        Recurrence alone is not the signal — a player's current focus turns up
+        most weeks by definition, and in a dense record nearly every cue would
+        qualify. What matters is recurrence that has not gone anywhere: the
+        cue is still being raised late in the block, and the rung it is being
+        raised at has not climbed.
+        """
+        return (self.count >= 8
+                and self.span_weeks >= 8
+                and self.weeks_present >= 6
+                and self.direction != "climbing")
 
 
 @dataclass
@@ -100,6 +141,8 @@ def cue_runs(player_id: str) -> list[CueRun]:
             if week["theme_name"] not in run.theme_weeks:
                 run.theme_weeks.append(week["theme_name"])
         run.authors.add(entry["author_id"])
+        run.points.append((week["id"] if week else 0,
+                           RUNG_LEVEL.get(entry["rung"]) if entry["rung"] else None))
         run.first_on = run.first_on or entry["occurred_on"]
         run.last_on = entry["occurred_on"]
     return sorted(runs.values(), key=lambda r: (-r.count, r.cue_id))
@@ -222,11 +265,13 @@ def digest(player_id: str) -> str:
     for run in runs:
         weeks = ", ".join(f"wk{w}" for w in sorted(set(run.weeks)))
         themes = "; ".join(run.theme_weeks)
-        chronic = "  <-- CHRONIC" if run.is_chronic else ""
+        chronic = "  <-- CHRONIC, and not moving" if run.is_chronic else ""
+        trend = (f", ladder trend {run.rung_trend:+} ({run.direction})"
+                 if run.rung_trend is not None else f", {run.direction}")
         lines.append(
             f"  {run.canonical} ({run.category}): {run.count}x across {weeks} "
             f"[{themes}], span {run.span_weeks} weeks, "
-            f"{len(run.authors)} source(s){chronic}"
+            f"{len(run.authors)} source(s){trend}{chronic}"
         )
 
     lines.append("\nLADDER EVIDENCE (low rungs first — technical rehearsal; "

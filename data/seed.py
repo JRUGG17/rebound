@@ -322,11 +322,17 @@ def build(*, reset: bool = True) -> dict:
                  (week_no - 1) // 4 + 1),
             )
 
-    for row in ENTRIES + routine_entries():
+    _TERM = term_entries()
+    for row in ENTRIES + _TERM:
         week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text = row[:11]
         author_id = player if author == "self" else author
         player_text = (row[11] if len(row) > 11
                        else (player_text_for(text) if author != "self" else None))
+        # Generated term notes are already written to the player, so they ship
+        # as the coach wrote them. The hand-written storyline notes are not,
+        # and keep their separate player version or stay unreleased.
+        if player_text is None and author != "self" and row in _TERM:
+            player_text = text
         db.add_entry(
             player_id=player,
             author_id=author_id,
@@ -441,180 +447,250 @@ def player_text_for(raw: str) -> str | None:
     return None
 
 
-# ---------------------------------------------------------------- routine weeks
+# ---------------------------------------------------------------- the term
 #
-# The hand-written entries above carry each player's storyline. These fill in
-# the ordinary weeks around them, so the record looks like a term of coaching
-# rather than six dramatic moments, and so frequency counts have something to
-# count. Every pool is written to reinforce that player's thread, never to
-# cut across it: Jonah's lines stay clean because he is the control, Ellie's
-# keep circling the grip, Maya's keep losing prep above the routine rung.
+# The hand-written entries above are each player's storyline. This fills in
+# the ordinary training around them so the record looks like a real term:
+# squad most weekdays, a lesson a week, reflections when a player bothers,
+# the odd solo session and a tournament weekend.
+#
+# No model calls, so density is free. Pools are written per player to
+# reinforce that player's thread — Jonah stays clean, Ellie circles the grip,
+# Maya keeps losing prep above the routine rung — and indexed so a line does
+# not come back for several weeks.
 
-ROUTINE = {
-    "maya": {
-        "coach": "coach_stuart",
-        "drive": [
-            ("block", "Straight drive length is good. Prep still arriving late when "
-                      "she has to move for it."),
-            ("pattern", "Drive/boast pattern — length held, prep went when the options "
-                        "opened up. Same story as the drop."),
-            ("conditioned_game", "Above-or-behind game. Length fine, prep late again "
-                                 "once she was choosing."),
-        ],
-        "boast": [
-            ("routine", "Two-wall boast is coming on. Good cut, staying down off the "
-                        "side wall."),
-            ("block", "Boast blocks were clean. She likes this shot."),
-            ("pattern", "Boast held up in the pattern. No prep problem here, which is "
-                        "interesting — she has more time on it."),
-        ],
-        "lob": [
-            ("routine", "Cross lob height good in the routine."),
-            ("pattern", "Lob fine until the pattern opened up, then she started "
-                        "reaching for the side wall again."),
-        ],
-        "drop": [
-            ("block", "Drop blocks clean, prep early throughout."),
-            ("routine", "Drive/drop routine — held together."),
-        ],
-        "reflections": [
-            "boast week is my favourite, it just feels easy",
-            "did solo for 20 mins on prep. felt fine on my own obviously",
-            "drive length was good today but i know i was late again",
-            "feel like i have been working on the same thing forever",
-        ],
-    },
-    "dev": {
-        "coach": "coach_nia",
-        "drive": [
-            ("block", "Drive length improving. Still reaching rather than stepping in."),
-            ("routine", "Drive/drive/drop routine. Length good, short ball rushed."),
-        ],
-        "boast": [
-            ("block", "Boast is inconsistent. Hard to tell what shape he is going for."),
-            ("routine", "Boast again — some good, some loose. Needs one clear idea of "
-                        "the swing."),
-        ],
-        "drop": [
-            ("block", "Drop is actually his best shot. Soft hands."),
-            ("routine", "Good drops in the routine. Confidence is up on it."),
-        ],
-        "lob": [
-            ("routine", "Lob height fine for eleven. Gets it to the back wall."),
-        ],
-        "reflections": [
-            "drops went really well today",
-            "boast is confusing me a bit",
-            "i beat someone two courts up in the sort",
-        ],
-    },
-    "ellie": {
-        "coach": "coach_stuart",
-        "drive": [
-            ("pattern", "Face opening under pace again on the backhand. Managing it."),
-            ("conditioned_game", "Two-bounce length game. Percentages held, drives a "
-                                 "foot off the wall all session."),
-        ],
-        "boast": [
-            ("routine", "Boast is solid. Rotation is good, plenty of cut."),
-        ],
-        "drop": [
-            ("pattern", "Drop under pressure is where the grip costs her most — face "
-                        "opens, ball sits up."),
-        ],
-        "lob": [
-            ("routine", "Lob is reliable. One of the better ones in the squad."),
-        ],
-        "reflections": [
-            "backhand felt loose again under pace",
-            "good session, won most of my games in the sort",
-            "states in a few weeks and i feel ready-ish",
-        ],
-    },
-    "tomas": {
-        "coach": "coach_nia",
-        "drive": [
-            ("block", "Stepping in on most of them now. Big progress."),
-            ("block", "Step then swing is becoming automatic. Ready for more."),
-        ],
-        "boast": [
-            ("block", "First go at boasts. Getting the idea of side wall first."),
-        ],
-        "drop": [
-            ("block", "Drops are hard at nine. Keeping it to one cue."),
-        ],
-        "lob": [
-            ("block", "Lob is a good shot for him — gets height easily."),
-        ],
-        "reflections": [
-            "i like lob week",
-            "i did 50 good ones in a row",
-            "squash was fun today",
-        ],
-    },
-    "priya": {
-        "coach": "coach_stuart",
-        "drive": [
-            ("pattern", "Drives are tight and deliberate. Tactically she is the most "
-                        "mature in the squad."),
-            ("conditioned_game", "Controlled the game from the T throughout."),
-        ],
-        "boast": [
-            ("routine", "Boast rotation clicked this week. Much better."),
-        ],
-        "drop": [
-            ("pattern", "Drop is accurate. Occasionally too safe when she could attack."),
-        ],
-        "lob": [
-            ("routine", "Lob still coming out flat and quick under any rush."),
-            ("pattern", "Lob height better in the routine, flat again in the pattern."),
-        ],
-        "reflections": [
-            "good session. felt in control",
-            "lob still flat when im rushed",
-            "tired this week",
-        ],
-    },
-    "jonah": {
-        "coach": "coach_nia",
-        "drive": [
-            ("routine", "Drive is clean. Left arm doing its job now."),
-            ("pattern", "Held up well in the pattern. Nothing to fix."),
-        ],
-        "boast": [
-            ("routine", "Boast is good. Ready for harder constraints."),
-            ("conditioned_game", "Used the boast well in the game without forcing it."),
-        ],
-        "drop": [
-            ("routine", "Drop is improving steadily. No complaints."),
-        ],
-        "lob": [
-            ("routine", "Lob solid. Good height, good width."),
-        ],
-        "reflections": [
-            "good week",
-            "want to play more matches",
-            "enjoyed the conditioned games",
-        ],
-    },
+
+# Seed-time cue tagging. In the running app the Organizer decides this; here
+# the lines are ours, so the mapping is explicit rather than inferred, and the
+# frequency counts the app reports are the ones the data was built to contain.
+CUE_BY_PHRASE = [
+    ("prep", "racket_before_feet"),
+    ("racket is still coming up", "racket_before_feet"),
+    ("stepping in", "step_then_swing"),
+    ("step then swing", "step_then_swing"),
+    ("sequence", "step_then_swing"),
+    ("face opening", "squeeze_grip"),
+    ("grip", "squeeze_grip"),
+    ("left arm", "left_arm"),
+    ("side wall under pressure", "responsible_pressure"),
+    ("reached for the side wall", "responsible_pressure"),
+    ("too safe", "responsible_pressure"),
+    ("flat", "effect_on_ball"),
+    ("cut", "effect_on_ball"),
+    ("reaching rather than stepping", "step_then_swing"),
+    ("controlled it from the t", "watch_them_hit"),
+    ("length", "aim_the_drive"),
+    ("tight and deliberate", "aim_the_drive"),
+    ("soft hands", None),
+    ("height", None),
+]
+
+
+def cue_for(text: str) -> str | None:
+    low = text.lower()
+    for phrase, cue in CUE_BY_PHRASE:
+        if phrase in low:
+            return cue
+    return None
+
+
+# (rung, text). "any" lines work in any theme week.
+BANK: dict[str, dict] = {
+    "maya": {"coach": "coach_stuart", "lesson_day": 0, "voice": [
+        "prep felt fine today, nobody said anything about it",
+        "good session. boast week is easier for me",
+        "did 20 mins solo on the prep thing. feels stupid easy on my own",
+        "late again in the game. i can feel it happening and still do it",
+        "honestly getting bored of hearing about my racket",
+        "really good drill today, the diagonals one",
+        "tired. legs were heavy from the start",
+        "won all my games in the sort which never happens",
+    ], "any": [
+        ("block", "Prep early and clean through the blocked work."),
+        ("routine", "Routine held together. Prep good for the first half."),
+        ("pattern", "Prep drifted late once the options opened up."),
+        ("conditioned_game", "Prep gone in the game again — feet first."),
+        ("routine", "Better. Prep held most of the routine today."),
+        ("block", "No complaints in the blocks. You are clean when it is slow."),
+        ("pattern", "Pattern work — prep fine until she had to choose, then late."),
+        ("conditioned_game", "Conditioned game. Length good, prep late."),
+    ], "drop": [
+        ("block", "Drop blocks clean. Soft hands, good target."),
+        ("conditioned_game", "Long/long/short. Drop fine, prep late into the front."),
+    ], "lob": [
+        ("routine", "Cross lob height good. Nothing on the side wall."),
+        ("conditioned_game", "Reached for the side wall under pressure again."),
+    ], "boast": [
+        ("routine", "Boast is your best shot. Good cut, stays down."),
+        ("pattern", "Boast held up in the pattern — you have more time on it."),
+    ]},
+    "dev": {"coach": "coach_nia", "lesson_day": 2, "voice": [
+        "drops went well",
+        "i dont really get the boast yet",
+        "beat someone two courts up",
+        "my arm was tired",
+        "liked the dead quarters game",
+        "i think im getting better at length",
+    ], "any": [
+        ("block", "Length improving. Still reaching rather than stepping in."),
+        ("routine", "Routine was good for him. Clear sequence, stuck to it."),
+        ("block", "Stepping in more today without being told."),
+        ("routine", "Rushed the short ball every time it came up."),
+        ("pattern", "First proper pattern. You took the options when they were there."),
+        ("block", "Solid blocked session. You settle when you know what is coming."),
+    ], "boast": [
+        ("block", "Boast inconsistent. Hard to tell what shape you are going for."),
+        ("routine", "Boast again — some good, some loose. Needs one clear idea of the swing."),
+    ], "drop": [
+        ("block", "Drop is your best shot. Genuinely soft hands."),
+        ("routine", "Good drops. Confidence is up on this one."),
+    ]},
+    "ellie": {"coach": "coach_stuart", "lesson_day": 0, "voice": [
+        "backhand loose again under pace",
+        "good session, won most of my games",
+        "states soon and i feel okay about it",
+        "felt sharp today",
+        "frustrated with the same thing every week",
+        "long day. squash was the good bit",
+    ], "any": [
+        ("pattern", "Face opening under pace on the backhand. We are managing around it."),
+        ("conditioned_game", "Percentages held all session. Drives a foot off the wall."),
+        ("routine", "Clean routine. Most consistent in the squad."),
+        ("pattern", "Same grip issue showing under pace. Aiming higher to compensate."),
+        ("conditioned_game", "Controlled the game. Tactically very mature."),
+        ("routine", "Good session. Nothing new."),
+    ], "drive": [
+        ("pattern", "Backhand face opening again under pace. Known problem."),
+        ("conditioned_game", "Two-bounce length game. Held up on percentages."),
+    ], "lob": [
+        ("routine", "Lob is reliable. One of the better ones here."),
+    ]},
+    "tomas": {"coach": "coach_nia", "lesson_day": 2, "voice": [
+        "squash was fun",
+        "i did 50 in a row",
+        "i like lob week",
+        "my legs hurt after",
+        "i hit one in the nick",
+        "i want to play a tournament",
+    ], "any": [
+        ("block", "Stepping in on most of them now. Big progress."),
+        ("block", "Step then swing is becoming automatic."),
+        ("block", "Good blocked session. One cue at a time still."),
+        ("routine", "First routines. Managing the sequence, losing the technique."),
+        ("block", "Back to blocks today — routines were a stretch last week."),
+        ("routine", "Routine went better. Sequence and technique both holding."),
+    ], "lob": [
+        ("block", "Lob is a good shot for him. Gets height easily."),
+    ], "drop": [
+        ("block", "Drops are hard at nine. We will keep it simple for now."),
+    ]},
+    "priya": {"coach": "coach_stuart", "lesson_day": 0, "voice": [
+        "felt in control today",
+        "lob still flat when im rushed",
+        "tired this week",
+        "good session",
+        "thinking a lot about next year",
+        "best ive hit it in a while",
+    ], "any": [
+        ("pattern", "Drives tight and deliberate. Really mature shot choice."),
+        ("conditioned_game", "You controlled it from the T throughout."),
+        ("routine", "Clean session. Nothing to fix technically."),
+        ("pattern", "Occasionally too safe when you could attack."),
+        ("conditioned_game", "Read the game well. Good decisions under pressure."),
+        ("routine", "Solid. A bit quiet today though."),
+    ], "lob": [
+        ("routine", "Lob still coming out flat and quick whenever you are rushed."),
+        ("pattern", "Lob height better in the routine, flat again in the pattern."),
+    ], "boast": [
+        ("routine", "Boast rotation clicked this week. Much better."),
+    ]},
+    "jonah": {"coach": "coach_nia", "lesson_day": 2, "voice": [
+        "good week",
+        "want to play more matches",
+        "enjoyed the conditioned games",
+        "felt strong today",
+        "the left arm thing is automatic now",
+    ], "any": [
+        ("routine", "Clean. Left arm is doing its job."),
+        ("pattern", "Held up well in the pattern. Nothing to fix."),
+        ("conditioned_game", "Used it well in the game without forcing it."),
+        ("routine", "Steady improvement. Ready for harder constraints."),
+        ("pattern", "Good decisions. You read the game really well."),
+        ("conditioned_game", "You look comfortable at this level now."),
+    ], "boast": [
+        ("routine", "Boast is good. Ready for more difficult versions."),
+    ]},
 }
 
 
-def routine_entries() -> list[tuple]:
-    """One coach note per player per week, plus a reflection now and then."""
+# How each player moves up the ladder over the twelve weeks. This is the whole
+# point of the dataset: a cue that is still being raised at the same rung in
+# October as in August has not been learned, and one that has climbed has.
+# Rung comes from here, not from the text pool, so the trend is a property of
+# the player's story rather than an artefact of list order.
+TRAJECTORY = {
+    # climbing: block -> routine -> pattern -> conditioned game
+    "jonah":  ["block", "block", "routine", "routine", "routine", "pattern",
+               "pattern", "pattern", "conditioned_game", "conditioned_game",
+               "conditioned_game", "conditioned_game"],
+    "tomas":  ["block", "block", "block", "block", "block", "routine",
+               "routine", "routine", "routine", "routine", "pattern", "pattern"],
+    "dev":    ["block", "block", "block", "routine", "routine", "routine",
+               "routine", "pattern", "routine", "pattern", "pattern", "pattern"],
+    # stuck: gets to pattern and falls back every time the shot comes round
+    "maya":   ["block", "routine", "pattern", "block", "routine", "pattern",
+               "block", "routine", "pattern", "block", "routine", "pattern"],
+    # managed, not fixed: high rungs throughout, no movement
+    "ellie":  ["pattern", "conditioned_game", "pattern", "pattern",
+               "conditioned_game", "pattern", "conditioned_game", "pattern",
+               "pattern", "conditioned_game", "pattern", "conditioned_game"],
+    "priya":  ["routine", "pattern", "pattern", "conditioned_game", "pattern",
+               "conditioned_game", "pattern", "conditioned_game",
+               "conditioned_game", "pattern", "conditioned_game", "pattern"],
+}
+
+# Mon-Fri. Squad most days; one lesson a week; Friday is often solo.
+SQUAD_DAYS = (0, 1, 3, 4)
+
+
+def term_entries() -> list[tuple]:
+    """A coach note most training days, a lesson a week, reflections throughout."""
     out: list[tuple] = []
     for week_no in range(1, 13):
         shot = ROTATION[(week_no - 1) % 4]
-        for pid, profile in ROUTINE.items():
-            pool = profile.get(shot) or []
-            if not pool:
-                continue
-            rung, text = pool[(week_no - 1) // 4 % len(pool)]
-            out.append((week_no, 2, pid, profile["coach"], "squad", rung, shot,
-                        "technical", None, "shared", text))
-            refs = profile["reflections"]
-            if refs and week_no % 3 == 0:
-                out.append((week_no, 4, pid, "self", "reflection", None, shot,
+        for pid, bank in BANK.items():
+            coach = bank["coach"]
+            pool = bank.get(shot, []) + bank["any"]
+            step = 0
+
+            week_rung = TRAJECTORY[pid][week_no - 1]
+            for weekday in SQUAD_DAYS:
+                if weekday == bank["lesson_day"]:
+                    continue
+                _pool_rung, text = pool[(week_no * 3 + step) % len(pool)]
+                # The week itself climbs: constrained early, open by Thursday.
+                rung = week_rung
+                if weekday <= 1:
+                    rung = db.RUNGS[max(0, db.RUNGS.index(week_rung) - 1)]
+                out.append((week_no, weekday, pid, coach, "squad", rung, shot,
+                            "technical", cue_for(text), "shared", text))
+                step += 1
+
+            lesson_rung, lesson_text = pool[(week_no * 5) % len(pool)]
+            out.append((week_no, bank["lesson_day"], pid, coach, "lesson", None, shot,
+                        "technical", cue_for(lesson_text), "shared",
+                        f"Lesson. {lesson_text}"))
+
+            voice = bank["voice"]
+            for n, weekday in enumerate((1, 4)):
+                if (week_no + n) % 2:
+                    continue
+                line = voice[(week_no + n) % len(voice)]
+                out.append((week_no, weekday, pid, "self", "reflection", None, shot,
+                            "technical", cue_for(line), "shared", line))
+
+            if week_no % 4 == 0:
+                out.append((week_no, 4, pid, coach, "solo", "solo", shot,
                             "technical", None, "shared",
-                            refs[(week_no // 3 - 1) % len(refs)]))
+                            f"Solo assigned: {shot} work, 20 minutes."))
     return out
