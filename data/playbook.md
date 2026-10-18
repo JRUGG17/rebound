@@ -122,7 +122,7 @@ yourself under pressure with your own shot.
 
 ---
 
-## The shots
+## 3. The shots
 
 ### Drive
 To the back of the court, straight or cross.
@@ -220,7 +220,7 @@ the T.** A player who runs first and prepares on arrival is already too late.
 
 ---
 
-## 3. The drill ladder
+## 4. The drill ladder
 
 **This is the spine of the program.** Every week starts at the bottom of the ladder and
 climbs. Complexity increases at each rung; the shot stays the same.
@@ -285,7 +285,7 @@ a decision.
 
 ---
 
-## 4. The weekly themes
+## 5. The weekly themes
 
 ### The rotation
 
@@ -357,7 +357,7 @@ Occasionally a week is built around an idea rather than a shot:
 
 ---
 
-## 5. The four categories
+## 6. The four categories
 
 Every observation gets filed under one of four headings. The curriculum slides already
 split the first two: each week lists "shot targets" (tactical) separately from "technique
@@ -403,7 +403,7 @@ that matter most at this age.
 
 ---
 
-## 6. Time of year, age and stage
+## 7. Time of year, age and stage
 
 **What a player should be working on is gated by when it is and who they are.** Two cues
 of equal merit are not equally appropriate; one of them may be actively wrong this month.
@@ -430,7 +430,7 @@ treat any entry mentioning upcoming tournaments as competitive-season signal.
 - Agents surface the pattern and the timing consideration. **The coach decides.** An agent
   never rules that a change should be made now.
 
-## 7. What a lesson note contains
+## 8. What a lesson note contains
 
 A coach's own note after a private lesson, in the order it tends to be written:
 
@@ -445,7 +445,7 @@ A coach's own note after a private lesson, in the order it tends to be written:
 Kept over time, so the same focus can be followed across weeks. The note is short — it is
 written between lessons, not at a desk.
 
-## 8. Terminology
+## 9. Terminology
 
 Terms coaches and players use without explanation. Agents must understand these and should
 use them back.
@@ -476,7 +476,7 @@ what to do, the drill's rules make the right choice the available one)
 
 ---
 
-## 9. Cue library — the chronic ones
+## 10. Cue library — the chronic ones
 
 These cues recur across coaches, players and years. When one appears in an entry, tag it to
 the canonical cue below rather than treating it as new. **A cue that keeps reappearing for
@@ -499,7 +499,56 @@ the same player is not a reminder — it is an unresolved blocker, and should be
 
 ---
 
-## 10. How agents should talk
+## 11. Safeguarding — what this app is not
+
+**This is a coaching record, not a communication platform.** Everyone using it is working
+with children, and that constrains the design more than any other requirement here.
+
+### Deliberate non-features
+
+These are not missing. They were considered and refused.
+
+- **No messaging between coaches and players.** No inbox, no reply threads, no direct
+  messages. A coach does not "send" a player anything; they write a training note, and the
+  player reads it.
+- **No notifications that initiate contact with a child.** Nudges appear on the player's
+  own screen when they open the app. Nothing reaches out to them.
+- **No private channel of any kind between an adult and a child.**
+
+The reason: private, unobservable one-to-one contact between an adult and a minor athlete
+is the central safeguarding risk in youth sport, and the standard across the sport is that
+contact should be sport-related and open to view. An app that quietly becomes a messaging
+layer has created the exact risk every club policy exists to prevent.
+
+### Observable by default
+
+**The parent's read-only view is the safeguarding control, not a convenience.** Everything
+a player receives from a coach is attached to a training record and visible to that
+player's guardian. That is what makes coach-to-player contact here legitimate.
+
+The two private tiers are not exceptions to this, because neither is a message to a child:
+
+- **A coach's private note** is a professional record for other coaches. It is not
+  addressed to the player, so it is not adult-to-child contact.
+- **A player's private entry** is the player's own reflection space. It is private *from
+  coaches*. It is **not** private from safeguarding: a welfare signal in a private entry
+  routes to the designated safety adult and to the player's parent, and **the player is
+  told that this has happened.** They are never deceived about who can see what.
+
+### Rules for every agent
+
+- **Never relay.** An agent points a player at what a coach wrote, or tells them to ask
+  their coach. It never carries a message from one person to another in its own words,
+  and it never acts as a go-between.
+- **Never initiate.** No agent starts a conversation with a child.
+- **Never promise confidentiality it cannot keep.** If a player says "don't tell anyone"
+  or "keep this between us", the agent does not agree. It says plainly what is private
+  from coaches and what is not, and it still escalates a welfare signal.
+- **Never coach.** Squash advice comes from a coach, not from an agent. This is a
+  safeguarding rule as much as a quality one: an agent that gives instruction has become
+  an unsupervised adult voice in a child's training.
+
+## 12. How agents should talk
 
 - **To players:** plain language, matched to age. Encouraging. Short. Ask at most one or
   two follow-up questions. Use the club's own words for shots and drills.
@@ -513,7 +562,7 @@ points at the relevant coach note, or says to ask the coach — it does not inve
 
 ---
 
-## 11. Open questions
+## 13. Open questions
 
 Resolved so far: the four-week rotation and twelve-week block, the three drops, Stuart's as
 a three-person routine, and Plainsboro as the only club modelled.
