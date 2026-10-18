@@ -171,8 +171,16 @@ ENTRIES: list[tuple] = [
      "aim_the_drive", "shared",
      "Won her group at the Philadelphia Open. Drives were a foot off the wall all "
      "day but she played the percentages and it held up."),
+    (8, 3, "ellie", "coach_nia", "squad", "block", "drive", "technical",
+     "squeeze_grip", "shared",
+     "Blocked drives — the face is still opening up as soon as there is any pace on "
+     "the ball. It is the grip, same as always. Nothing to do about it this term."),
     (11, 2, "ellie", "self", "reflection", None, "drive", "technical", None, "shared",
      "backhand still feels loose when they hit it hard at me. been like this all season"),
+    (11, 3, "ellie", "coach_stuart", "squad", "pattern", "drive", "technical",
+     "squeeze_grip", "shared",
+     "Fourth time this block I have written the same thing about her grip. She is "
+     "managing around it well and winning matches, but it is a ceiling."),
 
     # ---------------- Tomas: nine, short entries, age-appropriate
     (1, 2, "tomas", "coach_nia", "squad", "block", "drive", "technical",

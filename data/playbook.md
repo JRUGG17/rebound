@@ -368,7 +368,7 @@ keys" (technical).
 | **Technical** | How the shot is made — swing, grip, body position, footwork mechanics | "Racket head drops around at the height of the ball on the backhand" |
 | **Tactical** | Shot selection, targets, court position, game plan | "Hunt the volley from the return of serve" |
 | **Physical** | Movement, conditioning, mobility, injury, recovery | "Lower in the front corners — hand closer to the floor" |
-| **Psychological** | Focus, nerves, composure, intent, confidence | "Responsible under pressure — reset rather than forcing it" |
+| **Psychological** | Where attention is during play, scoreline management, sticking to a plan | "Thinking about where to hit it instead of my own preparation" |
 
 Observations frequently touch two categories. File under the primary one, note the second.
 
@@ -381,6 +381,38 @@ Observations frequently touch two categories. File under the primary one, note t
   scope for this app** — it records what happens on court.
 - **Psychological** — mostly surfaces in the one-to-one lesson, where a player will talk
   about pressure and how they handled a match.
+
+### What "psychological" means here — read this before tagging one
+
+This category is **narrower than the everyday sense of the word.** It is not mood, and it
+is not how a player felt about a session afterwards. It is **what is happening in a
+player's head while the rally is going on.** Three things live here:
+
+**1. Where the attention is.** The academy uses Nideffer's two axes — attention has a
+*width* (broad or narrow) and a *direction* (internal or external):
+
+| | **Internal** (yourself) | **External** (the court) |
+|---|---|---|
+| **Broad** | Planning, running the game plan | Reading the opponent, court position |
+| **Narrow** | Your own grip, prep, breathing | The ball onto the strings |
+
+Most in-play problems are being in the **wrong quadrant at the wrong moment**, or failing
+to switch between them. Maya's *"in the game I just forgot about it, I was thinking about
+where to hit it"* is exactly this: she is in broad-internal, running tactics, at the
+moment she needed narrow-internal, her own preparation. That is an attention problem, not
+a technical one — the swing is fine, it is just not being attended to.
+
+**2. Managing the scoreline.** Focusing at the critical points — 6-7 down, game ball.
+Noticing a run going against you and stopping it. The club's rule of thumb: **do not give
+up a run of three points, and do not end one with an unforced error.**
+
+**3. Sticking to the game plan.** Having one, and not abandoning it after two lost points.
+
+**What does not belong here.** Being annoyed with yourself after a session is a feeling
+about training, not a mindset during it — if the entry is really about a technical cue
+that keeps failing, file it technical and let the frustration sit in the summary.
+Confusion about conflicting coaching is not psychological either; that is a signal about
+the coaching, and the Comparison agent is what should notice it.
 
 ### The fifth trainable
 
