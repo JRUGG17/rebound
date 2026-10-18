@@ -298,6 +298,9 @@ def build(*, reset: bool = True) -> dict:
             cue_id=cue,
             raw_text=text,
             player_text=row[11] if len(row) > 11 else None,
+            # Seeded rewrites are pre-approved by their author — they stand for
+            # notes the coach already read and released.
+            approved_by=author_id if len(row) > 11 else None,
             visibility=vis,
             occurred_on=day_in_week(week_no, weekday),
         )

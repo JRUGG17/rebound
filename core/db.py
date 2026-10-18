@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS entries (
     raw_text      TEXT NOT NULL,               -- what was actually said
     summary       TEXT,                        -- what the Organizer made of it
     player_text   TEXT,                        -- a coach note rewritten for the kid
+    player_text_approved_by  TEXT,              -- the coach who signed that rewrite off
+    player_text_approved_at  TEXT,              -- when; NULL means not yet released
     visibility    TEXT NOT NULL DEFAULT 'shared'
                   CHECK (visibility IN ('shared', 'private')),
     media_url     TEXT,                        -- optional clip link, never uploaded
@@ -143,7 +145,13 @@ def init_db() -> None:
 # a column to a table that already exists, so widen it here instead of making
 # anyone delete their database.
 _ADDED_COLUMNS = {
-    "entries": [("player_text", "TEXT")],
+    "entries": [
+        ("player_text", "TEXT"),
+        # A rewrite reaches a child only once the coach who wrote the note has
+        # read it and signed it off. Unapproved, the note stays a coach record.
+        ("player_text_approved_by", "TEXT"),
+        ("player_text_approved_at", "TEXT"),
+    ],
 }
 
 
@@ -205,37 +213,76 @@ def add_entry(
     cue_id: str | None = None,
     summary: str | None = None,
     player_text: str | None = None,
+    approved_by: str | None = None,
     visibility: str = "shared",
     media_url: str | None = None,
 ) -> int:
     from datetime import datetime, timezone
 
+    now = datetime.now(timezone.utc).isoformat()
     with connect() as conn:
         cursor = conn.execute(
             """INSERT INTO entries (player_id, author_id, author_role, setting, rung,
-                   shot, category, cue_id, raw_text, summary, player_text, visibility,
+                   shot, category, cue_id, raw_text, summary, player_text,
+                   player_text_approved_by, player_text_approved_at, visibility,
                    media_url, occurred_on, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (player_id, author_id, author_role, setting, rung, shot, category, cue_id,
-             raw_text, summary, player_text, visibility, media_url, occurred_on,
-             datetime.now(timezone.utc).isoformat()),
+             raw_text, summary, player_text, approved_by,
+             now if approved_by else None, visibility, media_url, occurred_on, now),
         )
         return int(cursor.lastrowid or 0)
 
 
-def render_for(entry: sqlite3.Row, viewer_role: str) -> str:
-    """The text a given audience should actually be shown.
+def render_for(entry: sqlite3.Row, viewer_role: str) -> str | None:
+    """The text a given audience should be shown, or None if it is not for them.
 
-    A coach writes in coach language. The kid and their parents get the
-    rewritten version when one exists — same entry, two renderings — so a
-    coach never has to write anything twice, and a kid never reads a note
-    that was not written for them.
+    A coach writes in coach language. The child and their guardian read the
+    rewrite — same entry, two renderings — so a coach never writes anything
+    twice and a child never reads a note that was not meant for them.
+
+    The rewrite is a model's paraphrase, and a paraphrase can drop a qualifier
+    the coach meant. So it is shown to nobody until that coach has read it and
+    approved it, and `None` here means exactly that: not released yet.
     """
     if viewer_role == "coach":
         return entry["raw_text"]
-    if entry["author_role"] == "coach":
-        return entry["player_text"] or entry["raw_text"]
-    return entry["raw_text"]
+    if entry["author_role"] != "coach":
+        return entry["raw_text"]
+    if not entry["player_text_approved_at"]:
+        return None
+    return entry["player_text"] or entry["raw_text"]
+
+
+def approve_player_text(entry_id: int, coach_id: str, *, edited: str | None = None) -> None:
+    """A coach signs off the kid-facing version, optionally rewriting it first.
+
+    This is the human in the loop. Nothing a model wrote reaches a child until
+    it passes through here.
+    """
+    from datetime import datetime, timezone
+
+    with connect() as conn:
+        if edited is not None:
+            conn.execute("UPDATE entries SET player_text = ? WHERE id = ?", (edited, entry_id))
+        conn.execute(
+            """UPDATE entries
+               SET player_text_approved_by = ?, player_text_approved_at = ?
+               WHERE id = ?""",
+            (coach_id, datetime.now(timezone.utc).isoformat(), entry_id),
+        )
+
+
+def pending_approval(coach_id: str) -> list[sqlite3.Row]:
+    """A coach's own notes whose kid-facing version is still unreleased."""
+    with connect() as conn:
+        return conn.execute(
+            """SELECT * FROM entries
+               WHERE author_id = ? AND author_role = 'coach'
+                 AND visibility = 'shared' AND player_text_approved_at IS NULL
+               ORDER BY occurred_on DESC""",
+            (coach_id,),
+        ).fetchall()
 
 
 # "private" means different things depending on who wrote it:
@@ -271,19 +318,34 @@ def entries_for_coach(player_id: str, *, since: str | None = None) -> list[sqlit
 
 
 def entries_for_player(player_id: str, *, since: str | None = None) -> list[sqlite3.Row]:
-    """Their own entries, private included, plus coaches' shared notes."""
+    """Their own entries, private included, plus coaches' released notes.
+
+    A coach note reaches the child only once its kid-facing rewrite has been
+    approved. Until then it is a coach record and nothing else — so a model's
+    paraphrase can never be the first version of a note a child reads.
+    """
     return _rows(
         """SELECT * FROM entries
            WHERE player_id = ?
-             AND (author_id = ? OR (author_role = 'coach' AND visibility = 'shared'))""",
+             AND (author_id = ?
+                  OR (author_role = 'coach'
+                      AND visibility = 'shared'
+                      AND player_text_approved_at IS NOT NULL))""",
         [player_id, player_id], since,
     )
 
 
 def entries_for_parent(player_id: str, *, since: str | None = None) -> list[sqlite3.Row]:
-    """Read-only, and only what everybody can see."""
+    """Exactly what the child sees, minus the child's own private entries.
+
+    A guardian observing adult-to-child contact should see what was actually
+    said to their child, not a different version of it.
+    """
     return _rows(
-        "SELECT * FROM entries WHERE player_id = ? AND visibility = 'shared'",
+        """SELECT * FROM entries
+           WHERE player_id = ?
+             AND visibility = 'shared'
+             AND (author_role = 'player' OR player_text_approved_at IS NOT NULL)""",
         [player_id], since,
     )
 

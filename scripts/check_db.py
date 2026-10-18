@@ -112,14 +112,43 @@ def visibility_report() -> None:
     check("the kid reads the rewrite",
           kid_view == note["player_text"], kid_view[:48] + "…")
 
-    plain = next(e for e in db.entries_for_coach("maya")
-                 if e["author_role"] == "coach" and not e["player_text"])
-    check("a note with no rewrite falls back to the original",
-          db.render_for(plain, "player") == plain["raw_text"])
-
     kid_own = next(e for e in db.entries_for_player("maya") if e["author_role"] == "player")
     check("a kid's own words are never rewritten at them",
           db.render_for(kid_own, "player") == kid_own["raw_text"])
+
+    # --- the human in the loop -------------------------------------------
+    # A model's paraphrase can drop a qualifier the coach meant to keep, and
+    # the coach would never notice because they only ever see their own text.
+    # So nothing reaches a child until that coach has read the rewrite.
+    print()
+    unreleased = next(e for e in db.entries_for_coach("maya")
+                      if e["author_role"] == "coach" and not e["player_text_approved_at"])
+    check("an unapproved rewrite is withheld from the kid",
+          db.render_for(unreleased, "player") is None)
+    check("...and the coach still has their own note",
+          db.render_for(unreleased, "coach") == unreleased["raw_text"])
+    check("...and it does not appear in the kid's feed at all",
+          unreleased["id"] not in {e["id"] for e in db.entries_for_player("maya")})
+    check("...nor in the parent's",
+          unreleased["id"] not in {e["id"] for e in db.entries_for_parent("maya")})
+
+    queue = db.pending_approval("coach_stuart")
+    check("the coach has an approval queue", len(queue) > 0, f"{len(queue)} waiting")
+
+    db.approve_player_text(unreleased["id"], "coach_stuart",
+                           edited="Rewritten by the coach, not the model.")
+    released = next(e for e in db.entries_for_player("maya") if e["id"] == unreleased["id"])
+    check("approving releases it to the kid",
+          db.render_for(released, "player") == "Rewritten by the coach, not the model.")
+    check("the coach's edit is what shipped, not the model's",
+          released["player_text"] == "Rewritten by the coach, not the model.")
+    check("the approval is attributed",
+          released["player_text_approved_by"] == "coach_stuart")
+    check("the original note is untouched",
+          released["raw_text"] == unreleased["raw_text"])
+    check("the queue shrinks",
+          len(db.pending_approval("coach_stuart")) == len(queue) - 1)
+    print()
 
     # The role dispatcher must not let one player read another.
     check("a player cannot read another player",
