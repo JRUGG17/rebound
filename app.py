@@ -106,13 +106,15 @@ def run_day_summary(player_id: str, day: str, audience: str):
     return _run_job(work)
 
 
-def save_dated(player_id: str, text: str, visibility: str, day: str):
+def save_dated(player_id: str, text: str, visibility: str, day: str,
+               setting: str | None = None):
     def work():
         organized, _usage = aio.run(
             organizer.organize_player_entry(player_id, text, day))
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
-            setting=organized.setting, rung=organized.rung, shot=organized.shot,
+            setting=setting or organized.setting,
+            rung=organized.rung, shot=organized.shot,
             category=organized.category, cue_id=organized.cue_id, proposed_cue=organized.proposed_cue,
             raw_text=text, summary=organized.summary, visibility=visibility,
             occurred_on=day,
@@ -363,12 +365,14 @@ def move_clock(_b, _f, _r, _nav):
 
 PLAYER_NAV = [
     (None, [("today", "Today")]),
-    ("Journal", [("calendar", "Calendar"), ("recap", "Recap")]),
+    ("Journal", [("lessons", "Lessons"), ("calendar", "Calendar"),
+                 ("recap", "Recap")]),
     (None, [("usage", "Usage")]),
 ]
 COACH_NAV = [
     (None, [("today", "Today"), ("players", "Players"), ("note", "Add note")]),
-    ("Journal", [("calendar", "Calendar"), ("recap", "Recap")]),
+    ("Journal", [("lessons", "Lessons"), ("calendar", "Calendar"),
+                 ("recap", "Recap")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
 ]
 
@@ -390,7 +394,7 @@ def render_sidebar(who, nav, sel_player):
                                    className=f"side-btn{' active' if nav == key else ''}"))
     # Whose journal a coach is reading has to be visible, or the Calendar and
     # Recap tabs silently mean a different player than the one they picked.
-    if person["role"] in ("coach", "admin") and nav in ("calendar", "recap"):
+    if person["role"] in ("coach", "admin") and nav in ("calendar", "recap", "lessons"):
         subject = db.person(sel_player) if sel_player else None
         out.append(html.Div(
             f"Showing {subject['name']}" if subject
@@ -703,6 +707,32 @@ def save_on_day(_shared, _private, text, who, day):
 
 
 @app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Output("sel-day", "data", allow_duplicate=True),
+    Input({"type": "lesson-save", "d": ALL}, "n_clicks"),
+    State({"type": "lesson-text", "d": ALL}, "value"),
+    State("who", "value"),
+    prevent_initial_call=True,
+)
+def save_lesson_note(clicks, texts, who):
+    person = db.person(who)
+    if not any(c for c in clicks if c) or person is None or person["role"] != "player":
+        return no_update, no_update, no_update
+    day = ctx.triggered_id["d"]
+    # The textareas come back in layout order, so find the one for this lesson
+    # rather than trusting an index that shifts as lessons are added.
+    wanted = [i["id"]["d"] for i in ctx.states_list[0]]
+    try:
+        text = texts[wanted.index(day)]
+    except (ValueError, IndexError):
+        return no_update, no_update, no_update
+    if not text or not text.strip():
+        return no_update, no_update, no_update
+    return save_dated(who, text.strip(), "shared", day, setting="lesson"), False, day
+
+
+@app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
     Input("sel-player", "data"), Input("pb-sec", "data"),
@@ -726,6 +756,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
 
     role = person["role"]
     if role == "player":
+        if nav == "lessons":
+            return cv.lessons_view(who, "player", sel_day, running)
         if nav == "calendar":
             if sel_day:
                 return cv.day_view(who, "player", sel_day, day_summary, running, running)
@@ -736,6 +768,10 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
     if role == "parent":
         return cv.parent_page(who)
     if role in ("coach", "admin"):
+        if nav == "lessons":
+            if not sel_player:
+                return html.Div("Open a player under Players first.", className="card")
+            return cv.lessons_view(sel_player, "coach", sel_day, running)
         if nav == "calendar":
             if not sel_player:
                 return html.Div("Open a player under Players first.", className="card")

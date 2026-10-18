@@ -421,3 +421,38 @@ def period_digest(stats: dict) -> str:
             lines.append(f"  [{entry['occurred_on']}, {entry['setting']}] "
                          f"({who['role']}) {_clip(db.agent_text(entry), 130)}")
     return "\n".join(lines)
+
+
+def lessons(player_id: str, *, viewer: str = "player") -> list[dict]:
+    """The private lessons, newest first, with both sides of each one.
+
+    A lesson is where the technical focus gets set, so it is the spine of a
+    player's term — but in a flat feed it sits among forty squad notes and
+    reads like one of them. Pairing the coach's note with whatever the player
+    wrote about the same lesson is the point: two accounts of one hour.
+    """
+    rows = (db.entries_for_player(player_id) if viewer == "player"
+            else db.entries_for_coach(player_id))
+
+    days: dict[str, dict] = {}
+    for entry in rows:
+        if entry["setting"] != "lesson":
+            continue
+        day = days.setdefault(entry["occurred_on"], {"on": entry["occurred_on"],
+                                                     "coach": [], "player": []})
+        day["coach" if entry["author_role"] == "coach" else "player"].append(entry)
+
+    # A reflection written the same day belongs to that lesson in practice,
+    # even though the player filed it as a reflection.
+    for entry in rows:
+        if entry["setting"] == "reflection" and entry["occurred_on"] in days:
+            days[entry["occurred_on"]]["player"].append(entry)
+
+    out = []
+    for day in sorted(days.values(), key=lambda d: d["on"], reverse=True):
+        week = db.week_of(day["on"])
+        day["week"] = week
+        day["coach_names"] = sorted({db.person(e["author_id"])["name"]
+                                     for e in day["coach"]})
+        out.append(day)
+    return out

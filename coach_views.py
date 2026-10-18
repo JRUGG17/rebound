@@ -738,3 +738,92 @@ PRIVATE_PROMPT = (
     "annoying you, things you'd rather not say out loud yet. There's no wrong "
     "thing to put here."
 )
+
+
+def lessons_view(player_id: str, viewer_role: str, open_on: str | None, saving: bool):
+    """Lesson by lesson: what the coach wrote, what the player wrote back."""
+    items = analysis.lessons(player_id, viewer="player" if viewer_role == "player"
+                             else "coach")
+    if not items:
+        return html.Div([html.H2("Lessons"),
+                         html.Div("No lessons on record yet.", className="empty")],
+                        className="card")
+
+    cards = []
+    for lesson in items:
+        day = lesson["on"]
+        pretty = _date.fromisoformat(day).strftime("%a %-d %b")
+        is_open = (open_on or items[0]["on"]) == day
+
+        coach_block = [html.Div([
+            html.Div([html.Span("coach", className="who-chip coach"),
+                      html.Span(db.person(e["author_id"])["name"], className="hint")],
+                     className="meta"),
+            html.Div(db.render_for(e, viewer_role) or "", className="body"),
+        ], className="entry from-coach") for e in lesson["coach"]
+            if db.render_for(e, viewer_role)]
+
+        player_block = [html.Div([
+            html.Div(html.Span("you" if viewer_role == "player" else "player",
+                               className="who-chip player"), className="meta"),
+            html.Div(db.render_for(e, viewer_role) or "", className="body"),
+        ], className="entry from-player") for e in lesson["player"]
+            if db.render_for(e, viewer_role)]
+
+        if not player_block:
+            player_block = [html.Div(
+                "You didn't write anything about this lesson."
+                if viewer_role == "player" else "Nothing from the player.",
+                className="empty")]
+
+        body = [
+            html.Div("What your coach wrote" if viewer_role == "player"
+                     else "Coach", className="label"),
+            *(coach_block or [html.Div("Nothing recorded.", className="empty")]),
+            html.Div("What you wrote" if viewer_role == "player" else "Player",
+                     className="label", style={"marginTop": "16px"}),
+            *player_block,
+        ]
+
+        if viewer_role == "player":
+            body += [
+                html.Hr(style={"border": 0, "borderTop": "1px solid var(--line)",
+                               "margin": "16px 0"}),
+                dcc.Textarea(id={"type": "lesson-text", "d": day},
+                             placeholder="Anything you want to add about this lesson — "
+                                         "what stuck, what didn't make sense, what you "
+                                         "want to ask next time."),
+                html.Div([
+                    html.Button("Add to this lesson",
+                                id={"type": "lesson-save", "d": day},
+                                className="primary"),
+                    html.Span([html.Span(className="spinner"),
+                               html.Span("  Filing it…", className="hint")]
+                              if saving and is_open else ""),
+                ], className="composer-row"),
+            ]
+
+        cards.append(html.Details([
+            html.Summary([
+                html.Div([
+                    html.Span(pretty, className="lesson-date"),
+                    html.Span(lesson["week"]["theme_name"] if lesson["week"] else "",
+                              className="tag"),
+                ]),
+                html.Span(f"{len(lesson['coach'])} coach · "
+                          f"{len(lesson['player'])} yours"
+                          if viewer_role == "player" else
+                          f"{len(lesson['coach'])} coach · {len(lesson['player'])} player",
+                          className="hint"),
+            ]),
+            html.Div(body, className="bucket-body composer"),
+        ], className="bucket", open=is_open))
+
+    return html.Div([
+        html.H2(f"Lessons · {len(items)}"),
+        html.Div("Your private lessons, newest first. The coach's note and yours, "
+                 "side by side." if viewer_role == "player"
+                 else "Private lessons, newest first.", className="hint",
+                 style={"marginBottom": "12px"}),
+        *cards,
+    ], className="card")

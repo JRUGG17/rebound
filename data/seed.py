@@ -682,6 +682,14 @@ def term_entries() -> list[tuple]:
                         f"Lesson. {lesson_text}"))
 
             voice = bank["voice"]
+            # A reflection on the lesson day itself, most weeks. The lesson is
+            # where a player has something to react to, so this is where the
+            # two accounts of one session actually pair up.
+            if week_no % 3 != 0:
+                out.append((week_no, bank["lesson_day"], pid, "self", "reflection",
+                            None, shot, "technical",
+                            cue_for(voice[week_no % len(voice)]), "shared",
+                            voice[week_no % len(voice)]))
             for n, weekday in enumerate((1, 4)):
                 if (week_no + n) % 2:
                     continue
