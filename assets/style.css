@@ -1,0 +1,328 @@
+/* Rebound — Squash Tigers Academy
+   Tiger orange on slate, taken from the club's own curriculum slides. */
+
+:root {
+  --orange: #f08a24;
+  --orange-soft: #fdf1e3;
+  --slate: #4a4f54;
+  --slate-dark: #34383c;
+  --ink: #1d2124;
+  --muted: #6d757d;
+  --line: #e2e5e8;
+  --paper: #ffffff;
+  --wash: #f6f7f8;
+  --private: #f3eefb;
+  --private-line: #c9b6e8;
+  --green: #2e7d52;
+  --amber: #b26a00;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+  color: var(--ink);
+  background: var(--wash);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------- top bar */
+
+.topbar {
+  background: var(--slate-dark);
+  color: #fff;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-right: auto;
+}
+.brand span { color: var(--orange); }
+
+.topbar label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #a8aeb4;
+  margin-right: 8px;
+}
+
+.topbar .Select-control,
+.topbar select {
+  min-width: 190px;
+}
+
+.datebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.datebar .today {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+  min-width: 190px;
+  text-align: center;
+}
+
+button.step {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  height: 30px;
+  padding: 0 11px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button.step:hover { background: var(--orange); }
+
+/* ---------------------------------------------------------- layout */
+
+.page { max-width: 940px; margin: 0 auto; padding: 28px 24px 80px; }
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.focus-card {
+  border-left: 4px solid var(--orange);
+  background: linear-gradient(90deg, var(--orange-soft), var(--paper) 55%);
+}
+.focus-card .focus-text {
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.35;
+  margin-top: 6px;
+}
+
+.theme-pill {
+  display: inline-block;
+  background: var(--orange);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 4px 11px;
+  border-radius: 20px;
+}
+
+.tiein {
+  margin-top: 12px;
+  color: var(--slate);
+  line-height: 1.55;
+  font-size: 15px;
+}
+
+/* ---------------------------------------------------------- entries */
+
+.entry {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+}
+.entry:first-of-type { border-top: 0; }
+
+.entry .meta {
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.tag {
+  background: var(--wash);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.tag.technical { color: #1f5fa8; border-color: #c3d8f0; background: #eef5fd; }
+.tag.tactical  { color: #8a5a00; border-color: #f0dfb8; background: #fdf6e7; }
+.tag.physical  { color: #1f7a56; border-color: #bde0cf; background: #eaf7f1; }
+.tag.psychological { color: #7a3fa0; border-color: #dcc8ee; background: #f7f0fc; }
+
+.entry .body { line-height: 1.6; font-size: 15px; }
+.entry .byline { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+
+.private-pane {
+  background: var(--private);
+  border-color: var(--private-line);
+}
+.private-note {
+  font-size: 13px;
+  color: #5c4580;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+}
+
+/* ---------------------------------------------------------- composer */
+
+.composer textarea {
+  width: 100%;
+  min-height: 86px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.composer textarea:focus {
+  outline: 0;
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(240, 138, 36, 0.14);
+}
+
+.composer-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+button.primary {
+  background: var(--orange);
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 20px;
+  font-size: 14.5px;
+  font-weight: 620;
+  cursor: pointer;
+}
+button.primary:hover { background: #d9771a; }
+button.primary:disabled { background: #cfd4d8; cursor: default; }
+
+button.mic {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  width: 42px;
+  height: 40px;
+  font-size: 17px;
+  cursor: pointer;
+}
+button.mic.recording { background: #fdecec; border-color: #e5a0a0; }
+
+.hint { font-size: 12.5px; color: var(--muted); }
+
+/* ---------------------------------------------------------- tabs */
+
+.tab-row { display: flex; gap: 6px; margin-bottom: 14px; }
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tab-btn.active {
+  background: var(--paper);
+  border-color: var(--line);
+  border-bottom-color: var(--paper);
+  color: var(--ink);
+  margin-bottom: -1px;
+}
+.tab-btn.private.active { background: var(--private); border-color: var(--private-line); }
+
+/* ---------------------------------------------------------- usage */
+
+table.usage { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.usage th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+}
+table.usage td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+table.usage td.num { text-align: right; }
+
+.stat-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.stat {
+  flex: 1 1 150px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+.stat .value {
+  font-size: 25px;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+}
+.stat .sub { font-size: 12px; color: var(--muted); }
+
+.banner {
+  background: #fff8e8;
+  border: 1px solid #f0dca8;
+  color: var(--amber);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+.empty { color: var(--muted); font-style: italic; padding: 18px 0; }
+
+.spinner {
+  display: inline-block;
+  width: 15px; height: 15px;
+  border: 2px solid var(--line);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: -2px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
