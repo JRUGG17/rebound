@@ -154,6 +154,10 @@ _ADDED_COLUMNS = {
         # read it and signed it off. Unapproved, the note stays a coach record.
         ("player_text_approved_by", "TEXT"),
         ("player_text_approved_at", "TEXT"),
+        # Set by the Organizer when it files an entry. flagged_injection marks
+        # text that tried to instruct an agent rather than record training.
+        ("flagged_injection", "INTEGER NOT NULL DEFAULT 0"),
+        ("flagged_welfare", "INTEGER NOT NULL DEFAULT 0"),
     ],
 }
 
@@ -236,6 +240,8 @@ def add_entry(
     approved_by: str | None = None,
     visibility: str = "shared",
     media_url: str | None = None,
+    flagged_injection: bool = False,
+    flagged_welfare: bool = False,
 ) -> int:
     from datetime import datetime, timezone
 
@@ -245,13 +251,39 @@ def add_entry(
             """INSERT INTO entries (player_id, author_id, author_role, setting, rung,
                    shot, category, cue_id, raw_text, summary, player_text,
                    player_text_approved_by, player_text_approved_at, visibility,
-                   media_url, occurred_on, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   media_url, occurred_on, created_at, flagged_injection,
+                   flagged_welfare)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (player_id, author_id, author_role, setting, rung, shot, category, cue_id,
              raw_text, summary, player_text, approved_by,
-             now if approved_by else None, visibility, media_url, occurred_on, now),
+             now if approved_by else None, visibility, media_url, occurred_on, now,
+             int(flagged_injection), int(flagged_welfare)),
         )
         return int(cursor.lastrowid or 0)
+
+
+def agent_text(entry) -> str:
+    """What a downstream agent is allowed to read for an entry.
+
+    The Organizer is the airlock. It is the only agent that ever sees a
+    player's raw words, and its job includes neutralising anything in them
+    that was aimed at a model rather than at the record. Every agent after it
+    reads the summary it produced, not the original string.
+
+    That matters because the dangerous attack is not the one caught at the
+    door — it is the one that sits in the database and gets read next week by
+    a different agent building a coach's brief. A summary cannot carry an
+    instruction the Organizer already stripped.
+
+    Coach-authored notes pass through as written: they are staff records, and
+    paraphrasing a coach to another coach loses the detail the brief is for.
+    """
+    if entry["author_role"] == "coach":
+        return entry["raw_text"]
+    if entry["flagged_injection"]:
+        return (entry["summary"] or "[entry withheld]") + \
+               "  [flagged: this entry contained text addressed at an agent]"
+    return entry["summary"] or entry["raw_text"]
 
 
 def render_for(entry: sqlite3.Row, viewer_role: str) -> str | None:

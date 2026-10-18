@@ -56,6 +56,8 @@ def start_job(player_id: str, text: str, visibility: str) -> str:
                 summary=organized.summary,
                 visibility=visibility,
                 occurred_on=on,
+                flagged_injection=organized.injected_instruction,
+                flagged_welfare=organized.welfare_flag,
             )
             with _JOBS_LOCK:
                 _JOBS[job_id] = {"state": "done", "usage": usage,

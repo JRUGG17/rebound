@@ -185,7 +185,7 @@ def digest(player_id: str) -> str:
                 week = db.week_of(entry["occurred_on"])
                 when = f"wk{week['id']}" if week else entry["occurred_on"]
                 lines.append(
-                    f"    [{rung}, {when}] ({who['role']}) {_clip(entry['raw_text'])}")
+                    f"    [{rung}, {when}] ({who['role']}) {_clip(db.agent_text(entry))}")
 
     overlaps = coach_overlaps(player_id)
     if overlaps:
@@ -195,7 +195,7 @@ def digest(player_id: str) -> str:
             lines.append(f"  week {overlap['week']}, {overlap['shot']}:")
             for entry in overlap["entries"]:
                 who = db.person(entry["author_id"])
-                lines.append(f"    {who['name']}: {_clip(entry['raw_text'])}")
+                lines.append(f"    {who['name']}: {_clip(db.agent_text(entry))}")
 
     # Entries with no rung are not ladder evidence, but they are often the most
     # revealing thing in the record — a player saying they did not know which
@@ -213,5 +213,5 @@ def digest(player_id: str) -> str:
             week = db.week_of(entry["occurred_on"])
             where = f"wk{week['id']}" if week else entry["occurred_on"]
             lines.append(f"  [{where}, {entry['setting']}] ({who['role']} "
-                         f"{who['name']}) {_clip(entry['raw_text'], 200)}")
+                         f"{who['name']}) {_clip(db.agent_text(entry), 200)}")
     return "\n".join(lines)
