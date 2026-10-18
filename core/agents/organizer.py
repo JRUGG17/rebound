@@ -58,7 +58,17 @@ class Organized(BaseModel):
     cue_id: str | None = Field(
         default=None,
         description="The id of the canonical cue this is an instance of, taken from "
-        "the cue list. Null if it does not match one — do not force a match.",
+        "the cue list. Null if it does not match one — do not force a match. The cue "
+        "list was seeded from one coach's old notes and is not the academy's whole "
+        "vocabulary, so a near-miss is a miss.",
+    )
+    proposed_cue: str | None = Field(
+        default=None,
+        description="Only when cue_id is null AND this reads like a coaching theme that "
+        "would recur rather than a one-off remark: a short canonical phrasing for it, "
+        "three to five words, in the words a coach would use. The head of program "
+        "development reviews these and decides whether the club adopts them. Null "
+        "otherwise — most entries should not propose anything.",
     )
     mentions_injury: bool = Field(
         default=False, description="True if any pain, injury or physical problem is mentioned."

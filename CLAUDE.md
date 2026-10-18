@@ -78,7 +78,8 @@ questions-for-coach round trip. The parent page stays as one read-only screen.
 | 5. Debrief agent | not started |
 | 6. Safety defenses + test script | partly — visibility and injection already tested |
 | 7. Archive demo (Jamie's 3 years of notes) | not started |
-| 8. README + fresh-clone dry run | not started |
+| 8. Cue proposals: admin UI to adopt them | backend done, no screen yet |
+| 9. README + fresh-clone dry run | not started |
 | Report (41 pts) + slides (8 pts) | not started |
 
 **The report and slides are 49 of 100 points.** Budget roughly: app to Oct 21, polish and
@@ -146,4 +147,13 @@ Not "a training diary". The diary is how the data gets collected. The product is
    contradictory advice.
 
 Jamie's own three years of notes are the proof that the problem is real: the same eight
-cues recur across every document, for years, never resolved. That archive is the "before".
+cues recur across every document, for years, never resolved. That archive is the
+"before" — **it is evidence, not doctrine.**
+
+This matters for how the app is built. The cue library was seeded from those notes, which
+made it a fast start and does not make it authoritative: it is one coach's vocabulary,
+not the academy's. Agents are told not to force a match and not to read a coach's note
+through that list. Where a theme recurs in coaches' and players' own words and nothing
+covers it, the Organizer proposes a cue and the head of program development decides.
+The vocabulary is meant to end up coming from what the club writes, not from the archive
+it started with.

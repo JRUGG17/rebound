@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS entries (
     shot          TEXT,
     category      TEXT,
     cue_id        TEXT,
+    proposed_cue  TEXT,
     raw_text      TEXT NOT NULL,               -- what was actually said
     summary       TEXT,                        -- what the Organizer made of it
     player_text   TEXT,                        -- a coach note rewritten for the kid
@@ -158,6 +159,9 @@ _ADDED_COLUMNS = {
         # text that tried to instruct an agent rather than record training.
         ("flagged_injection", "INTEGER NOT NULL DEFAULT 0"),
         ("flagged_welfare", "INTEGER NOT NULL DEFAULT 0"),
+        # A coaching theme the Organizer saw recurring that no canonical cue
+        # covers. Waiting on an admin to adopt it, or not.
+        ("proposed_cue", "TEXT"),
     ],
 }
 
@@ -235,6 +239,7 @@ def add_entry(
     shot: str | None = None,
     category: str | None = None,
     cue_id: str | None = None,
+    proposed_cue: str | None = None,
     summary: str | None = None,
     player_text: str | None = None,
     approved_by: str | None = None,
@@ -249,13 +254,13 @@ def add_entry(
     with connect() as conn:
         cursor = conn.execute(
             """INSERT INTO entries (player_id, author_id, author_role, setting, rung,
-                   shot, category, cue_id, raw_text, summary, player_text,
-                   player_text_approved_by, player_text_approved_at, visibility,
-                   media_url, occurred_on, created_at, flagged_injection,
+                   shot, category, cue_id, proposed_cue, raw_text, summary,
+                   player_text, player_text_approved_by, player_text_approved_at,
+                   visibility, media_url, occurred_on, created_at, flagged_injection,
                    flagged_welfare)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (player_id, author_id, author_role, setting, rung, shot, category, cue_id,
-             raw_text, summary, player_text, approved_by,
+             proposed_cue, raw_text, summary, player_text, approved_by,
              now if approved_by else None, visibility, media_url, occurred_on, now,
              int(flagged_injection), int(flagged_welfare)),
         )
@@ -433,3 +438,41 @@ def week_of(date_iso: str) -> sqlite3.Row | None:
             "SELECT * FROM weeks WHERE starts_on <= ? ORDER BY starts_on DESC LIMIT 1",
             (date_iso,),
         ).fetchone()
+
+
+# ---------------------------------------------------------------- cue proposals
+
+def cue_proposals() -> list[dict]:
+    """Themes the Organizer saw recurring that no canonical cue covers.
+
+    Grouped by the exact phrasing proposed, most frequent first. Near-misses
+    are not merged — "racket up early" and "early racket" stay separate — and
+    that is deliberate: a human reads these, and quietly collapsing two of
+    them would be the system deciding the academy's vocabulary for it.
+    """
+    with connect() as conn:
+        rows = conn.execute(
+            """SELECT proposed_cue AS phrase, COUNT(*) AS n,
+                      COUNT(DISTINCT player_id) AS players,
+                      MIN(occurred_on) AS first_on, MAX(occurred_on) AS last_on
+               FROM entries
+               WHERE proposed_cue IS NOT NULL AND proposed_cue != ''
+                 AND cue_id IS NULL
+               GROUP BY lower(trim(proposed_cue))
+               ORDER BY n DESC, phrase"""
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def adopt_cue(phrase: str, category: str) -> str:
+    """Promote a proposal to a canonical cue, and tag the entries that raised it."""
+    cue_id = "_".join(phrase.lower().split())[:40] or "cue"
+    with connect() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO cues (id, canonical, category) VALUES (?,?,?)",
+            (cue_id, phrase.strip(), category))
+        conn.execute(
+            """UPDATE entries SET cue_id = ?
+               WHERE cue_id IS NULL AND lower(trim(proposed_cue)) = lower(trim(?))""",
+            (cue_id, phrase))
+    return cue_id

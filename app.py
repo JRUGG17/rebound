@@ -65,7 +65,7 @@ def save_reflection(player_id: str, text: str, visibility: str):
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
             setting=organized.setting, rung=organized.rung, shot=organized.shot,
-            category=organized.category, cue_id=organized.cue_id,
+            category=organized.category, cue_id=organized.cue_id, proposed_cue=organized.proposed_cue,
             raw_text=text, summary=organized.summary, visibility=visibility,
             occurred_on=on,
             flagged_injection=organized.injected_instruction,
@@ -113,7 +113,7 @@ def save_dated(player_id: str, text: str, visibility: str, day: str):
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
             setting=organized.setting, rung=organized.rung, shot=organized.shot,
-            category=organized.category, cue_id=organized.cue_id,
+            category=organized.category, cue_id=organized.cue_id, proposed_cue=organized.proposed_cue,
             raw_text=text, summary=organized.summary, visibility=visibility,
             occurred_on=day,
             flagged_injection=organized.injected_instruction,
@@ -588,7 +588,8 @@ def save_note(_release, _keep, _raw, draft, player_text, coach_id):
         player_id=draft["player_id"], author_id=coach_id, author_role="coach",
         setting=draft["setting"], rung=organized.get("rung"),
         shot=organized.get("shot"), category=organized.get("category"),
-        cue_id=organized.get("cue_id"), raw_text=draft["text"],
+        cue_id=organized.get("cue_id"), proposed_cue=organized.get("proposed_cue"),
+        raw_text=draft["text"],
         summary=organized.get("summary"),
         player_text=(player_text or "").strip() or None,
         # Releasing is the approval. A note kept back stays a coach record and

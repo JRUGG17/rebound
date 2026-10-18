@@ -669,11 +669,30 @@ what to do, the drill's rules make the right choice the available one)
 
 ---
 
-## 10. Cue library — the chronic ones
+## 10. Cue library — a starting vocabulary, not a canon
 
-These cues recur across coaches, players and years. When one appears in an entry, tag it to
-the canonical cue below rather than treating it as new. **A cue that keeps reappearing for
-the same player is not a reminder — it is an unresolved blocker, and should be escalated.**
+Tagging exists for one reason: the same coaching point gets written a dozen different
+ways, and unless those collapse to one thing, nobody can see that it has come back.
+**A cue that keeps reappearing for the same player is not a reminder — it is an
+unresolved blocker, and should be escalated.**
+
+**Where this list came from, and what that means.** It was seeded from one coach's
+personal training notes, kept over several years. That made it a useful starting point
+and it is not authoritative. It is one person's vocabulary, not the academy's, and the
+academy's is what matters.
+
+So two rules for agents:
+
+- **Do not force a match.** If what a coach wrote is not one of these, leave the cue
+  empty. A wrong tag is worse than no tag — it inflates one count and hides another.
+- **Do not read a coach's note through this list.** A coach writing about something not
+  here is not writing about something lesser. Read what they said, not the nearest
+  entry below.
+
+**The list is meant to grow from real notes.** Where a theme keeps appearing in coaches'
+and players' own words and nothing here covers it, an agent proposes a new cue and the
+head of program development decides. Over time the vocabulary should come from what the
+club actually writes, not from the archive it was seeded with.
 
 | Canonical cue | Category | Also said as |
 |---|---|---|
