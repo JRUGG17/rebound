@@ -165,39 +165,32 @@ def entry_card(entry, viewer_role: str):
 
 
 def player_today(player_id: str):
-    player = db.person(player_id)
+    """Short on purpose.
+
+    This grew into the whole record with a focus card on top. A landing page
+    that takes scrolling is a landing page nobody reads, and everything on it
+    already has a home: the journal has the history, lessons have the
+    lessons. Today answers one question — what am I working on, and what is
+    this week — and then gets out of the way.
+    """
     focus = db.current_focus(player_id)
     week = db.week_of(clock.today_iso())
-    cards = []
 
-    if focus:
-        cards.append(html.Div([
-            html.H2("Your focus right now"),
-            html.Div(focus["text"], className="focus-text"),
-            html.Div(f"Set by {db.person(focus['coach_id'])['name']} on {focus['set_on']}",
-                     className="byline"),
-        ], className="card focus-card"))
+    header = [
+        html.Div([
+            html.Div("Working on", className="label"),
+            html.Div(focus["text"] if focus else "Nothing set yet",
+                     className="focus-text"),
+            html.Div(f"Set by {db.person(focus['coach_id'])['name']}"
+                     if focus else "", className="byline"),
+        ]),
+        html.Div(html.Span(week["theme_name"], className="theme-pill")
+                 if week else "", className="today-week"),
+    ]
+    return [html.Div(header, className="card focus-card today-head")]
 
-    if week:
-        tie = []
-        if focus and week["theme_shot"]:
-            tie.append(html.Div(
-                f"Squad is on the {week['theme_shot']} this week. The blocked and "
-                f"routine parts are where you get to think about your own focus — "
-                f"that is the slowest the session gets.", className="tiein"))
-        cards.append(html.Div([
-            html.H2("This week at squad"),
-            html.Div(html.Span(week["theme_name"], className="theme-pill")),
-            *tie,
-        ], className="card"))
 
-    cards.append(html.Div([
-        html.H2("Nudge"),
-        html.Div(f"{player['name'].split()[0]}, you have not logged anything since the "
-                 f"last squad. Thirty seconds is plenty — just say how it went.",
-                 className="tiein"),
-    ], className="card"))
-    return cards
+RECENT_ON_TODAY = 4
 
 
 def player_reflections(player_id: str, tab: str, job_id: str | None):
@@ -207,9 +200,16 @@ def player_reflections(player_id: str, tab: str, job_id: str | None):
                and (e["author_id"] == player_id or not private)]
     entries.reverse()
 
-    cards = [c for c in (entry_card(e, "player") for e in entries) if c]
+    # The last few, not the term. Everything older lives in the journal, and
+    # showing it twice is how this page became unreadable.
+    shown = entries[:RECENT_ON_TODAY]
+    cards = [c for c in (entry_card(e, "player") for e in shown) if c]
     body = cards or [html.Div(
-        "Nothing here yet." if private else "No shared reflections yet.", className="empty")]
+        "Nothing here yet." if private else "Nothing shared yet.", className="empty")]
+    if len(entries) > len(shown):
+        body.append(html.Div(
+            f"{len(entries) - len(shown)} older — they are in your journal.",
+            className="hint", style={"paddingTop": "12px"}))
 
     state = job(job_id)
     status = []

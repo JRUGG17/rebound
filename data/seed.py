@@ -438,7 +438,7 @@ BANK: dict[str, dict] = {
         ("conditioned_game", "Prep gone in the game again — feet first."),
         ("routine", "Better. Prep held most of the routine today."),
         ("block", "No complaints in the blocks. You are clean when it is slow."),
-        ("pattern", "Pattern work — prep fine until she had to choose, then late."),
+        ("pattern", "Pattern work — prep fine until you had to choose, then late."),
         ("conditioned_game", "Conditioned game. Length good, prep late."),
     ], "drop": [
         ("block", "Drop blocks clean. Soft hands, good target."),
@@ -459,7 +459,7 @@ BANK: dict[str, dict] = {
         "i think im getting better at length",
     ], "any": [
         ("block", "Length improving. Still reaching rather than stepping in."),
-        ("routine", "Routine was good for him. Clear sequence, stuck to it."),
+        ("routine", "Good routine. Clear sequence and you stuck to it."),
         ("block", "Stepping in more today without being told."),
         ("routine", "Rushed the short ball every time it came up."),
         ("pattern", "First proper pattern. You took the options when they were there."),
@@ -506,7 +506,7 @@ BANK: dict[str, dict] = {
         ("block", "Back to blocks today — routines were a stretch last week."),
         ("routine", "Routine went better. Sequence and technique both holding."),
     ], "lob": [
-        ("block", "Lob is a good shot for him. Gets height easily."),
+        ("block", "Lob is a good shot for you. You get height easily."),
     ], "drop": [
         ("block", "Drops are hard at nine. We will keep it simple for now."),
     ]},

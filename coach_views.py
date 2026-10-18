@@ -13,6 +13,8 @@ from dash import dcc, html
 from core import analysis, clock, db
 from core import playbook as pb
 
+CATEGORY_ORDER = ("technical", "tactical", "physical", "psychological")
+
 RUNG_LABELS = {
     "solo": "solo", "block": "block", "routine": "routine",
     "pattern": "pattern", "conditioned_game": "cond. game", "match": "match",
@@ -202,9 +204,7 @@ def player_detail(player_id: str, review: dict | None, running: bool,
 
         html.Div([
             html.H2("Where the evidence sits"),
-            html.Div("Low rungs are technical rehearsal; high rungs are tactical "
-                     "application. A shot with entries low and nothing high has not "
-                     "been tested under pressure.", className="hint",
+            html.Div("Low rungs rehearse, high rungs test.", className="hint",
                      style={"marginBottom": "12px"}),
             matrix_table(player_id),
         ], className="card"),
@@ -218,19 +218,45 @@ def player_detail(player_id: str, review: dict | None, running: bool,
             html.Div(findings, style={"marginTop": "12px"}),
         ], className="card"),
 
-        html.Div([
-            html.H2("Everything on file"),
-            *[html.Div([
-                html.Div(" · ".join(filter(None, [
-                    e["occurred_on"], e["setting"], e["rung"], e["shot"],
-                    "PRIVATE" if e["visibility"] == "private" else None,
-                    "FLAGGED" if e["flagged_injection"] else None,
-                ])), className="meta"),
-                html.Div(db.agent_text(e), className="body"),
-                html.Div(f"— {db.person(e['author_id'])['name']}", className="byline"),
-            ], className="entry") for e in reversed(db.entries_for_coach(player_id))],
-        ], className="card"),
+        recent_notes(player_id),
     ])
+
+
+RECENT_FOR_COACH = 6
+
+
+def recent_notes(player_id: str):
+    """The last handful, not the file.
+
+    This used to print every entry on record — eighty-odd by half term, which
+    is a page a coach scrolls past rather than reads. The history has three
+    homes already: the calendar by day, Lessons by lesson, Recap by theme.
+    """
+    rows = list(reversed(db.entries_for_coach(player_id)))
+    shown = rows[:RECENT_FOR_COACH]
+    return html.Div([
+        html.Div([
+            html.H2("Latest"),
+            html.Span(f"{len(rows)} on file · the rest is under Journal",
+                      className="hint"),
+        ], style={"display": "flex", "justifyContent": "space-between",
+                  "alignItems": "baseline"}),
+        *[html.Div([
+            html.Div([
+                html.Span(e["occurred_on"], className="hint"),
+                html.Span("coach" if e["author_role"] == "coach" else "player",
+                          className=f"who-chip {'coach' if e['author_role'] == 'coach' else 'player'}"),
+                html.Span(e["setting"], className="tag"),
+                html.Span("private", className="tag")
+                if e["visibility"] == "private" else html.Span(),
+                html.Span("unsent", className="tag")
+                if e["author_role"] == "coach" and not e["player_text_approved_at"]
+                else html.Span(),
+            ], className="meta"),
+            html.Div(db.agent_text(e), className="body"),
+        ], className=f"entry from-{'coach' if e['author_role'] == 'coach' else 'player'}")
+          for e in shown],
+    ], className="card")
 
 
 # ------------------------------------------------------------------ resources
@@ -464,6 +490,307 @@ def note_composer(draft: dict | None, running: bool):
             ], className="composer-row"),
         ], className="card composer"),
     ])
+
+
+# ------------------------------------------------------------------ journal
+
+import calendar as _cal
+from datetime import date as _date, timedelta
+
+
+CATEGORY_ORDER = ("technical", "tactical", "physical", "psychological")
+
+
+def _plural(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
+def _month_bounds(day: _date) -> tuple[str, str]:
+    last = _cal.monthrange(day.year, day.month)[1]
+    return (day.replace(day=1).isoformat(), day.replace(day=last).isoformat())
+
+
+def calendar_view(player_id: str, viewer_role: str, offset: int = 0):
+    """A month at a glance. Which days had anything, and what kind."""
+    today = clock.today()
+    month = today.month + offset
+    year = today.year + (month - 1) // 12
+    month = (month - 1) % 12 + 1
+    first = _date(year, month, 1)
+    start, end = _month_bounds(first)
+
+    rows = (db.entries_for_player(player_id) if viewer_role == "player"
+            else db.entries_for_coach(player_id))
+    by_day: dict[str, list] = {}
+    for entry in rows:
+        if start <= entry["occurred_on"] <= end:
+            by_day.setdefault(entry["occurred_on"], []).append(entry)
+
+    weeks = _cal.Calendar(firstweekday=0).monthdatescalendar(year, month)
+    grid = []
+    for week in weeks:
+        cells = []
+        for day in week:
+            if day.month != month:
+                cells.append(html.Td("", className="cal-out"))
+                continue
+            entries = by_day.get(day.isoformat(), [])
+            dots = [html.Span(className=f"dot {e['category'] or 'none'}")
+                    for e in entries[:4]]
+            cells.append(html.Td(
+                html.Button([
+                    html.Div(str(day.day), className="cal-day"),
+                    html.Div(dots, className="cal-dots"),
+                ], id={"type": "cal-day", "d": day.isoformat()}, className="cal-btn"),
+                className="cal-cell" + (" has" if entries else "")
+                + (" today" if day == today else "")))
+        grid.append(html.Tr(cells))
+
+    legend = html.Div([
+        html.Span([html.Span(className=f"dot {c}"), " ", c], className="legend-item")
+        for c in CATEGORY_ORDER
+    ], className="legend")
+
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.Button("‹", id="cal-prev", className="step dark"),
+                html.Span(first.strftime("%B %Y"), className="cal-title"),
+                html.Button("›", id="cal-next", className="step dark"),
+            ], className="cal-head"),
+            html.Table([
+                html.Thead(html.Tr([html.Th(d) for d in
+                                    ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")])),
+                html.Tbody(grid),
+            ], className="calendar"),
+            legend,
+            html.Div([
+                html.Span(_plural(sum(len(v) for v in by_day.values()),
+                                  "entry", "entries")
+                          + " on " + _plural(len(by_day), "day", "days")
+                          + " this month", className="hint"),
+                html.Button(f"Recap {first.strftime('%B')}",
+                            id={"type": "month-recap", "m": first.isoformat()},
+                            className="tab-btn") if by_day else html.Span(),
+            ], style={"display": "flex", "justifyContent": "space-between",
+                      "alignItems": "center", "marginTop": "10px"}),
+        ], className="card"),
+    ])
+
+
+DIRECTION_LABEL = {
+    "climbing": "▲", "flat": "▬", "slipping": "▼", "new": "✦", "unclear": "·",
+}
+
+# Rolling windows rather than everything. A recap over the whole record costs
+# the most and says the least — the useful question is almost always "what has
+# been going on lately". Whole months are reachable from the calendar, where
+# they are a deliberate choice rather than the default.
+RANGES = [
+    ("7", "Last 7 days"),
+    ("14", "Last 2 weeks"),
+    ("30", "Last 30 days"),
+    ("block", "Whole block"),
+]
+
+
+def range_bounds(key: str) -> tuple[str, str, str]:
+    today = clock.today()
+    if key and key.startswith("month:"):
+        first = _date.fromisoformat(key.split(":", 1)[1])
+        a, b = _month_bounds(first)
+        return a, min(b, today.isoformat()), first.strftime("%B %Y")
+    if key == "block":
+        return (clock.BLOCK_START.isoformat(), today.isoformat(), "the whole block")
+    days = int(key) if str(key).isdigit() else 30
+    start = today - timedelta(days=days - 1)
+    label = {7: "the last 7 days", 14: "the last 2 weeks"}.get(days,
+                                                              f"the last {days} days")
+    return start.isoformat(), today.isoformat(), label
+
+
+def recap_view(player_id: str, viewer_role: str, range_key: str,
+               result: dict | None, running: bool):
+    start, end, label = range_bounds(range_key)
+    stats = analysis.period_stats(
+        player_id, start, end, viewer="player" if viewer_role == "player" else "coach")
+    all_rows = (db.entries_for_player(player_id) if viewer_role == "player"
+                else db.entries_for_coach(player_id))
+    all_rows = [e for e in all_rows if start <= e["occurred_on"] <= end]
+
+    picker = html.Div([
+        html.Button(label_, id={"type": "recap-range", "k": key},
+                    className=f"tab-btn{' active' if key == range_key else ''}")
+        for key, label_ in RANGES
+    ], className="tab-row")
+
+    tiles = html.Div([
+        html.Div([html.Div("Entries", className="label"),
+                  html.Div(str(stats["total"]), className="value")], className="stat"),
+        html.Div([html.Div("Days trained", className="label"),
+                  html.Div(str(stats["sessions"]), className="value")], className="stat"),
+        *[html.Div([html.Div(c, className="label"),
+                    html.Div(str(stats["counts"][c]), className="value")],
+                   className="stat") for c in CATEGORY_ORDER],
+    ], className="stat-row")
+
+    if running:
+        body = [html.Span(className="spinner"),
+                html.Span("  Reading it back…", className="hint")]
+    elif not stats["total"]:
+        body = [html.Div(f"Nothing recorded for {label}.", className="empty")]
+    elif result:
+        body = [
+            html.Div(result["headline"], className="recap-headline"),
+            html.Div(result["overview"], className="recap-overview"),
+        ]
+        for theme in result["themes"]:
+            # The entries behind a theme: by its cue where it has one, by
+            # category otherwise. This is the "click in for the detail" half —
+            # the theme is the point, the days are the receipts.
+            if theme.get("cue_id"):
+                backing = [e for e in all_rows if e["cue_id"] == theme["cue_id"]]
+            else:
+                backing = stats["by_category"].get(theme["category"], [])
+            body.append(html.Details([
+                html.Summary([
+                    html.Span(DIRECTION_LABEL.get(theme["direction"], "·"),
+                              className=f"arrow {theme['direction']}"),
+                    html.Div([
+                        html.Div(theme["title"], className="theme-title"),
+                        html.Div([
+                            html.Span(theme["category"],
+                                      className=f"tag {theme['category']}"),
+                            html.Span(theme["evidence"], className="hint"),
+                        ], className="meta"),
+                    ], style={"flex": "1"}),
+                ]),
+                html.Div([
+                    html.Div(theme["what_it_is"], className="theme-body"),
+                    html.Div(f"{_plural(len(backing), 'entry', 'entries')} behind this",
+                             className="label", style={"marginTop": "14px"}),
+                    *[html.Div([
+                        html.Div(" · ".join(filter(None, [
+                            e["occurred_on"], e["setting"],
+                            e["rung"].replace("_", " ") if e["rung"] else None])),
+                            className="meta"),
+                        html.Div(db.render_for(e, viewer_role) or db.agent_text(e),
+                                 className="body"),
+                    ], className="entry") for e in backing[-12:]],
+                ], className="bucket-body"),
+            ], className="bucket"))
+        if result.get("gap"):
+            body.append(html.Div([html.Strong("Gap. "), result["gap"]],
+                                 className="timing-box"))
+    else:
+        body = [html.Div("Pick a stretch of time and read it back. "
+                         "Costs one model call.", className="empty")]
+
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.H2(f"Recap · {label}"),
+                html.Button("Read it back", id="run-recap", className="primary"),
+            ], style={"display": "flex", "justifyContent": "space-between",
+                      "alignItems": "center"}),
+            picker,
+            tiles,
+            html.Div(body, style={"marginTop": "6px"}),
+        ], className="card"),
+    ])
+
+
+def day_view(player_id: str, viewer_role: str, day: str,
+             summary: dict | None, running: bool, saving: bool):
+    """One day: everything written, plus somewhere to add to it.
+
+    Backfilling matters more than it looks. A player who remembers on Thursday
+    what happened on Tuesday should be able to put it on Tuesday, or the
+    record drifts and the calendar stops meaning anything.
+    """
+    rows = (db.entries_for_player(player_id) if viewer_role == "player"
+            else db.entries_for_coach(player_id))
+    entries = [e for e in rows if e["occurred_on"] == day]
+    week = db.week_of(day)
+    is_past = day < clock.today_iso()
+    pretty = _date.fromisoformat(day).strftime("%A %-d %B %Y")
+
+    if running:
+        head = [html.Span(className="spinner"),
+                html.Span("  Reading the day back…", className="hint")]
+    elif summary:
+        head = [html.Div(summary["what_happened"], className="recap-overview")]
+        if summary.get("fits_in"):
+            head.append(html.Div([html.Strong("In context. "), summary["fits_in"]],
+                                 className="recur-box"))
+    elif entries:
+        head = [html.Div("Nothing read back yet.", className="empty")]
+    else:
+        head = []
+
+    cards = []
+    for entry in entries:
+        text = db.render_for(entry, viewer_role)
+        if text is None:
+            continue
+        author = db.person(entry["author_id"])
+        meta = [html.Span(" · ".join(filter(None, [
+            entry["setting"],
+            entry["rung"].replace("_", " ") if entry["rung"] else None,
+            entry["shot"]])))]
+        if entry["category"]:
+            meta.append(html.Span(entry["category"], className=f"tag {entry['category']}"))
+        if entry["visibility"] == "private":
+            meta.append(html.Span("private", className="tag"))
+        cards.append(html.Div([
+            html.Div(meta, className="meta"),
+            html.Div(text, className="body"),
+            html.Div(f"— {author['name']}" if author["role"] == "coach"
+                     else "— you", className="byline"),
+        ], className="entry"))
+
+    composer = []
+    if viewer_role == "player":
+        composer = [html.Div([
+            html.H2("Add to this day" if entries else "Nothing here yet"),
+            html.Div(
+                "You can still add to a day that has passed — put it on the day it "
+                "happened and the record stays straight."
+                if is_past else
+                "How did it go? A sentence is plenty.", className="hint",
+                style={"marginBottom": "10px"}),
+            dcc.Textarea(id="day-text"),
+            html.Div([
+                html.Button("🎤", id="day-mic", className="mic", title="Speak instead"),
+                html.Button("Add to this day", id="day-save", className="primary"),
+                html.Button("🔒 Keep private", id="day-save-private", className="tab-btn"),
+                html.Span([html.Span(className="spinner"),
+                           html.Span("  Filing it…", className="hint")] if saving else ""),
+            ], className="composer-row"),
+        ], className="card composer")]
+
+    return html.Div([
+        html.Div([
+            html.Button("‹ Back to the month", id="day-back", className="tab-btn"),
+            html.H2(pretty),
+            html.Div(html.Span(week["theme_name"], className="theme-pill")
+                     if week else "", style={"marginBottom": "8px"}),
+            html.Div([
+                html.Button("Read this day back", id="run-day", className="primary"),
+            ] if entries else [], className="composer-row"),
+            *head,
+        ], className="card"),
+        html.Div([html.H2(_plural(len(cards), "entry", "entries")), *cards],
+                 className="card") if cards else html.Span(),
+        *composer,
+    ])
+
+
+PRIVATE_PROMPT = (
+    "Whatever you want. Nobody reads this but you — how you're feeling, what's "
+    "annoying you, things you'd rather not say out loud yet. There's no wrong "
+    "thing to put here."
+)
 
 
 def lessons_view(player_id: str, viewer_role: str, open_on: str | None,

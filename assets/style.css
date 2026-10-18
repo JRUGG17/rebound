@@ -579,3 +579,7 @@ button.mic.recording {
 }
 @keyframes pulse { 50% { background: #f8d7d7; } }
 body.no-speech button.mic { opacity: 0.45; }
+
+.today-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.today-head .focus-text { margin-top: 2px; }
+.today-week { flex: 0 0 auto; padding-top: 4px; }
