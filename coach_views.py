@@ -473,11 +473,13 @@ def calendar_view(player_id: str, viewer_role: str, offset: int = 0):
             entries = by_day.get(day.isoformat(), [])
             dots = [html.Span(className=f"dot {e['category'] or 'none'}")
                     for e in entries[:4]]
-            cells.append(html.Td([
-                html.Div(str(day.day), className="cal-day"),
-                html.Div(dots, className="cal-dots"),
-            ], className="cal-cell" + (" has" if entries else "")
-               + (" today" if day == today else "")))
+            cells.append(html.Td(
+                html.Button([
+                    html.Div(str(day.day), className="cal-day"),
+                    html.Div(dots, className="cal-dots"),
+                ], id={"type": "cal-day", "d": day.isoformat()}, className="cal-btn"),
+                className="cal-cell" + (" has" if entries else "")
+                + (" today" if day == today else "")))
         grid.append(html.Tr(cells))
 
     legend = html.Div([
@@ -595,4 +597,92 @@ def recap_view(player_id: str, viewer_role: str, range_key: str,
             tiles,
             html.Div(body, style={"marginTop": "6px"}),
         ], className="card"),
+    ])
+
+
+def day_view(player_id: str, viewer_role: str, day: str,
+             summary: dict | None, running: bool, saving: bool):
+    """One day: everything written, plus somewhere to add to it.
+
+    Backfilling matters more than it looks. A player who remembers on Thursday
+    what happened on Tuesday should be able to put it on Tuesday, or the
+    record drifts and the calendar stops meaning anything.
+    """
+    rows = (db.entries_for_player(player_id) if viewer_role == "player"
+            else db.entries_for_coach(player_id))
+    entries = [e for e in rows if e["occurred_on"] == day]
+    week = db.week_of(day)
+    is_past = day < clock.today_iso()
+    pretty = _date.fromisoformat(day).strftime("%A %-d %B %Y")
+
+    if running:
+        head = [html.Span(className="spinner"),
+                html.Span("  Reading the day back…", className="hint")]
+    elif summary:
+        head = [html.Div(summary["what_happened"], className="recap-overview")]
+        if summary.get("fits_in"):
+            head.append(html.Div([html.Strong("In context. "), summary["fits_in"]],
+                                 className="recur-box"))
+    elif entries:
+        head = [html.Div("Nothing read back yet.", className="empty")]
+    else:
+        head = []
+
+    cards = []
+    for entry in entries:
+        text = db.render_for(entry, viewer_role)
+        if text is None:
+            continue
+        author = db.person(entry["author_id"])
+        meta = [html.Span(" · ".join(filter(None, [
+            entry["setting"],
+            entry["rung"].replace("_", " ") if entry["rung"] else None,
+            entry["shot"]])))]
+        if entry["category"]:
+            meta.append(html.Span(entry["category"], className=f"tag {entry['category']}"))
+        if entry["visibility"] == "private":
+            meta.append(html.Span("private", className="tag"))
+        cards.append(html.Div([
+            html.Div(meta, className="meta"),
+            html.Div(text, className="body"),
+            html.Div(f"— {author['name']}" if author["role"] == "coach"
+                     else "— you", className="byline"),
+        ], className="entry"))
+
+    composer = []
+    if viewer_role == "player":
+        composer = [html.Div([
+            html.H2("Add to this day" if entries else "Nothing here yet"),
+            html.Div(
+                "You can still add to a day that has passed — put it on the day it "
+                "happened and the record stays straight."
+                if is_past else
+                "How did it go? A sentence is plenty.", className="hint",
+                style={"marginBottom": "10px"}),
+            dcc.Textarea(id="day-text",
+                         placeholder="What happened. Or how you were feeling — you do "
+                                     "not have to share anything you would rather not."),
+            html.Div([
+                html.Button("🎤", id="day-mic", className="mic", title="Speak instead"),
+                html.Button("Add to this day", id="day-save", className="primary"),
+                html.Button("🔒 Keep private", id="day-save-private", className="tab-btn"),
+                html.Span([html.Span(className="spinner"),
+                           html.Span("  Filing it…", className="hint")] if saving else ""),
+            ], className="composer-row"),
+        ], className="card composer")]
+
+    return html.Div([
+        html.Div([
+            html.Button("‹ Back to the month", id="day-back", className="tab-btn"),
+            html.H2(pretty),
+            html.Div(html.Span(week["theme_name"], className="theme-pill")
+                     if week else "", style={"marginBottom": "8px"}),
+            html.Div([
+                html.Button("Read this day back", id="run-day", className="primary"),
+            ] if entries else [], className="composer-row"),
+            *head,
+        ], className="card"),
+        html.Div([html.H2(_plural(len(cards), "entry", "entries")), *cards],
+                 className="card") if cards else html.Span(),
+        *composer,
     ])

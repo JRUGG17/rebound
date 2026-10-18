@@ -98,6 +98,31 @@ def run_recap(player_id: str, start: str, end: str, audience: str):
     return _run_job(work)
 
 
+def run_day_summary(player_id: str, day: str, audience: str):
+    def work():
+        output, _usage = aio.run(
+            recap_agent.summarise_day(player_id, day, audience=audience))
+        return {"day": output.model_dump() if output else None}
+    return _run_job(work)
+
+
+def save_dated(player_id: str, text: str, visibility: str, day: str):
+    def work():
+        organized, _usage = aio.run(
+            organizer.organize_player_entry(player_id, text, day))
+        db.add_entry(
+            player_id=player_id, author_id=player_id, author_role="player",
+            setting=organized.setting, rung=organized.rung, shot=organized.shot,
+            category=organized.category, cue_id=organized.cue_id,
+            raw_text=text, summary=organized.summary, visibility=visibility,
+            occurred_on=day,
+            flagged_injection=organized.injected_instruction,
+            flagged_welfare=organized.welfare_flag,
+        )
+        return {"dated": True}
+    return _run_job(work)
+
+
 def ask_playbook(question: str):
     def work():
         answer, _usage = aio.run(methodology.ask(question))
@@ -296,6 +321,8 @@ app.layout = html.Div([
     dcc.Store(id="recap-range", data="block"),
     dcc.Store(id="recap", data=None),
     dcc.Store(id="cal-offset", data=0),
+    dcc.Store(id="sel-day", data=None),
+    dcc.Store(id="day-summary", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -499,24 +526,27 @@ def start_ask(n, question):
     Output("answer", "data", allow_duplicate=True),
     Output("draft", "data", allow_duplicate=True),
     Output("recap", "data", allow_duplicate=True),
+    Output("day-summary", "data", allow_duplicate=True),
     Input("poll", "n_intervals"), State("job", "data"), State("draft", "data"),
     prevent_initial_call=True,
 )
 def collect(_n, job_id, draft):
     state = job(job_id)
     if state["state"] == "running":
-        return False, no_update, no_update, no_update, no_update
+        return False, no_update, no_update, no_update, no_update, no_update
     result = state.get("result")
     if state["state"] == "done" and isinstance(result, dict):
         if "findings" in result:
-            return True, result, no_update, no_update, no_update
+            return True, result, no_update, no_update, no_update, no_update
         if "answer" in result:
-            return True, no_update, result, no_update, no_update
+            return True, no_update, result, no_update, no_update, no_update
         if "coach_note" in result and draft:
-            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}, no_update
+            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}, no_update, no_update
         if "recap" in result:
-            return True, no_update, no_update, no_update, result["recap"]
-    return True, no_update, no_update, no_update, no_update
+            return True, no_update, no_update, no_update, result["recap"], no_update
+        if "day" in result:
+            return True, no_update, no_update, no_update, no_update, result["day"]
+    return True, no_update, no_update, no_update, no_update, no_update
 
 
 # --------------------------------------------------- writing a lesson note
@@ -608,6 +638,58 @@ def start_recap(n, who, sel_player, range_key):
     return run_recap(subject, start, end, "player" if is_player else "coach"), False
 
 
+@app.callback(Output("sel-day", "data"), Output("day-summary", "data"),
+              Input({"type": "cal-day", "d": ALL}, "n_clicks"),
+              prevent_initial_call=True)
+def open_day(clicks):
+    if not any(c for c in clicks if c):
+        return no_update, no_update
+    return ctx.triggered_id["d"], None
+
+
+@app.callback(Output("sel-day", "data", allow_duplicate=True),
+              Output("day-summary", "data", allow_duplicate=True),
+              Input("day-back", "n_clicks"), prevent_initial_call=True)
+def close_day(n):
+    return (None, None) if n else (no_update, no_update)
+
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Input("run-day", "n_clicks"),
+    State("who", "value"), State("sel-player", "data"), State("sel-day", "data"),
+    prevent_initial_call=True,
+)
+def start_day_summary(n, who, sel_player, day):
+    person = db.person(who)
+    if not n or person is None or not day:
+        return no_update, no_update
+    is_player = person["role"] == "player"
+    subject = who if is_player else sel_player
+    if not subject:
+        return no_update, no_update
+    return run_day_summary(subject, day, "player" if is_player else "coach"), False
+
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Output("day-text", "value"),
+    Input("day-save", "n_clicks"), Input("day-save-private", "n_clicks"),
+    State("day-text", "value"), State("who", "value"), State("sel-day", "data"),
+    prevent_initial_call=True,
+)
+def save_on_day(_shared, _private, text, who, day):
+    person = db.person(who)
+    if not text or not text.strip() or person is None or person["role"] != "player":
+        return no_update, no_update, no_update
+    if not day:
+        return no_update, no_update, no_update
+    visibility = "private" if ctx.triggered_id == "day-save-private" else "shared"
+    return save_dated(who, text.strip(), visibility, day), False, ""
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
@@ -616,11 +698,12 @@ def start_recap(n, who, sel_player, range_key):
     Input("review", "data"), Input("answer", "data"),
     Input("theme-tick", "data"), Input("draft", "data"),
     Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
+    Input("sel-day", "data"), Input("day-summary", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
-                cal_offset, job_id):
+                cal_offset, sel_day, day_summary, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -632,6 +715,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
     role = person["role"]
     if role == "player":
         if nav == "calendar":
+            if sel_day:
+                return cv.day_view(who, "player", sel_day, day_summary, running, running)
             return cv.calendar_view(who, "player", cal_offset or 0)
         if nav == "recap":
             return cv.recap_view(who, "player", recap_range, recap, running)
@@ -642,6 +727,9 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
         if nav == "calendar":
             if not sel_player:
                 return html.Div("Open a player under Players first.", className="card")
+            if sel_day:
+                return cv.day_view(sel_player, "coach", sel_day, day_summary,
+                                   running, running)
             return cv.calendar_view(sel_player, "coach", cal_offset or 0)
         if nav == "recap":
             if not sel_player:

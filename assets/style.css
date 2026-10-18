@@ -523,3 +523,14 @@ details.bucket[open] summary::before { content: "▾"; }
 details.bucket summary:hover { background: var(--wash); }
 .bucket-head { font-size: 15px; line-height: 1.45; }
 .bucket-body { padding: 4px 0 12px 19px; border-left: 2px solid var(--line); margin-left: 4px; }
+
+/* calendar cells are buttons now */
+td.cal-cell { padding: 0; }
+button.cal-btn {
+  display: block; width: 100%; height: 100%; min-height: 60px;
+  background: transparent; border: 0; padding: 5px 6px;
+  text-align: left; font: inherit; cursor: pointer;
+}
+button.cal-btn:hover { background: var(--orange-soft); }
+td.cal-cell.has button.cal-btn { background: #fffaf4; }
+td.cal-cell.has button.cal-btn:hover { background: var(--orange-soft); }

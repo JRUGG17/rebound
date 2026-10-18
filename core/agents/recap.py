@@ -102,3 +102,51 @@ async def recap_period(player_id: str, start: str, end: str,
     )
     output, usage = await run(agent, prompt, name=f"recap:{audience}")
     return output, usage
+
+
+class DaySummary(BaseModel):
+    what_happened: str = Field(
+        description="One or two sentences on what this day actually was. Plain, not "
+        "dramatic. If it was an ordinary session, say so."
+    )
+    fits_in: str | None = Field(
+        default=None,
+        description="How this day sits against the longer picture — whether it is the "
+        "same thing coming back again, the first time something has held, or a break "
+        "from the pattern. Null if there is nothing meaningful to connect it to.",
+    )
+
+
+DAY_INSTRUCTIONS = """
+You are summarising a single day in a player's training record, for them to
+read. One or two sentences on the day, then at most one sentence on how it
+fits the longer run.
+
+Most days are ordinary. Say so when they are — inflating a normal session
+into a milestone makes the whole record untrustworthy, and a player will
+stop reading it.
+
+You do not coach and you do not give advice.
+"""
+
+
+async def summarise_day(player_id: str, day: str, *, audience: Audience = "player"):
+    viewer = "player" if audience == "player" else "coach"
+    stats = analysis.period_stats(player_id, day, day, viewer=viewer)
+    if not stats["total"]:
+        return None, None
+
+    # The longer view, so "fits_in" has something to be measured against.
+    runs = [r for r in analysis.cue_runs(player_id) if r.count > 1]
+    context = "\n".join(
+        f"  {r.canonical}: {r.count} times across weeks "
+        f"{sorted(set(r.weeks))}{'  <-- chronic' if r.is_chronic else ''}"
+        for r in runs) or "  nothing has recurred yet"
+
+    agent = make_agent(DAY_INSTRUCTIONS, DaySummary)
+    prompt = (
+        f"{analysis.period_digest(stats)}\n\n"
+        f"FOR CONTEXT — what has been recurring over the whole record:\n{context}\n\n"
+        f"Summarise {day}."
+    )
+    return await run(agent, prompt, name=f"day:{audience}")
