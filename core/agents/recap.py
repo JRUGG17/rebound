@@ -53,7 +53,9 @@ class Theme(BaseModel):
         description="Two or three sentences pulling together everything that belongs to "
         "this theme. Synthesise it — do not list sessions, do not recount days one by "
         "one, and do not quote entries verbatim. The reader can open the detail if they "
-        "want it; this is the version that saves them having to."
+        "want it; this is the version that saves them having to. Say where each claim "
+        "comes from: what the coaches wrote, and separately what the player wrote. "
+        "Never present the player's own words back to them as an observation about them."
     )
     evidence: str = Field(
         description="The counts behind it, taken exactly from the digest. "
@@ -101,6 +103,21 @@ thing on the page.
 
 This is their record, so write to them. Honest, not a telling-off and not a
 pep talk. You do not coach and you do not suggest drills.
+
+ATTRIBUTE EVERYTHING. The digest marks each entry (coach) or (player). Those
+are different kinds of claim and must never be blended into one voice:
+
+  a coach's note      -> "your coaches kept writing that...", "Nia noticed..."
+  the player's own    -> "you wrote that...", "you said it felt..."
+
+Never state a player's own reflection back at them as though it were a
+finding about them. "Hearing about your racket was getting frustrating" is
+the app telling a child how they feel. "You wrote twice that you were bored
+of hearing about your racket" is reporting what they said. The second is
+true, the first is presumptuous, and the difference is one clause.
+
+Where a coach's view and the player's own view disagree, that is worth a
+sentence of its own — say both and whose each is.
 """
 
 COACH_INSTRUCTIONS = """
@@ -113,6 +130,21 @@ being raised at the same rung after two months has not been learned, and
 that is the sentence a coach needs.
 
 You do not prescribe. The coach decides what to do about it.
+
+ATTRIBUTE EVERYTHING. The digest marks each entry (coach) or (player). Those
+are different kinds of claim and must never be blended into one voice:
+
+  a coach's note      -> "your coaches kept writing that...", "Nia noticed..."
+  the player's own    -> "you wrote that...", "you said it felt..."
+
+Never state a player's own reflection back at them as though it were a
+finding about them. "Hearing about your racket was getting frustrating" is
+the app telling a child how they feel. "You wrote twice that you were bored
+of hearing about your racket" is reporting what they said. The second is
+true, the first is presumptuous, and the difference is one clause.
+
+Where a coach's view and the player's own view disagree, that is worth a
+sentence of its own — say both and whose each is.
 """
 
 
