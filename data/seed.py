@@ -144,6 +144,24 @@ ENTRIES: list[tuple] = [
      "Lost 3-1 at the Mid-Atlantic qualifier. Same lob problem — every reset went for "
      "the nick and she could not get out of the back."),
 
+    # ---------------- Week 11, this week: what the squad is actually on.
+    # Several players on the same cue is normal, and it is the whole point of
+    # the squad card — the coach has two minutes on the bleachers and should
+    # lead with whatever most of the group is working on.
+    (11, 2, "priya", "coach_nia", "squad", "block", "drop", "technical",
+     "racket_before_feet", "shared",
+     "Prep is late on the drop when she is moving forward. Same note as half the group "
+     "this week."),
+    (11, 2, "jonah", "coach_nia", "squad", "block", "drop", "technical",
+     "racket_before_feet", "shared",
+     "Racket coming up after the first step rather than before it. Worth a group cue."),
+    (11, 3, "tomas", "coach_nia", "squad", "routine", "drop", "physical",
+     "get_lower", "shared",
+     "Very upright into the front corners. Needs to soften the knees."),
+    (11, 3, "dev", "coach_nia", "squad", "routine", "drop", "physical",
+     "get_lower", "shared",
+     "Standing tall on the drop, so he is reaching rather than stepping in."),
+
     # ---------------- Dev: two coaches, opposite advice, same week
     (6, 1, "dev", "coach_stuart", "lesson", None, "boast", "technical",
      "follow_through", "shared",

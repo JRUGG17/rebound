@@ -326,3 +326,107 @@ table.usage td.num { text-align: right; }
   vertical-align: -2px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------------------------------------------------------- subnav */
+
+.subnav { background: var(--paper); border-bottom: 1px solid var(--line); }
+.subnav .page { display: flex; gap: 4px; }
+
+.nav-btn {
+  background: transparent; border: 0; border-bottom: 2px solid transparent;
+  padding: 12px 16px; font-size: 14px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+}
+.nav-btn:hover { color: var(--ink); }
+.nav-btn.active { color: var(--ink); border-bottom-color: var(--orange); }
+
+/* ---------------------------------------------------------- squad card */
+
+.lead-box {
+  background: var(--orange-soft); border: 1px solid #f3d5b0;
+  border-radius: 9px; padding: 15px 18px; margin: 10px 0 14px;
+}
+.lead-box .label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px;
+  color: var(--amber); font-weight: 650;
+}
+.lead-cue { font-size: 23px; font-weight: 700; margin: 3px 0 5px; }
+
+.shared-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-top: 1px solid var(--line);
+}
+.count-pill {
+  background: var(--slate); color: #fff; border-radius: 5px;
+  padding: 2px 8px; font-size: 12px; font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.shared-cue { font-weight: 600; font-size: 15px; }
+
+/* ---------------------------------------------------------- roster */
+
+.roster { display: flex; flex-direction: column; }
+.roster-row {
+  display: block; width: 100%; text-align: left; background: transparent;
+  border: 0; border-top: 1px solid var(--line); padding: 13px 4px;
+  cursor: pointer; font: inherit;
+}
+.roster-row:first-child { border-top: 0; }
+.roster-row:hover { background: var(--wash); }
+.roster-name { font-size: 16px; font-weight: 650; margin-right: 9px; }
+.roster-focus { color: var(--slate); font-size: 14px; margin: 3px 0 5px; }
+
+.tag.chronic { color: #9c2c2c; border-color: #eec4c4; background: #fdeeee; }
+.tag.transfer_gap { color: #8a5a00; border-color: #f0dfb8; background: #fdf6e7; }
+.tag.chronic_cue { color: #9c2c2c; border-color: #eec4c4; background: #fdeeee; }
+.tag.coach_conflict { color: #7a3fa0; border-color: #dcc8ee; background: #f7f0fc; }
+.tag.blind_spot { color: #1f5fa8; border-color: #c3d8f0; background: #eef5fd; }
+.tag.progress { color: var(--green); border-color: #bde0cf; background: #eaf7f1; }
+
+/* ---------------------------------------------------------- matrix */
+
+table.matrix { border-collapse: collapse; font-size: 13px; }
+table.matrix th {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-weight: 600; padding: 6px 10px; text-align: center;
+}
+table.matrix td {
+  border: 1px solid var(--line); width: 74px; height: 36px;
+  text-align: center; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+table.matrix td.shot-name {
+  border: 0; text-align: left; font-weight: 650; color: var(--ink);
+  padding-right: 14px; width: auto; text-transform: capitalize;
+}
+table.matrix td.has { background: var(--orange-soft); color: var(--amber); font-weight: 650; }
+
+/* ---------------------------------------------------------- findings */
+
+.finding-head { font-size: 16px; font-weight: 640; line-height: 1.4; margin: 4px 0 6px; }
+.for-coach { margin-top: 8px; font-size: 14px; color: var(--slate); line-height: 1.55; }
+.timing-box {
+  background: #fff8e8; border-left: 3px solid var(--orange);
+  border-radius: 0 7px 7px 0; padding: 10px 13px; margin-top: 9px;
+  font-size: 13.5px; line-height: 1.55; color: var(--amber);
+}
+
+/* ---------------------------------------------------------- playbook */
+
+.pb-nav { display: flex; flex-wrap: wrap; gap: 4px; }
+.pb-nav .tab-btn { border-radius: 7px; padding: 7px 12px; font-size: 13px; }
+.pb-nav .tab-btn.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+.pb-body { line-height: 1.65; font-size: 15px; }
+.pb-body h2 { font-size: 20px; text-transform: none; letter-spacing: 0; color: var(--ink); margin-top: 0; }
+.pb-body h3 { font-size: 16px; margin-top: 22px; }
+.pb-body table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+.pb-body th, .pb-body td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; }
+.pb-body th { background: var(--wash); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+.pb-body blockquote {
+  border-left: 3px solid var(--orange); margin: 14px 0; padding: 2px 0 2px 15px;
+  color: var(--slate); font-style: italic;
+}
+.pb-body code, .pb-body pre {
+  background: var(--wash); border-radius: 5px; font-size: 13px;
+}
+.pb-body pre { padding: 12px 14px; overflow-x: auto; }

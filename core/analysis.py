@@ -148,6 +148,60 @@ def matrix(player_id: str) -> dict:
     return {shot: dict(rungs) for shot, rungs in sorted(grid.items())}
 
 
+def squad_overview() -> dict:
+    """What the whole squad is working on, and where it overlaps.
+
+    This is the bleachers moment. Feedback after a drill is given to the group,
+    nobody is singled out, the group is mixed-level, and the coach has about
+    two minutes and no notes. Knowing that four of eight players are on the
+    same cue turns that two minutes from a guess into a decision.
+
+    Counted in Python. No model call, so a coach can open this between drills
+    and it is instant and free.
+    """
+    from core import clock
+
+    week = db.week_of(clock.today_iso())
+    week_start = week["starts_on"] if week else None
+
+    players = []
+    by_cue: dict[str, list[str]] = defaultdict(list)
+
+    for person in db.people("player"):
+        focus = db.current_focus(person["id"])
+        chronic = [r for r in cue_runs(person["id"]) if r.is_chronic]
+        entries = db.entries_for_coach(person["id"])
+        # Overlap is drawn from what has come up on court this week, not from
+        # the standing lesson focus. A coach on the bleachers cares what the
+        # group has been doing in the last few sessions.
+        this_week = [e for e in entries if week_start and e["occurred_on"] >= week_start]
+        week_cues = {e["cue_id"] for e in this_week if e["cue_id"]}
+
+        players.append({
+            "id": person["id"],
+            "name": person["name"],
+            "age": person["age"],
+            "focus": focus["text"] if focus else None,
+            "cue_id": focus["cue_id"] if focus else None,
+            "chronic": chronic,
+            "week_cues": week_cues,
+            "entries_this_week": len(this_week),
+            "last_entry": entries[-1]["occurred_on"] if entries else None,
+        })
+        for cue_id in week_cues:
+            by_cue[cue_id].append(person["name"].split()[0])
+
+    with db.connect() as conn:
+        cues = {r["id"]: r["canonical"] for r in conn.execute("SELECT id, canonical FROM cues")}
+
+    shared = [
+        {"cue_id": cue_id, "canonical": cues.get(cue_id, cue_id), "players": names}
+        for cue_id, names in sorted(by_cue.items(), key=lambda kv: -len(kv[1]))
+        if len(names) > 1
+    ]
+    return {"players": players, "shared": shared, "total": len(players)}
+
+
 def _clip(text: str, limit: int = 150) -> str:
     text = " ".join(text.split())
     return text if len(text) <= limit else text[:limit].rstrip() + "…"
