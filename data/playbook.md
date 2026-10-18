@@ -246,20 +246,65 @@ climbs. Complexity increases at each rung; the shot stays the same.
 |---|---|---|
 | **Solo** | Player alone on court | Technique in isolation, no pressure, no decisions |
 | **Block** | Two shots only — one player hits one shot, the other hits the other. Little movement. | Technique with a live ball |
-| **Routine** | A set sequence, usually 3 or 4 shots, in fixed order | Technique while moving, known pattern |
-| **Pattern** | Sequence with options. Typically "must go long from behind, may go short when in front" | Decision-making under light constraint |
+| **Routine** | A set sequence of shots, in fixed order | Technique while moving, known pattern |
+| **Pattern** | The same sequence with options in it | Decision-making under constraint |
 | **Modified / conditioned game** | Match play with conditions attached | The shot under real pressure |
 | **Match play** | Unconstrained | Whether it transfers at all |
 
-Common conditions used at the conditioned-game rung:
+### Routines
+
+A fixed sequence, no choices. Named by the shots in it:
+
+- drive, drive, drop
+- drive, drive, boast
+- drive, boast, cross-court lob (a Lob Week staple)
+- straight drive, straight drive, cross-court drive
+- long ball, long ball, short ball
+
+### Patterns
+
+A routine with optionality added. Named the same way — a *drive/drop pattern*, a
+*drive/boast pattern*. The governing constraint is nearly always the game's own rule:
+
+> **Must go long from behind. Look for the short ball when in front.**
+
+Two versions of that, and the words matter because coaches use them:
+
+- **Stripped** — the strict form. Must go long from behind, **must** go short when in
+  front. No choice, so the shot gets forced.
+- **Phasing** — the relaxed form. You do not *have* to go short when in front; you can
+  hit deep instead. The decision comes back.
+
+Optionality is then tuned by adding or removing constraints:
+
+- All drives back to one side (right wall only), or to both
+- Drops to one side, or to both
+- An option to go short from behind as well
+- A counter drop allowed in
+- Dead quarters
+
+### The quarters
+
+The court is numbered, and coaches use these numbers constantly:
+
+| | Front | Back |
+|---|---|---|
+| **Left** | **1** | **4** |
+| **Right** | **2** | **3** |
+
+A *dead quarter* is one that is out of play for that drill. Any combination can be in or
+out, which is how most conditions get built.
+
+### Conditions used at the conditioned-game rung
 
 - Two-bounce length game
 - Second ball must land behind the short line
-- "Above or behind" — the ball must be either above the service line on the front wall, or
-  bounce first past the short line
+- "Above or behind" — above the service line on the front wall, or first bounce past the
+  short line
 - Right-wall only / left-wall only
-- Dead quarters (a region of the court is out of play)
+- Dead quarters
 - Must go short when in front (forces the shot being trained)
+- A volley boast option, a short-ball option, a counter allowance
 
 **Why this matters for the app:** a player who is clean at *block* and falls apart at
 *pattern* has a precisely locatable problem. The rung where a shot stops transferring is
@@ -274,8 +319,34 @@ Every squad session follows the same arc:
 Warmup → Sort → [Block / Routine / Pattern / Modified Game] → Stretchdown
 ```
 
-"Sort" is the graded warm-up progression that opens the session, usually three steps
-ending in match play.
+**The Sort is not a warm-up.** It is how players get matched to courts. The squad opens
+with modified games — chosen to suit the week's shot, so Boast Week might open with "above
+or behind" with a volley-boast option, then side versus side, then match play — played on
+a **timed rotation**. Winners move up a court, losers move down. After a few rotations
+everyone has settled roughly among players of their own level, having played some stronger
+and some weaker on the way.
+
+That cross-pollination is deliberate: a player sees the same shot against several
+different people before the session proper begins.
+
+**Nearly everything is scored**, including routines and patterns. Some blocked work is
+not. Scoring is there for engagement as much as measurement — the academy's experience is
+that juniors stay switched on when there is a score.
+
+### The week has the same shape as the session
+
+The ladder runs across the week as well as within a session:
+
+```
+early week   ──────────────────────────────▶   late week
+block work, routines              patterns, open play, more options
+most constrained                        most optional
+```
+
+A week starts tight and opens up, with how far it opens depending on the theme and where
+the group is in the curriculum. So a cue failing at a pattern **on Thursday** is a
+different and more advanced observation than the same cue failing in a block on Monday,
+even though both are the same week.
 
 ### The bleachers moment
 
@@ -442,8 +513,26 @@ A technical rebuild costs performance before it pays it back. Starting one durin
 competitive block makes a player worse at exactly the wrong time. The same change made in
 the off-season is good coaching.
 
-`[CHECK]` The academy's season phases are not yet written down here. Until they are,
-treat any entry mentioning upcoming tournaments as competitive-season signal.
+### The year
+
+The junior season runs **September to March**, ending at Nationals. That shape decides
+when a technical change is good coaching and when it is a mistake.
+
+| Months | Phase | What the work is |
+|---|---|---|
+| **Sep – Mar** | Competitive season | Compete. Keep working at what is already in flight. **Do not start a technical rebuild.** |
+| **Mar – May** | Spring, after Nationals | **The technical window.** This is when changes get made. |
+| **Summer** | Off-season | Physical work, and consolidating the spring's technical changes until they hold |
+| **Late summer** | Taper | Ease off, sharpen up, go into the season |
+
+So a grip or swing rebuild flagged in November waits for **March or April**. That is not
+a fudge — it is the next real opportunity, and naming the month is more useful to a coach
+than "later".
+
+**The caveat.** Tournaments run all year, and a player competing through the summer —
+because of recruiting timelines or a ranking they are chasing — is on a different
+calendar. Age and level change it too. If an entry suggests a player is competing out of
+season, say so rather than applying the default.
 
 **What this means for agents:**
 
@@ -496,7 +585,7 @@ head dropping around the ball) · *kinetic chain* · *split step* · *last step*
 deliberately between A and B) · *show two* (presenting two shot options) · *counter* ·
 *hunt the volley* · *contain* · *reset* · *guard short*
 
-**Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *sort* ·
+**Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *stripped* (a pattern with no choice in it) · *phasing* (a pattern with the choice put back) · *the sort* (the timed, scored rotation that matches players to courts at the start of a squad) · *dead quarter* · *quarters 1–4* (front left, front right, back right, back left) ·
 *constraints-based* (the academy's name for its drill design: rather than telling a player
 what to do, the drill's rules make the right choice the available one)
 
@@ -590,10 +679,14 @@ points at the relevant coach note, or says to ask the coach — it does not inve
 
 ## 13. Open questions
 
-Resolved so far: the four-week rotation and twelve-week block, the three drops, Stuart's as
-a three-person routine, and Plainsboro as the only club modelled.
+Resolved: the four-week rotation and twelve-week block, the three drops, Stuart's as a
+three-person routine, Plainsboro as the only club modelled, and the season calendar that
+the timing rule in §7 depends on.
 
 Still open:
 
-- The academy's season phases, by name and by month. Needed before the timing rule in
-  section 6 can do anything useful.
+- **The drill library.** What is written here is a handful of illustrations. The academy
+  runs many more, and which ones get used varies by coach, group and level. No agent
+  should ever tell a coach that a drill is not part of the program.
+- **Shot targets and technique keys per theme week.** These are set by the coach running
+  the week, and only a few are recorded here.
