@@ -50,6 +50,21 @@ def _run_job(fn) -> str:
     return job_id
 
 
+def clicked(*counts) -> bool:
+    """Did a person actually press something?
+
+    Dash fires a callback when one of its Input components is newly mounted,
+    with n_clicks of None — and ctx.triggered_id names that button as though
+    it had been pressed. Any callback that writes to the database has to check
+    the count, not the trigger, or it runs the moment its button appears.
+
+    This has now caused two real bugs: a save throwing the user out of the
+    private tab, and a coach's note being sent to a player the instant the
+    send button rendered, before they had read it. Guard every one.
+    """
+    return any(bool(c) for c in counts)
+
+
 def job(job_id: str | None) -> dict:
     if not job_id:
         return {"state": "idle"}
@@ -75,10 +90,10 @@ def save_reflection(player_id: str, text: str, visibility: str):
     return _run_job(work)
 
 
-def file_coach_note(player_id: str, text: str, setting: str):
+def file_coach_note(player_id: str, text: str, setting: str, on: str | None = None):
     def work():
         organized, _usage = aio.run(
-            organizer.organize_coach_note(player_id, text, clock.today_iso()))
+            organizer.organize_coach_note(player_id, text, on or clock.today_iso()))
         return {"coach_note": organized.model_dump()}
     return _run_job(work)
 
@@ -405,9 +420,8 @@ def render_sidebar(who, nav, sel_player):
     # Recap tabs silently mean a different player than the one they picked.
     if person["role"] in ("coach", "admin") and nav in ("calendar", "recap", "lessons"):
         subject = db.person(sel_player) if sel_player else None
-        out.append(html.Div(
-            f"Showing {subject['name']}" if subject
-            else "Pick a player under Players first", className="side-note"))
+        if subject:
+            out.append(html.Div(f"Showing {subject['name']}", className="side-note"))
     return html.Div(out)
 
 
@@ -593,15 +607,17 @@ def collect(_n, job_id, draft):
     Output("draft", "data", allow_duplicate=True),
     Input("file-note", "n_clicks"),
     State("note-player", "value"), State("note-text", "value"),
-    State("note-setting", "value"),
+    State("note-setting", "value"), State("note-date", "date"),
     prevent_initial_call=True,
 )
-def start_file_note(n, player_id, text, setting):
+def start_file_note(n, player_id, text, setting, on):
     if not n or not player_id or not text or not text.strip():
         return no_update, no_update, no_update
     draft = {"player_id": player_id, "text": text.strip(),
-             "setting": setting or "lesson", "organized": None}
-    return file_coach_note(player_id, text.strip(), setting or "lesson"), False, draft
+             "setting": setting or "lesson", "on": on or clock.today_iso(),
+             "organized": None}
+    return (file_coach_note(player_id, text.strip(), setting or "lesson",
+                            draft["on"]), False, draft)
 
 
 @app.callback(
@@ -610,7 +626,9 @@ def start_file_note(n, player_id, text, setting):
     State("draft", "data"), State("note-player-text", "value"), State("who", "value"),
     prevent_initial_call=True,
 )
-def save_note(_release, _keep, draft, player_text, coach_id):
+def save_note(release_clicks, keep_clicks, draft, player_text, coach_id):
+    if not clicked(release_clicks, keep_clicks):
+        return no_update
     if not draft or not draft.get("organized"):
         return no_update
     trigger = ctx.triggered_id
@@ -630,7 +648,7 @@ def save_note(_release, _keep, draft, player_text, coach_id):
         # the player is shown nothing, rather than the coach's raw words.
         approved_by=coach_id if release else None,
         visibility="shared",
-        occurred_on=clock.today_iso(),
+        occurred_on=draft.get("on") or clock.today_iso(),
     )
     name = db.person(draft["player_id"])["name"].split()[0]
     if release:
@@ -724,7 +742,9 @@ def start_day_summary(n, who, sel_player, day):
     State("day-text", "value"), State("who", "value"), State("sel-day", "data"),
     prevent_initial_call=True,
 )
-def save_on_day(_shared, _private, text, who, day):
+def save_on_day(shared_clicks, private_clicks, text, who, day):
+    if not clicked(shared_clicks, private_clicks):
+        return no_update, no_update, no_update
     person = db.person(who)
     if not text or not text.strip() or person is None or person["role"] != "player":
         return no_update, no_update, no_update
@@ -803,6 +823,17 @@ def set_focus(n, text, category, player_id, coach_id):
     return f"Set. {db.person(player_id)['name'].split()[0]} sees it on their Today."
 
 
+@app.callback(Output("nav", "data", allow_duplicate=True),
+              Output("draft", "data", allow_duplicate=True),
+              Input("goto-note", "n_clicks"), State("sel-player", "data"),
+              prevent_initial_call=True)
+def write_up_lesson(n, player_id):
+    if not clicked(n) or not player_id:
+        return no_update, no_update
+    return "note", {"player_id": player_id, "setting": "lesson",
+                    "on": clock.today_iso(), "text": "", "organized": None}
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
@@ -846,19 +877,19 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
             return cv.coach_log_view(who, cal_offset or 0)
         if nav == "lessons":
             if not sel_player:
-                return html.Div("Open a player under Players first.", className="card")
+                return cv.coach_lesson_picker()
             return cv.lessons_view(sel_player, "coach", sel_day, running,
                                    lesson_arc, running)
         if nav == "calendar":
             if not sel_player:
-                return html.Div("Open a player under Players first.", className="card")
+                return cv.coach_lesson_picker()
             if sel_day:
                 return cv.day_view(sel_player, "coach", sel_day, day_summary,
                                    running, running)
             return cv.calendar_view(sel_player, "coach", cal_offset or 0)
         if nav == "recap":
             if not sel_player:
-                return html.Div("Open a player under Players first.", className="card")
+                return cv.coach_lesson_picker()
             return cv.recap_view(sel_player, "coach", recap_range, recap, running)
         if nav == "note":
             return cv.note_composer(draft, running)

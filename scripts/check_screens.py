@@ -90,6 +90,9 @@ def main() -> int:
           lambda: cv.player_detail(player, None, False, "Set."))
     check("my log", lambda: cv.coach_log_view(coach))
     check("add note, empty", lambda: cv.note_composer(None, False))
+    check("add note, prefilled for a lesson", lambda: cv.note_composer(
+        {"player_id": player, "setting": "lesson", "on": "2026-10-13",
+         "text": "", "organized": None}, False))
     check("add note, filed", lambda: cv.note_composer(
         {"player_id": player, "setting": "lesson", "text": "note",
          "organized": {"category": "technical", "summary": "s", "rung": "block",
@@ -99,6 +102,7 @@ def main() -> int:
     check("coach resources with an answer", lambda: cv.resources(
         {"answer": "a", "citations": ["§3"], "in_playbook": True,
          "note_for_admin": "n"}, False, 3))
+    check("lesson picker", cv.coach_lesson_picker)
     check("a player's lessons", lambda: cv.lessons_view(player, "coach", None, False))
     check("a player's calendar", lambda: cv.calendar_view(player, "coach", 0))
     check("a player's recap", lambda: cv.recap_view(player, "coach", "30", None, False))

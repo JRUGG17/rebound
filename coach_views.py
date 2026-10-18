@@ -390,12 +390,20 @@ def note_composer(draft: dict | None, running: bool):
         html.Div([
             dcc.Dropdown(id="note-player", options=players,
                          value=draft.get("player_id"), placeholder="Which player",
-                         clearable=False, style={"width": "260px"}),
+                         clearable=False, style={"width": "240px"}),
             dcc.Dropdown(id="note-setting",
                          options=[{"label": label, "value": key}
                                   for key, label in SETTINGS],
                          value=draft.get("setting", "lesson"), clearable=False,
-                         style={"width": "200px"}),
+                         style={"width": "180px"}),
+            # Coaches write up a lesson on the way home, or the next morning.
+            # It belongs on the day it happened.
+            dcc.DatePickerSingle(
+                id="note-date",
+                date=draft.get("on") or clock.today_iso(),
+                max_date_allowed=clock.today_iso(),
+                min_date_allowed=clock.BLOCK_START.isoformat(),
+                display_format="D MMM YYYY"),
         ], className="composer-row", style={"marginBottom": "10px"}),
         dcc.Textarea(id="note-text", value=draft.get("text", "")),
         html.Div([
@@ -410,10 +418,10 @@ def note_composer(draft: dict | None, running: bool):
     if not organized:
         return html.Div([form, html.Div([
             html.H2("How this works"),
-            html.Div("You write once, in your own language. The note is filed against "
-                     "the curriculum automatically, and a version for the player is "
-                     "drafted for you to check. Nothing reaches them until you release "
-                     "it.", className="tiein"),
+            html.Div("Write it however you write. It gets filed against the "
+                     "curriculum automatically, and the player reads your words, not "
+                     "a rewrite of them — but nothing reaches them until you send it.",
+                     className="tiein"),
         ], className="card")])
 
     # The coach chose the setting. The model may infer a different one from the
@@ -901,7 +909,20 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
         thread = [html.Div("Read the lessons end to end and see how the focus has "
                            "moved. Costs one model call.", className="empty")]
 
+    add_lesson = []
+    if viewer_role == "coach":
+        add_lesson = [html.Div([
+            html.Div([
+                html.H2(f"Lessons with {db.person(player_id)['name'].split()[0]}"),
+                html.Button("Write up a lesson", id="goto-note", className="primary"),
+            ], style={"display": "flex", "justifyContent": "space-between",
+                      "alignItems": "center"}),
+            html.Div("Opens the note form with this player and a date, so you can log "
+                     "one for the day it happened.", className="hint"),
+        ], className="card")]
+
     return html.Div([
+        *add_lesson,
         html.Div([
             html.Div([
                 html.H2("The thread"),
@@ -930,6 +951,31 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
 
 
 # ------------------------------------------------------------------ coach's own
+
+def coach_lesson_picker():
+    """Lessons, for a coach: pick whose."""
+    rows = []
+    for person in db.people("player"):
+        items = analysis.lessons(person["id"], viewer="coach")
+        last = items[0]["on"] if items else None
+        focus = db.current_focus(person["id"])
+        rows.append(html.Button([
+            html.Div([
+                html.Span(person["name"], className="roster-name"),
+                html.Span(f"age {person['age']}", className="hint"),
+            ]),
+            html.Div(focus["text"] if focus else "No focus set",
+                     className="roster-focus"),
+            html.Div(f"{_plural(len(items), 'lesson', 'lessons')}"
+                     + (f" · last {last}" if last else ""), className="hint"),
+        ], id={"type": "open-player", "id": person["id"]}, className="roster-row"))
+
+    return html.Div([
+        html.H2("Lessons"),
+        html.Div("Pick a player to see their lesson history and write up a new one.",
+                 className="hint", style={"marginBottom": "12px"}),
+        html.Div(rows, className="roster"),
+    ], className="card")
 
 def coach_log_view(coach_id: str, offset: int = 0):
     """A coach's own teaching log, their lessons and notes, grouped by month."""
