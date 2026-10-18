@@ -121,6 +121,17 @@ another agent does that. Produce only the structured record.
 Players speak casually and in fragments. "the blocked stuff felt good but in
 the game i forgot about it" is a complete entry: it names two rungs and a
 transfer problem. Read what is there and do not inflate it.
+
+Much of this arrives by speech-to-text, which does not know squash. Expect
+mangled terms and read through them: boost or post for boast, Nick for nick,
+ten for tin, tea for the T, drop shock for drop shot, volley drop heard as
+volley drap. Use the playbook's vocabulary to work out what was meant.
+
+Two rules about that. Correct the terminology in the summary, because the
+summary is what every later agent reads and a count of "boost" is a count of
+nothing. Never correct the player's own wording anywhere else — the entry
+keeps what they actually said, mistranscriptions and all, because that is
+the record.
 """
 
 COACH_INSTRUCTIONS = """

@@ -571,3 +571,11 @@ details.bucket summary { align-items: flex-start; }
 
 .lesson-date { font-size: 15px; font-weight: 650; margin-right: 10px; }
 details.bucket summary { justify-content: space-between; }
+
+/* recording state */
+button.mic.recording {
+  background: #fdecec; border-color: #e5a0a0; color: #9c2c2c;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { background: #f8d7d7; } }
+body.no-speech button.mic { opacity: 0.45; }

@@ -370,9 +370,7 @@ def note_composer(draft: dict | None, running: bool):
                          value=draft.get("setting", "lesson"), clearable=False,
                          style={"width": "200px"}),
         ], className="composer-row", style={"marginBottom": "10px"}),
-        dcc.Textarea(id="note-text", value=draft.get("text", ""),
-                     placeholder="What happened, in your own words. Shorthand is fine — "
-                                 "this is your note, not the player's."),
+        dcc.Textarea(id="note-text", value=draft.get("text", "")),
         html.Div([
             html.Button("File it", id="file-note", className="primary"),
             html.Span([html.Span(className="spinner"),
@@ -706,7 +704,7 @@ def day_view(player_id: str, viewer_role: str, day: str,
                 if is_past else
                 "How did it go? A sentence is plenty.", className="hint",
                 style={"marginBottom": "10px"}),
-            dcc.Textarea(id="day-text", placeholder=JOURNAL_PROMPT),
+            dcc.Textarea(id="day-text"),
             html.Div([
                 html.Button("🎤", id="day-mic", className="mic", title="Speak instead"),
                 html.Button("Add to this day", id="day-save", className="primary"),
@@ -790,11 +788,11 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None, saving: 
                 html.Hr(style={"border": 0, "borderTop": "1px solid var(--line)",
                                "margin": "16px 0"}),
                 dcc.Textarea(id={"type": "lesson-text", "d": day},
-                             placeholder="Anything you want to add about this lesson — "
-                                         "what stuck, what didn't make sense, what you "
-                                         "want to ask next time."),
+                             ),
                 html.Div([
-                    html.Button("Add to this lesson",
+                    html.Button("🎤", id={"type": "lesson-mic", "d": day},
+                            className="mic", title="Speak instead"),
+                html.Button("Add to this lesson",
                                 id={"type": "lesson-save", "d": day},
                                 className="primary"),
                     html.Span([html.Span(className="spinner"),

@@ -229,8 +229,7 @@ def player_reflections(player_id: str, tab: str, job_id: str | None):
         html.Div([
             *note,
             html.Div([
-                dcc.Textarea(id="composer", placeholder=cv.JOURNAL_PROMPT
-                             if not private else cv.PRIVATE_PROMPT),
+                dcc.Textarea(id="composer"),
                 html.Div([
                     html.Button("🎤", id="mic", className="mic", title="Speak instead"),
                     html.Button("Save", id="save", className="primary"),
