@@ -115,9 +115,13 @@ def visibility_report() -> None:
           not any(e["visibility"] == "private" for e in ellie_parent))
 
     # Same entry, two renderings: the coach's own words, and the kid's version.
+    # Most term notes are written to the player already, so coach text and
+    # player text are the same string by design. The pair that matters is a
+    # note written in coach voice with a separate version for the kid.
     note = next(e for e in db.entries_for_coach("maya")
                 if e["author_role"] == "coach" and e["player_text"]
-                and e["player_text_approved_at"])
+                and e["player_text_approved_at"]
+                and e["player_text"] != e["raw_text"])
     coach_view = db.render_for(note, "coach")
     kid_view = db.render_for(note, "player")
     check("a coach note renders differently for the kid", coach_view != kid_view)
