@@ -481,10 +481,9 @@ Observations frequently touch two categories. File under the primary one, note t
 The test is **during play, not afterwards.** What was going on in the player's head while
 the rally was happening. Four things live here:
 
-**0. Emotional regulation on court.** Frustration, nerves, tilt, how a player handles a
-bad call or a run of errors, whether they can reset between points. This is squarely
-psychological — it is the most common thing in the category and it belongs here, not
-filed away as a feeling.
+**0. Emotional regulation on court.** **Losing focus. Feeling stressed, anxious, tense,
+rattled.** Frustration, tilt, how a player handles a bad call or a run of errors, whether
+they can reset between points. This is the most common thing in the category.
 
 **1. Where the attention is.** The academy uses Nideffer's two axes — attention has a
 *width* (broad or narrow) and a *direction* (internal or external):
@@ -506,12 +505,21 @@ up a run of three points, and do not end one with an unforced error.**
 
 **3. Sticking to the game plan.** Having one, and not abandoning it after two lost points.
 
-**The edge case.** An entry can be both: "I lost the prep again and got annoyed with
-myself" is technical in substance and psychological in what happened next. File the
-primary and note the second. If the frustration is the story, it is psychological.
+**The test: is a psychological state actually being described?** Lost focus, got tense,
+could not settle, stopped trusting it, went in with no plan. Those are psychological.
 
-Confusion about conflicting coaching is the one thing that does not belong here — that
-is a signal about the coaching, and the Comparison agent is what should notice it.
+**Liking a shot is not.** "Feeling good about my boast, want to use it more in matches"
+reads emotional and is not: it is a tactical intention about when to play a shot, and it
+belongs in tactical. The same goes for "the drive felt better today" — that is a
+technical observation with a mood word attached. **A positive feeling about a shot is a
+note about the shot.**
+
+**The genuine edge case.** "I lost the prep again and got annoyed with myself" is
+technical in substance and psychological in what followed. File the primary and note the
+second. If the frustration is the story rather than the decoration, it is psychological.
+
+Confusion about conflicting coaching does not belong here either — that is a signal about
+the coaching, and the Comparison agent is what should notice it.
 
 ### The fifth trainable
 

@@ -171,7 +171,7 @@ ENTRIES: list[tuple] = [
      "follow_through", "shared",
      "Told him to let the follow through go — he is cutting the swing off early and "
      "the ball dies before the side wall. Needs more through the shot."),
-    (6, 4, "dev", "self", "reflection", None, "boast", "psychological", None, "shared",
+    (6, 4, "dev", "self", "reflection", None, "boast", "technical", None, "shared",
      "stuart said smaller swing and nia said bigger follow through. i dont know "
      "which one to do so i just did what i normally do"),
     (10, 2, "dev", "coach_nia", "squad", "block", "boast", "technical", None, "shared",
@@ -219,7 +219,8 @@ ENTRIES: list[tuple] = [
      "step_then_swing", "shared",
      "Stepping in now without being told. Big improvement for four weeks."),
     (5, 2, "tomas", "self", "reflection", None, "drive", "psychological", None, "shared",
-     "i won a point against a big kid"),
+     "i won a point against a big kid. i was really nervous at the start but i stopped "
+     "being scared of him after that"),
     (9, 2, "tomas", "coach_nia", "squad", "routine", "drive", "physical",
      "get_lower", "shared",
      "Ready for routines now. Next thing is getting lower — he is very upright."),
@@ -259,7 +260,7 @@ ENTRIES: list[tuple] = [
     (10, 3, "jonah", "coach_nia", "squad", "conditioned_game", "boast", "technical",
      None, "shared",
      "Holding up in conditioned games. Nothing to fix — give him harder drills."),
-    (10, 4, "jonah", "self", "reflection", None, "boast", "psychological", None, "shared",
+    (10, 4, "jonah", "self", "reflection", None, "boast", "tactical", None, "shared",
      "feeling good about my boast, want to try it more in matches"),
 ]
 

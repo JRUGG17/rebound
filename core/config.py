@@ -91,11 +91,35 @@ def build_model() -> OpenAIResponsesModel:
     return _model_for_loop(loop_id)
 
 
-@lru_cache(maxsize=1)
-def playbook() -> str:
-    """The club playbook, identical on every run.
-
-    Every agent prompt starts with this so the shared prefix can be served from
-    the model's prompt cache. Read once, cached in memory.
-    """
+@lru_cache(maxsize=4)
+def _playbook_at(_mtime_ns: int) -> str:
     return PLAYBOOK_PATH.read_text(encoding="utf-8")
+
+
+def playbook() -> str:
+    """The club playbook, identical on every run — until someone edits it.
+
+    Every agent prompt starts with this, so it is cached rather than re-read
+    per call, and the identical prefix is what the model's prompt cache keys
+    on.
+
+    But this file is meant to be edited: it is the one thing an admin changes
+    to change what the agents know. Caching it outright meant a running server
+    kept answering from the copy it loaded at startup, so a new section was
+    invisible until a restart and the agent would say a term was not in the
+    playbook while it was sitting there on disk. Keying the cache on the
+    file's mtime picks up an edit on the next call and still never re-reads
+    an unchanged file.
+    """
+    try:
+        mtime = PLAYBOOK_PATH.stat().st_mtime_ns
+    except OSError:
+        mtime = 0
+    return _playbook_at(mtime)
+
+
+def playbook_cache_clear() -> None:
+    _playbook_at.cache_clear()
+
+
+playbook.cache_clear = playbook_cache_clear  # type: ignore[attr-defined]
