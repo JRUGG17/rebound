@@ -13,14 +13,13 @@ freezes the page.
 
 from __future__ import annotations
 
-import asyncio
 import threading
 import uuid
 
 from dash import ALL, Dash, Input, Output, State, ctx, dcc, html, no_update
 
 import coach_views as cv
-from core import analysis, clock, db, metering
+from core import aio, analysis, clock, db, metering
 from core import playbook as pb
 from core.agents import comparison, methodology, organizer, recap as recap_agent
 from core.config import MODEL_NAME, key_is_set
@@ -61,7 +60,7 @@ def job(job_id: str | None) -> dict:
 def save_reflection(player_id: str, text: str, visibility: str):
     def work():
         on = clock.today_iso()
-        organized, _usage = asyncio.run(
+        organized, _usage = aio.run(
             organizer.organize_player_entry(player_id, text, on))
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
@@ -78,7 +77,7 @@ def save_reflection(player_id: str, text: str, visibility: str):
 
 def file_coach_note(player_id: str, text: str, setting: str):
     def work():
-        organized, _usage = asyncio.run(
+        organized, _usage = aio.run(
             organizer.organize_coach_note(player_id, text, clock.today_iso()))
         return {"coach_note": organized.model_dump()}
     return _run_job(work)
@@ -86,14 +85,14 @@ def file_coach_note(player_id: str, text: str, setting: str):
 
 def run_comparison(player_id: str):
     def work():
-        review, _usage = asyncio.run(comparison.review_player(player_id))
+        review, _usage = aio.run(comparison.review_player(player_id))
         return review.model_dump()
     return _run_job(work)
 
 
 def run_recap(player_id: str, start: str, end: str, audience: str):
     def work():
-        output, _usage = asyncio.run(
+        output, _usage = aio.run(
             recap_agent.recap_period(player_id, start, end, audience=audience))
         return {"recap": output.model_dump() if output else None}
     return _run_job(work)
@@ -101,7 +100,7 @@ def run_recap(player_id: str, start: str, end: str, audience: str):
 
 def ask_playbook(question: str):
     def work():
-        answer, _usage = asyncio.run(methodology.ask(question))
+        answer, _usage = aio.run(methodology.ask(question))
         return answer.model_dump()
     return _run_job(work)
 

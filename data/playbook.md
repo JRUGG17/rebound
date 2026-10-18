@@ -231,6 +231,20 @@ mention as new.
 Said many ways: early twitch, high neutral, hand higher on prep, racket before feet,
 shoulder back early, start the swing while moving.
 
+### Open racket face
+
+**A general principle across every shot, not a detail of one.**
+
+> The face stays open so you can cut the ball.
+
+The swing shape that goes with it: **the racket starts high, comes down and through, and
+finishes toward the target**, cutting across the strings on the way. Nearly everything in
+this program is cut rather than hit flat — a flat ball with pace on it balloons off the
+walls instead of staying down.
+
+So "open the face", "more cut", "come around the ball" and "don't be too flat" are all
+the same instruction. An agent should never read an open face as a fault.
+
 ### Footwork — three jobs
 
 Footwork is judged against three things, in this order:
@@ -279,8 +293,10 @@ Two versions of that, and the words matter because coaches use them:
   the shot being trained gets forced. The Volley Drop Week card writes this as
   "Drive / drop - Strict".
 - **Phasing** — the relaxed form. You do not *have* to go short when in front; you can
-  hit deep instead. The decision comes back. `[CHECK]` term taken from a spoken
-  description, not yet seen written down.
+  hit deep instead. The decision comes back.
+
+Under **strict**, going short means a drop or a boast — those are the shots being
+forced.
 
 Optionality is then tuned by adding or removing constraints:
 

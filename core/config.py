@@ -14,6 +14,7 @@ tools together with reasoning_effort on this model.
 
 from __future__ import annotations
 
+import asyncio
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -57,8 +58,8 @@ def key_is_set() -> bool:
     return bool(os.getenv("PORTKEY_API_KEY", "").strip())
 
 
-@lru_cache(maxsize=1)
-def build_model() -> OpenAIResponsesModel:
+@lru_cache(maxsize=4)
+def _model_for_loop(_loop_id: int) -> OpenAIResponsesModel:
     headers = {"x-portkey-provider": "openai"}
     if SKIP_CACHE:
         headers["x-portkey-cache-force-refresh"] = "true"
@@ -68,6 +69,26 @@ def build_model() -> OpenAIResponsesModel:
         default_headers=headers,
     )
     return OpenAIResponsesModel(MODEL_NAME, provider=OpenAIProvider(openai_client=client))
+
+
+def build_model() -> OpenAIResponsesModel:
+    """The model, cached per event loop rather than globally.
+
+    The httpx pool inside the client binds to whichever loop first used it, so
+    a single cached client handed to a second loop raises "Event loop is
+    closed" — and keeps raising it, because the cache holds the dead one
+    forever. Keying on the running loop means a client is only ever reused on
+    the loop it was born on.
+
+    In the app there is exactly one loop (see core/aio.py), so this caches to
+    a single entry. Scripts that call asyncio.run() more than once get a fresh
+    client each time, which costs a connection and saves a crash.
+    """
+    try:
+        loop_id = id(asyncio.get_running_loop())
+    except RuntimeError:
+        loop_id = 0
+    return _model_for_loop(loop_id)
 
 
 @lru_cache(maxsize=1)
