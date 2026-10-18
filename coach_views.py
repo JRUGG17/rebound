@@ -51,9 +51,9 @@ def squad_card():
         html.H2("Squad card"),
         lead,
         *others,
-        html.Div("Names are here for your own reference. Group feedback does not "
-                 "single anyone out.", className="hint",
-                 style={"marginTop": "14px"}),
+        html.Div("Worth naming someone if they did it well, or if what they were "
+                 "working on applies to the rest. Save the harder conversations for "
+                 "one-to-one.", className="hint", style={"marginTop": "14px"}),
     ], className="card")
 
 
@@ -329,6 +329,12 @@ def parent_page(parent_id: str):
 
 
 # ------------------------------------------------------------------ add note
+
+JOURNAL_PROMPT = (
+    "What's on your mind? Reflect on the session here — how it went, what you were "
+    "working on, how you felt about it. You don't have to share anything you don't "
+    "want to."
+)
 
 SETTINGS = [("lesson", "Private lesson"), ("squad", "Squad"),
             ("tournament", "Tournament"), ("solo", "Solo assignment")]
@@ -659,9 +665,7 @@ def day_view(player_id: str, viewer_role: str, day: str,
                 if is_past else
                 "How did it go? A sentence is plenty.", className="hint",
                 style={"marginBottom": "10px"}),
-            dcc.Textarea(id="day-text",
-                         placeholder="What happened. Or how you were feeling — you do "
-                                     "not have to share anything you would rather not."),
+            dcc.Textarea(id="day-text", placeholder=JOURNAL_PROMPT),
             html.Div([
                 html.Button("🎤", id="day-mic", className="mic", title="Speak instead"),
                 html.Button("Add to this day", id="day-save", className="primary"),
@@ -686,3 +690,10 @@ def day_view(player_id: str, viewer_role: str, day: str,
                  className="card") if cards else html.Span(),
         *composer,
     ])
+
+
+PRIVATE_PROMPT = (
+    "Whatever you want. Nobody reads this but you — how you're feeling, what's "
+    "annoying you, things you'd rather not say out loud yet. There's no wrong "
+    "thing to put here."
+)

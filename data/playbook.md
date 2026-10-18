@@ -391,8 +391,10 @@ drill on court  →  come off, sit on the bleachers  →  group feedback  →  b
 
 Three things govern that feedback and they make it harder than it looks:
 
-- **It is given to the group**, not to one player. Nobody gets singled out in front of
-  everyone. A coach who wants to say something personal pulls that player aside.
+- **It is pitched at the group**, not at one player. Naming someone is fine and normal —
+  for something they did well, or when what they were working on applies to everybody
+  else. What does not happen in front of the group is personal criticism. A coach who
+  needs to say something harder pulls that player aside.
 - **The group is mixed-level**, so one piece of feedback does not fit everyone.
 - **It is sometimes split by age** — one coach takes the younger players, another the
   older ones — which means neither coach has the whole picture.
