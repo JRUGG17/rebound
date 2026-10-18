@@ -125,6 +125,13 @@ def save_dated(player_id: str, text: str, visibility: str, day: str,
     return _run_job(work)
 
 
+def run_lesson_arc(player_id: str, audience: str):
+    def work():
+        arc, _usage = aio.run(recap_agent.recap_lessons(player_id, audience=audience))
+        return {"arc": arc.model_dump() if arc else None}
+    return _run_job(work)
+
+
 def ask_playbook(question: str):
     def work():
         answer, _usage = aio.run(methodology.ask(question))
@@ -322,6 +329,7 @@ app.layout = html.Div([
     dcc.Store(id="cal-offset", data=0),
     dcc.Store(id="sel-day", data=None),
     dcc.Store(id="day-summary", data=None),
+    dcc.Store(id="lesson-arc", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -528,26 +536,29 @@ def start_ask(n, question):
     Output("draft", "data", allow_duplicate=True),
     Output("recap", "data", allow_duplicate=True),
     Output("day-summary", "data", allow_duplicate=True),
+    Output("lesson-arc", "data", allow_duplicate=True),
     Input("poll", "n_intervals"), State("job", "data"), State("draft", "data"),
     prevent_initial_call=True,
 )
 def collect(_n, job_id, draft):
     state = job(job_id)
     if state["state"] == "running":
-        return False, no_update, no_update, no_update, no_update, no_update
+        return False, no_update, no_update, no_update, no_update, no_update, no_update
     result = state.get("result")
     if state["state"] == "done" and isinstance(result, dict):
         if "findings" in result:
-            return True, result, no_update, no_update, no_update, no_update
+            return True, result, no_update, no_update, no_update, no_update, no_update
         if "answer" in result:
-            return True, no_update, result, no_update, no_update, no_update
+            return True, no_update, result, no_update, no_update, no_update, no_update
         if "coach_note" in result and draft:
-            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}, no_update, no_update
+            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}, no_update, no_update, no_update
         if "recap" in result:
-            return True, no_update, no_update, no_update, result["recap"], no_update
+            return True, no_update, no_update, no_update, result["recap"], no_update, no_update
         if "day" in result:
-            return True, no_update, no_update, no_update, no_update, result["day"]
-    return True, no_update, no_update, no_update, no_update, no_update
+            return True, no_update, no_update, no_update, no_update, result["day"], no_update
+        if "arc" in result:
+            return True, no_update, no_update, no_update, no_update, no_update, result["arc"]
+    return True, no_update, no_update, no_update, no_update, no_update, no_update
 
 
 # --------------------------------------------------- writing a lesson note
@@ -732,6 +743,24 @@ def save_lesson_note(clicks, texts, who):
 
 
 @app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Input("run-lesson-arc", "n_clicks"),
+    State("who", "value"), State("sel-player", "data"),
+    prevent_initial_call=True,
+)
+def start_lesson_arc(n, who, sel_player):
+    person = db.person(who)
+    if not n or person is None:
+        return no_update, no_update
+    is_player = person["role"] == "player"
+    subject = who if is_player else sel_player
+    if not subject:
+        return no_update, no_update
+    return run_lesson_arc(subject, "player" if is_player else "coach"), False
+
+
+@app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
     Input("sel-player", "data"), Input("pb-sec", "data"),
@@ -740,11 +769,12 @@ def save_lesson_note(clicks, texts, who):
     Input("theme-tick", "data"), Input("draft", "data"),
     Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
     Input("sel-day", "data"), Input("day-summary", "data"),
+    Input("lesson-arc", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
-                cal_offset, sel_day, day_summary, job_id):
+                cal_offset, sel_day, day_summary, lesson_arc, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -756,7 +786,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
     role = person["role"]
     if role == "player":
         if nav == "lessons":
-            return cv.lessons_view(who, "player", sel_day, running)
+            return cv.lessons_view(who, "player", sel_day, running,
+                                   lesson_arc, running)
         if nav == "calendar":
             if sel_day:
                 return cv.day_view(who, "player", sel_day, day_summary, running, running)
@@ -770,7 +801,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
         if nav == "lessons":
             if not sel_player:
                 return html.Div("Open a player under Players first.", className="card")
-            return cv.lessons_view(sel_player, "coach", sel_day, running)
+            return cv.lessons_view(sel_player, "coach", sel_day, running,
+                                   lesson_arc, running)
         if nav == "calendar":
             if not sel_player:
                 return html.Div("Open a player under Players first.", className="card")

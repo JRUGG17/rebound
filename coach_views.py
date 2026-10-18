@@ -738,7 +738,8 @@ PRIVATE_PROMPT = (
 )
 
 
-def lessons_view(player_id: str, viewer_role: str, open_on: str | None, saving: bool):
+def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
+                 saving: bool, arc: dict | None = None, running: bool = False):
     """Lesson by lesson: what the coach wrote, what the player wrote back."""
     items = analysis.lessons(player_id, viewer="player" if viewer_role == "player"
                              else "coach")
@@ -817,11 +818,47 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None, saving: 
             html.Div(body, className="bucket-body composer"),
         ], className="bucket", open=is_open))
 
+    if running:
+        thread = [html.Span(className="spinner"),
+                  html.Span("  Reading the whole thread…", className="hint")]
+    elif arc:
+        thread = [html.Div(arc["overview"], className="recap-overview")]
+        for phase in arc["phases"]:
+            thread.append(html.Div([
+                html.Div(phase["span"], className="label"),
+                html.Div(phase["focus"], className="theme-title"),
+                html.Div(phase["what_happened"], className="theme-body"),
+            ], className="entry"))
+        if arc.get("carried_over"):
+            thread.append(html.Div([
+                html.Div("Still carrying over", className="label"),
+                *[html.Div(line, className="recur-line") for line in arc["carried_over"]],
+            ], className="recur-box"))
+        if arc.get("never_answered"):
+            thread.append(html.Div([
+                html.Strong("Raised and never picked up. "),
+                html.Div([html.Div(line) for line in arc["never_answered"]]),
+            ], className="timing-box"))
+    else:
+        thread = [html.Div("Read the lessons end to end and see how the focus has "
+                           "moved. Costs one model call.", className="empty")]
+
     return html.Div([
-        html.H2(f"Lessons · {len(items)}"),
-        html.Div("Your private lessons, newest first. The coach's note and yours, "
-                 "side by side." if viewer_role == "player"
-                 else "Private lessons, newest first.", className="hint",
-                 style={"marginBottom": "12px"}),
-        *cards,
-    ], className="card")
+        html.Div([
+            html.Div([
+                html.H2("The thread"),
+                html.Button("Read the lessons back", id="run-lesson-arc",
+                            className="primary"),
+            ], style={"display": "flex", "justifyContent": "space-between",
+                      "alignItems": "center"}),
+            html.Div(thread, style={"marginTop": "10px"}),
+        ], className="card"),
+        html.Div([
+            html.H2(f"Lessons · {len(items)}"),
+            html.Div("Your private lessons, newest first. The coach's note and yours, "
+                     "side by side." if viewer_role == "player"
+                     else "Private lessons, newest first.", className="hint",
+                     style={"marginBottom": "12px"}),
+            *cards,
+        ], className="card"),
+    ])

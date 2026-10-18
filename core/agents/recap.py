@@ -213,3 +213,81 @@ async def summarise_day(player_id: str, day: str, *, audience: Audience = "playe
         f"Summarise {day}."
     )
     return await run(agent, prompt, name=f"day:{audience}")
+
+
+class Phase(BaseModel):
+    """A stretch of lessons spent on one thing."""
+
+    span: str = Field(description="The dates it ran between, from the digest.")
+    focus: str = Field(description="What the lessons were about, in a few words.")
+    what_happened: str = Field(
+        description="One or two sentences. Did it move? Say which way, using the "
+        "lessons themselves. Attribute: what the coach wrote, what the player wrote."
+    )
+
+
+class LessonArc(BaseModel):
+    overview: str = Field(
+        description="Two or three sentences on the shape of the lesson thread as a "
+        "whole. Counts only from the digest."
+    )
+    phases: list[Phase] = Field(
+        description="The focus eras in order, oldest first. Two to four. A phase is a "
+        "stretch of lessons on one thing, not one lesson."
+    )
+    carried_over: list[str] = Field(
+        default_factory=list,
+        description="Things raised in a lesson that came back in a later lesson still "
+        "unresolved, with how many lessons apart. This is what the thread is for.",
+    )
+    never_answered: list[str] = Field(
+        default_factory=list,
+        description="Questions or worries the player raised in a lesson that no later "
+        "lesson picks up. Empty if none — do not manufacture them.",
+    )
+
+
+LESSON_INSTRUCTIONS = """
+You are reading a player's private lessons end to end — the place their
+technical focus gets set — and describing how that thread has gone.
+
+A lesson is not a session. Group them into the two to four things the term
+was actually about, and say whether each moved.
+
+Attribute everything. The digest marks each entry (coach) or (player). "Your
+coach wrote" and "you wrote" are different claims and a lesson thread is
+exactly where the gap between them shows.
+
+What earns its place here is continuity: something raised in August that is
+still being raised in October, or a worry the player voiced that no later
+lesson answers. Do not manufacture either. If the thread is healthy, say so.
+
+You do not coach and you do not prescribe drills.
+"""
+
+
+async def recap_lessons(player_id: str, *, audience: Audience = "player"):
+    from core import db
+
+    viewer = "player" if audience == "player" else "coach"
+    items = analysis.lessons(player_id, viewer=viewer)
+    if not items:
+        return None, None
+
+    player = db.person(player_id)
+    lines = [f"PLAYER: {player['name']}, age {player['age']}",
+             f"LESSONS ON RECORD: {len(items)}, "
+             f"{items[-1]['on']} to {items[0]['on']}", ""]
+    for lesson in reversed(items):
+        week = lesson["week"]
+        theme = f" · {week['theme_name']}" if week else ""
+        lines.append(f"--- {lesson['on']}{theme}")
+        for entry in lesson["coach"]:
+            lines.append(f"  (coach {db.person(entry['author_id'])['name']}) "
+                         f"{analysis._clip(db.agent_text(entry), 180)}")
+        for entry in lesson["player"]:
+            lines.append(f"  (player) {analysis._clip(db.agent_text(entry), 180)}")
+
+    agent = make_agent(LESSON_INSTRUCTIONS, LessonArc)
+    return await run(agent, "\n".join(lines) + "\n\nRead this thread.",
+                     name=f"lessons:{audience}")
