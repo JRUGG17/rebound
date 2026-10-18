@@ -326,3 +326,103 @@ def parent_page(parent_id: str):
         *(shown or [html.Div("Nothing yet.", className="empty")]),
     ], className="card"))
     return html.Div(cards)
+
+
+# ------------------------------------------------------------------ add note
+
+SETTINGS = [("lesson", "Private lesson"), ("squad", "Squad"),
+            ("tournament", "Tournament"), ("solo", "Solo assignment")]
+
+
+def note_composer(draft: dict | None, running: bool):
+    """Writing a lesson note. The thing the whole app is actually for.
+
+    Two steps on one screen. The coach writes in their own language; the
+    Organizer files it and proposes the version the player will read; the
+    coach edits that and releases it. Nothing a model wrote reaches a child
+    without passing through the second step.
+    """
+    draft = draft or {}
+    organized = draft.get("organized")
+
+    players = [{"label": f"{p['name']} (age {p['age']})", "value": p["id"]}
+               for p in db.people("player")]
+
+    form = html.Div([
+        html.H2("New note"),
+        html.Div([
+            dcc.Dropdown(id="note-player", options=players,
+                         value=draft.get("player_id"), placeholder="Which player",
+                         clearable=False, style={"width": "260px"}),
+            dcc.Dropdown(id="note-setting",
+                         options=[{"label": label, "value": key}
+                                  for key, label in SETTINGS],
+                         value=draft.get("setting", "lesson"), clearable=False,
+                         style={"width": "200px"}),
+        ], className="composer-row", style={"marginBottom": "10px"}),
+        dcc.Textarea(id="note-text", value=draft.get("text", ""),
+                     placeholder="What happened, in your own words. Shorthand is fine — "
+                                 "this is your note, not the player's."),
+        html.Div([
+            html.Button("File it", id="file-note", className="primary"),
+            html.Span([html.Span(className="spinner"),
+                       html.Span("  Filing and drafting the player's version…",
+                                 className="hint")] if running else "",
+                      className="hint"),
+        ], className="composer-row"),
+    ], className="card composer")
+
+    if not organized:
+        return html.Div([form, html.Div([
+            html.H2("How this works"),
+            html.Div("You write once, in your own language. The note is filed against "
+                     "the curriculum automatically, and a version for the player is "
+                     "drafted for you to check. Nothing reaches them until you release "
+                     "it.", className="tiein"),
+        ], className="card")])
+
+    # The coach chose the setting. The model may infer a different one from the
+    # wording — "blocked drives" reads like squad even in a lesson note — and
+    # when they disagree the coach is right, so show theirs.
+    tags = [html.Span(organized["category"], className=f"tag {organized['category']}"),
+            html.Span(dict(SETTINGS)[draft.get("setting", "lesson")].lower(),
+                      className="tag")]
+    for key in ("rung", "shot"):
+        if organized.get(key):
+            tags.append(html.Span(str(organized[key]).replace("_", " "), className="tag"))
+    if organized.get("cue_id"):
+        tags.append(html.Span(organized["cue_id"].replace("_", " "), className="tag"))
+
+    warnings = []
+    if organized.get("dropped_qualifier"):
+        warnings.append(html.Div([
+            html.Strong("Check this. "),
+            "Something in your note — a caveat, a number, a condition — could not be "
+            "carried into the player's version. Edit it before releasing.",
+        ], className="timing-box"))
+    if organized.get("mentions_injury"):
+        warnings.append(html.Div([html.Strong("Injury mentioned. "),
+                                  "This will be routed to the player's parent."],
+                                 className="timing-box"))
+
+    return html.Div([
+        form,
+        html.Div([
+            html.H2("Filed as"),
+            html.Div(tags, className="meta", style={"marginBottom": "10px"}),
+            html.Div(organized.get("summary", ""), className="body"),
+        ], className="card"),
+        html.Div([
+            html.H2("What the player will read"),
+            html.Div("Drafted from your note. Edit it — your words are what ships.",
+                     className="hint", style={"marginBottom": "10px"}),
+            *warnings,
+            dcc.Textarea(id="note-player-text", value=organized.get("player_text", ""),
+                         style={"minHeight": "110px"}),
+            html.Div([
+                html.Button("Release to player", id="release-note", className="primary"),
+                html.Button("Keep as coach-only", id="keep-note", className="tab-btn"),
+                html.Span(draft.get("saved", ""), className="hint"),
+            ], className="composer-row"),
+        ], className="card composer"),
+    ])

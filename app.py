@@ -76,6 +76,14 @@ def save_reflection(player_id: str, text: str, visibility: str):
     return _run_job(work)
 
 
+def file_coach_note(player_id: str, text: str, setting: str):
+    def work():
+        organized, _usage = asyncio.run(
+            organizer.organize_coach_note(player_id, text, clock.today_iso()))
+        return {"coach_note": organized.model_dump()}
+    return _run_job(work)
+
+
 def run_comparison(player_id: str):
     def work():
         review, _usage = asyncio.run(comparison.review_player(player_id))
@@ -277,6 +285,7 @@ app.layout = html.Div([
     # Anything render_page needs to react to has to live up here. It cannot
     # take an Input from a component it is itself responsible for creating.
     dcc.Store(id="theme-tick", data=None),
+    dcc.Store(id="draft", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -321,7 +330,7 @@ def render_subnav(who, nav):
     if person is None:
         return None
     if person["role"] in ("coach", "admin"):
-        tabs = [("today", "Today"), ("players", "Players"),
+        tabs = [("today", "Today"), ("players", "Players"), ("note", "Add note"),
                 ("resources", "Coach resources"), ("usage", "Usage")]
     else:
         tabs = [("today", "Today"), ("usage", "Usage")]
@@ -456,20 +465,70 @@ def start_ask(n, question):
     Output("poll", "disabled", allow_duplicate=True),
     Output("review", "data", allow_duplicate=True),
     Output("answer", "data", allow_duplicate=True),
-    Input("poll", "n_intervals"), State("job", "data"), State("nav", "data"),
+    Output("draft", "data", allow_duplicate=True),
+    Input("poll", "n_intervals"), State("job", "data"), State("draft", "data"),
     prevent_initial_call=True,
 )
-def collect(_n, job_id, nav):
+def collect(_n, job_id, draft):
     state = job(job_id)
     if state["state"] == "running":
-        return False, no_update, no_update
+        return False, no_update, no_update, no_update
     result = state.get("result")
     if state["state"] == "done" and isinstance(result, dict):
         if "findings" in result:
-            return True, result, no_update
+            return True, result, no_update, no_update
         if "answer" in result:
-            return True, no_update, result
-    return True, no_update, no_update
+            return True, no_update, result, no_update
+        if "coach_note" in result and draft:
+            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}
+    return True, no_update, no_update, no_update
+
+
+# --------------------------------------------------- writing a lesson note
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Output("draft", "data", allow_duplicate=True),
+    Input("file-note", "n_clicks"),
+    State("note-player", "value"), State("note-text", "value"),
+    State("note-setting", "value"),
+    prevent_initial_call=True,
+)
+def start_file_note(n, player_id, text, setting):
+    if not n or not player_id or not text or not text.strip():
+        return no_update, no_update, no_update
+    draft = {"player_id": player_id, "text": text.strip(),
+             "setting": setting or "lesson", "organized": None}
+    return file_coach_note(player_id, text.strip(), setting or "lesson"), False, draft
+
+
+@app.callback(
+    Output("draft", "data", allow_duplicate=True),
+    Input("release-note", "n_clicks"), Input("keep-note", "n_clicks"),
+    State("draft", "data"), State("note-player-text", "value"), State("who", "value"),
+    prevent_initial_call=True,
+)
+def save_note(_release, _keep, draft, player_text, coach_id):
+    if not draft or not draft.get("organized"):
+        return no_update
+    release = ctx.triggered_id == "release-note"
+    organized = draft["organized"]
+    db.add_entry(
+        player_id=draft["player_id"], author_id=coach_id, author_role="coach",
+        setting=draft["setting"], rung=organized.get("rung"),
+        shot=organized.get("shot"), category=organized.get("category"),
+        cue_id=organized.get("cue_id"), raw_text=draft["text"],
+        summary=organized.get("summary"),
+        player_text=(player_text or "").strip() or None,
+        # Releasing is the approval. A note kept back stays a coach record and
+        # the player is shown nothing, rather than the coach's raw words.
+        approved_by=coach_id if release else None,
+        visibility="shared",
+        occurred_on=clock.today_iso(),
+    )
+    name = db.person(draft["player_id"])["name"].split()[0]
+    return {"saved": f"Saved{' and released to ' + name if release else ' as coach-only'}."}
 
 
 @app.callback(
@@ -478,11 +537,11 @@ def collect(_n, job_id, nav):
     Input("sel-player", "data"), Input("pb-sec", "data"),
     Input("today-label", "children"), Input("poll", "disabled"),
     Input("review", "data"), Input("answer", "data"),
-    Input("theme-tick", "data"),
+    Input("theme-tick", "data"), Input("draft", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
-                review, answer, theme_msg, job_id):
+                review, answer, theme_msg, draft, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -497,6 +556,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
     if role == "parent":
         return cv.parent_page(who)
     if role in ("coach", "admin"):
+        if nav == "note":
+            return cv.note_composer(draft, running)
         if nav == "resources":
             return cv.resources(answer, running, pb_sec or 1)
         if nav == "players":
