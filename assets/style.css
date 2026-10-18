@@ -534,3 +534,25 @@ button.cal-btn {
 button.cal-btn:hover { background: var(--orange-soft); }
 td.cal-cell.has button.cal-btn { background: #fffaf4; }
 td.cal-cell.has button.cal-btn:hover { background: var(--orange-soft); }
+
+/* ---------------------------------------------------------- recap themes */
+
+.recap-headline {
+  font-size: 20px; font-weight: 680; line-height: 1.4;
+  margin: 16px 0 8px; color: var(--ink);
+}
+.recap-overview { font-size: 15px; color: var(--slate); margin-bottom: 18px; }
+
+details.bucket summary { align-items: flex-start; }
+.theme-title { font-size: 16px; font-weight: 640; line-height: 1.4; }
+.theme-body { font-size: 15px; line-height: 1.6; color: var(--slate); }
+
+.arrow {
+  font-size: 13px; width: 24px; flex: 0 0 24px; text-align: center;
+  padding-top: 2px; font-weight: 700;
+}
+.arrow.climbing { color: var(--green); }
+.arrow.slipping { color: #9c2c2c; }
+.arrow.flat     { color: var(--amber); }
+.arrow.new      { color: #1f5fa8; }
+.arrow.unclear  { color: var(--muted); }

@@ -356,8 +356,13 @@ def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player"
         names = {r["id"]: r["canonical"]
                  for r in conn.execute("SELECT id, canonical FROM cues")}
 
+    runs = {r.cue_id: r for r in cue_runs(player_id)}
     recurring = sorted(
-        ({"cue_id": c, "canonical": names.get(c, c), "count": n}
+        ({"cue_id": c, "canonical": names.get(c, c), "count": n,
+          "direction": runs[c].direction if c in runs else "unclear",
+          "trend": runs[c].rung_trend if c in runs else None,
+          "all_time": runs[c].count if c in runs else n,
+          "chronic": bool(c in runs and runs[c].is_chronic)}
          for c, n in cue_hits.items() if n > 1),
         key=lambda r: -r["count"])
 
@@ -398,8 +403,14 @@ def period_digest(stats: dict) -> str:
     if stats["by_rung"]:
         lines.append("RUNGS: " + ", ".join(f"{k} {v}" for k, v in stats["by_rung"].items()))
     if stats["recurring"]:
-        lines.append("CAME BACK MORE THAN ONCE: " + "; ".join(
-            f"{r['canonical']} x{r['count']}" for r in stats["recurring"]))
+        lines.append("CAME BACK MORE THAN ONCE (in this period / all time / which way "
+                     "it is going on the ladder):")
+        for r in stats["recurring"]:
+            trend = f"{r['trend']:+}" if r["trend"] is not None else "n/a"
+            flag = "  <-- not moving" if r["chronic"] else ""
+            lines.append(f"  {r['canonical']} [{r['cue_id']}]: {r['count']}x here, "
+                         f"{r['all_time']}x all time, ladder {trend} "
+                         f"({r['direction']}){flag}")
 
     for category, entries in stats["by_category"].items():
         if not entries:

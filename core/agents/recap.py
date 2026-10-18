@@ -28,16 +28,36 @@ Category = Literal["technical", "tactical", "physical", "psychological"]
 Audience = Literal["player", "coach"]
 
 
-class Bucket(BaseModel):
-    category: Category
-    headline: str = Field(
-        description="One sentence on what happened in this area. Concrete — name the "
-        "shot, the rung, the cue. If there is nothing in this bucket, say what that "
-        "absence means rather than inventing content."
+Direction = Literal["climbing", "flat", "slipping", "new", "unclear"]
+
+
+class Theme(BaseModel):
+    """One big idea, drawn from many entries."""
+
+    title: str = Field(
+        description="The idea in four or five words, as a coach would say it. "
+        "Not a date, not a session, not a quote."
     )
-    standout: str | None = Field(
+    category: Category
+    cue_id: str | None = Field(
         default=None,
-        description="The single thing most worth noticing here, if there is one.",
+        description="The canonical cue id from the digest if this theme is one, so the "
+        "reader can open the entries behind it. Null if it spans several or none.",
+    )
+    direction: Direction = Field(
+        description="Use the ladder trend in the digest. Climbing means it is being "
+        "worked at higher rungs than it was. Flat means it keeps coming back at the "
+        "same level. New means it only started this period."
+    )
+    what_it_is: str = Field(
+        description="Two or three sentences pulling together everything that belongs to "
+        "this theme. Synthesise it — do not list sessions, do not recount days one by "
+        "one, and do not quote entries verbatim. The reader can open the detail if they "
+        "want it; this is the version that saves them having to."
+    )
+    evidence: str = Field(
+        description="The counts behind it, taken exactly from the digest. "
+        "For example: 13 mentions this period, 44 all term, ladder +0.28."
     )
 
 
@@ -49,13 +69,14 @@ class Recap(BaseModel):
     emphasis: Category | None = Field(
         default=None, description="Which trainable dominated, if one did."
     )
-    buckets: list[Bucket] = Field(
-        description="One per trainable that has anything in it, in order of weight."
+    themes: list[Theme] = Field(
+        description="Two to four. The big ideas of this period, most important first. "
+        "A theme is something that runs across many entries, not a single session. "
+        "Fewer and better beats a list of everything that happened."
     )
-    recurring: list[str] = Field(
-        default_factory=list,
-        description="Things that came back more than once, with their exact counts from "
-        "the digest. This is the most valuable part — it is what a diary normally hides.",
+    headline: str = Field(
+        description="The single most important thing about this period, in one short "
+        "sentence. If one thing dominates, say it plainly."
     )
     gap: str | None = Field(
         default=None,
@@ -68,18 +89,28 @@ PLAYER_INSTRUCTIONS = """
 You are writing a player's own recap of their training over a stretch of time.
 They are between 8 and 18. Match the language to their age.
 
-This is their record, so write to them, about what they did. Be honest about
-what kept coming back, because that is the whole point — but it is a summary,
-not a telling-off, and not a pep talk either.
+AMALGAMATE. You are given dozens of entries and you are not summarising them
+one by one — you are finding the two to four ideas that run through them and
+writing those. "On the 12th you did X, on the 14th you did Y" is the thing
+this page exists to replace. A reader who wants the days can open them.
 
-You do not coach. You do not suggest fixes or drills. You say what happened
-and what kept happening.
+Use the ladder trend to say which way something is going. A cue being worked
+at higher rungs than it was is going somewhere. One still being raised at the
+same rung after two months is not, and saying so plainly is the most useful
+thing on the page.
+
+This is their record, so write to them. Honest, not a telling-off and not a
+pep talk. You do not coach and you do not suggest drills.
 """
 
 COACH_INSTRUCTIONS = """
 You are writing a coach's recap of one player over a stretch of time. Terse
-and specific. Lead with the shape of it, name the shot and the rung, and do
-not pad.
+and specific.
+
+AMALGAMATE. Two to four themes across the whole period, not a session list.
+Name the shot, the rung, the direction. Use the ladder trend: a cue still
+being raised at the same rung after two months has not been learned, and
+that is the sentence a coach needs.
 
 You do not prescribe. The coach decides what to do about it.
 """

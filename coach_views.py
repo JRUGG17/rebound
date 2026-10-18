@@ -190,7 +190,11 @@ def player_detail(player_id: str, review: dict | None, running: bool):
                              className="empty")]
 
     return html.Div([
-        html.Button("‹ All players", id="back-roster", className="tab-btn"),
+        html.Div([
+            html.Button("‹ All players", id="back-roster", className="tab-btn"),
+            html.Span("Their Calendar and Recap are in the sidebar under Journal.",
+                      className="hint"),
+        ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
         html.Div([
             html.H2("Focus"),
             html.Div(focus["text"] if focus else "No focus set", className="focus-text"),
@@ -530,6 +534,10 @@ def calendar_view(player_id: str, viewer_role: str, offset: int = 0):
     ])
 
 
+DIRECTION_LABEL = {
+    "climbing": "▲", "flat": "▬", "slipping": "▼", "new": "✦", "unclear": "·",
+}
+
 RANGES = [
     ("week", "This week"),
     ("month", "This month"),
@@ -553,6 +561,9 @@ def recap_view(player_id: str, viewer_role: str, range_key: str,
     start, end, label = range_bounds(range_key)
     stats = analysis.period_stats(
         player_id, start, end, viewer="player" if viewer_role == "player" else "coach")
+    all_rows = (db.entries_for_player(player_id) if viewer_role == "player"
+                else db.entries_for_coach(player_id))
+    all_rows = [e for e in all_rows if start <= e["occurred_on"] <= end]
 
     picker = html.Div([
         html.Button(label_, id={"type": "recap-range", "k": key},
@@ -576,30 +587,43 @@ def recap_view(player_id: str, viewer_role: str, range_key: str,
     elif not stats["total"]:
         body = [html.Div(f"Nothing recorded for {label}.", className="empty")]
     elif result:
-        body = [html.Div(result["overview"], className="recap-overview")]
-        if result.get("recurring"):
-            body.append(html.Div([
-                html.Div("What kept coming back", className="label"),
-                *[html.Div(r, className="recur-line") for r in result["recurring"]],
-            ], className="recur-box"))
-        for bucket in result["buckets"]:
-            entries = stats["by_category"].get(bucket["category"], [])
+        body = [
+            html.Div(result["headline"], className="recap-headline"),
+            html.Div(result["overview"], className="recap-overview"),
+        ]
+        for theme in result["themes"]:
+            # The entries behind a theme: by its cue where it has one, by
+            # category otherwise. This is the "click in for the detail" half —
+            # the theme is the point, the days are the receipts.
+            if theme.get("cue_id"):
+                backing = [e for e in all_rows if e["cue_id"] == theme["cue_id"]]
+            else:
+                backing = stats["by_category"].get(theme["category"], [])
             body.append(html.Details([
                 html.Summary([
-                    html.Span(bucket["category"], className=f"tag {bucket['category']}"),
-                    html.Span(f"{len(entries)}", className="count-pill"),
-                    html.Span(bucket["headline"], className="bucket-head"),
+                    html.Span(DIRECTION_LABEL.get(theme["direction"], "·"),
+                              className=f"arrow {theme['direction']}"),
+                    html.Div([
+                        html.Div(theme["title"], className="theme-title"),
+                        html.Div([
+                            html.Span(theme["category"],
+                                      className=f"tag {theme['category']}"),
+                            html.Span(theme["evidence"], className="hint"),
+                        ], className="meta"),
+                    ], style={"flex": "1"}),
                 ]),
                 html.Div([
-                    html.Div([html.Strong("Worth noticing. "), bucket["standout"]],
-                             className="hint") if bucket.get("standout") else html.Span(),
+                    html.Div(theme["what_it_is"], className="theme-body"),
+                    html.Div(f"{_plural(len(backing), 'entry', 'entries')} behind this",
+                             className="label", style={"marginTop": "14px"}),
                     *[html.Div([
-                        html.Div(f"{e['occurred_on']} · {e['setting']}"
-                                 + (f" · {e['rung'].replace('_',' ')}" if e["rung"] else ""),
-                                 className="meta"),
+                        html.Div(" · ".join(filter(None, [
+                            e["occurred_on"], e["setting"],
+                            e["rung"].replace("_", " ") if e["rung"] else None])),
+                            className="meta"),
                         html.Div(db.render_for(e, viewer_role) or db.agent_text(e),
                                  className="body"),
-                    ], className="entry") for e in entries],
+                    ], className="entry") for e in backing[-12:]],
                 ], className="bucket-body"),
             ], className="bucket"))
         if result.get("gap"):
