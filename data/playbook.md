@@ -270,10 +270,12 @@ A routine with optionality added. Named the same way — a *drive/drop pattern*,
 
 Two versions of that, and the words matter because coaches use them:
 
-- **Stripped** — the strict form. Must go long from behind, **must** go short when in
-  front. No choice, so the shot gets forced.
+- **Strict** — must go long from behind, **must** go short when in front. No choice, so
+  the shot being trained gets forced. The Volley Drop Week card writes this as
+  "Drive / drop - Strict".
 - **Phasing** — the relaxed form. You do not *have* to go short when in front; you can
-  hit deep instead. The decision comes back.
+  hit deep instead. The decision comes back. `[CHECK]` term taken from a spoken
+  description, not yet seen written down.
 
 Optionality is then tuned by adding or removing constraints:
 
@@ -585,7 +587,7 @@ head dropping around the ball) · *kinetic chain* · *split step* · *last step*
 deliberately between A and B) · *show two* (presenting two shot options) · *counter* ·
 *hunt the volley* · *contain* · *reset* · *guard short*
 
-**Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *stripped* (a pattern with no choice in it) · *phasing* (a pattern with the choice put back) · *the sort* (the timed, scored rotation that matches players to courts at the start of a squad) · *dead quarter* · *quarters 1–4* (front left, front right, back right, back left) ·
+**Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *strict* (a pattern with no choice in it) · *phasing* (a pattern with the choice put back) · *the sort* (the timed, scored rotation that matches players to courts at the start of a squad) · *dead quarter* · *quarters 1–4* (front left, front right, back right, back left) ·
 *constraints-based* (the academy's name for its drill design: rather than telling a player
 what to do, the drill's rules make the right choice the available one)
 
