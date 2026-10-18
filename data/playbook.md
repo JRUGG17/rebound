@@ -297,6 +297,15 @@ The court is numbered, and coaches use these numbers constantly:
 A *dead quarter* is one that is out of play for that drill. Any combination can be in or
 out, which is how most conditions get built.
 
+**Magic quarters** are the other way of using the numbers. A *magic 3* alternates: one
+ball into quarter 3, the next ball out of 3, then back into 3, and so on. The opponent is
+pulled into that corner and sent away from it every other shot, so the ball travels the
+whole court while one corner keeps getting revisited.
+
+Named for whichever quarter is the magic one — magic 3 works the back right, magic 4 the
+back left. A player's note saying "magic 3" or "last step towards back wall in 4" is
+referring to this, not to a scoreline or a count.
+
 ### Conditions used at the conditioned-game rung
 
 - Two-bounce length game
@@ -587,7 +596,7 @@ head dropping around the ball) · *kinetic chain* · *split step* · *last step*
 deliberately between A and B) · *show two* (presenting two shot options) · *counter* ·
 *hunt the volley* · *contain* · *reset* · *guard short*
 
-**Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *strict* (a pattern with no choice in it) · *phasing* (a pattern with the choice put back) · *the sort* (the timed, scored rotation that matches players to courts at the start of a squad) · *dead quarter* · *quarters 1–4* (front left, front right, back right, back left) ·
+**Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *strict* (a pattern with no choice in it) · *phasing* (a pattern with the choice put back) · *the sort* (the timed, scored rotation that matches players to courts at the start of a squad) · *dead quarter* (out of play for that drill) · *magic quarter* (every other ball goes into that quarter, the one between goes out of it) · *quarters 1–4* (front left, front right, back right, back left) ·
 *constraints-based* (the academy's name for its drill design: rather than telling a player
 what to do, the drill's rules make the right choice the available one)
 
