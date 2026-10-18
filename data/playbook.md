@@ -188,9 +188,14 @@ Use the second when the rally needs to end now; the first when staying safe matt
 > Some players work from a front-wall target, others from a floor target. Either is fine.
 > Do not correct a player onto the other one.
 
-Also in this family: the **volley drop** (out of the air, horizontal racket shaft, extended
-through) and the **counter drop** (a drop answering a drop, from the front, usually under
-pressure).
+Also in this family:
+
+- **Volley drop** — out of the air. Horizontal racket shaft, extended through.
+- **Counter drop** — **a straight drop played off an opponent's drop.** Straight is part
+  of the definition here, not a variation of it. Played from the front, usually under
+  pressure.
+- **Tickle boast** — a deceptive two-wall boast played at the front of the court. Written
+  "trickle boast" in some squash writing; **this academy says tickle.**
 
 ### Lob
 The reset shot, used **under pressure**, especially from the front of the court.
@@ -595,6 +600,42 @@ head dropping around the ball) · *kinetic chain* · *split step* · *last step*
 **Tactics** — *hold* (delaying the shot to disguise it) · *delineate* (choosing
 deliberately between A and B) · *show two* (presenting two shot options) · *counter* ·
 *hunt the volley* · *contain* · *reset* · *guard short*
+
+### General squash vocabulary
+
+Words from the wider game, not this academy's method. They are here so an agent can read
+a match reflection without guessing — a player writing "got a stroke against me at 9-9"
+should not need explaining.
+
+**Where this list and the rest of this playbook differ, the rest of this playbook wins.**
+The academy's way of teaching a shot is not the dictionary definition of it, and a general
+glossary is never grounds for correcting a coach.
+
+**Interference and officiating** — *let* (rally replayed after interference) · *no let*
+(play on, no replay) · *stroke* (point awarded for significant interference) · *conduct
+warning*, *conduct stroke*, *conduct game*, *conduct match* (escalating penalties for
+misconduct)
+
+**Faults and lost rallies** — *down* (hit the tin) · *out of court* (on or above the red
+line) · *double bounce* · *double hit* · *scoop* (ball held too long on the strings, a
+kind of double hit) · *foot fault* · *short* (a serve that fails to carry past the front
+of the service box)
+
+**Scoring** — *game ball* / *game point* · *match ball* / *match point* · *championship
+point* · *sudden death* (next point takes it at 10-10) · *two clear points* (the
+alternative, play on until someone leads by two) · *bagel* (winning a game 11-0)
+
+**Strokes and shots not in the four** — *half volley* (struck immediately after the
+bounce) · *dummy* (a fake swing, playing the ball on the second) · *corkscrew* (front wall
+then side wall from near the middle, travelling deep with spin) · *skid boast* (hit hard
+and high from the back, side wall then front wall, then cross-court deep)
+
+**Equipment and court** — *bumper* · *racket head*, *throat*, *grip*, *strings* ·
+*service line* (the serve must land above it) · *service box* · *short line* · *tin* ·
+*nick* · *the T*
+
+**Training** — *ghosting* (movement practice with no ball, recreating the patterns from
+the T into each corner)
 
 **Scoring and format** — *conditioned game* · *block* · *routine* · *pattern* · *strict* (a pattern with no choice in it) · *phasing* (a pattern with the choice put back) · *the sort* (the timed, scored rotation that matches players to courts at the start of a squad) · *dead quarter* (out of play for that drill) · *magic quarter* (every other ball goes into that quarter, the one between goes out of it) · *quarters 1–4* (front left, front right, back right, back left) ·
 *constraints-based* (the academy's name for its drill design: rather than telling a player
