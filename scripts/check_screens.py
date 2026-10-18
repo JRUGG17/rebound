@@ -53,8 +53,7 @@ def main() -> int:
 
     print("\n[player]")
     check("today", lambda: application.player_today(player))
-    check("reflections, shared", lambda: application.player_reflections(player, "shared", None))
-    check("reflections, private", lambda: application.player_reflections(player, "private", None))
+    check("reflections", lambda: application.player_reflections(player, "shared", None))
     check("calendar", lambda: cv.calendar_view(player, "player", 0))
     check("calendar, previous month", lambda: cv.calendar_view(player, "player", -1))
     check("a day", lambda: cv.day_view(player, "player", today, None, False, False))

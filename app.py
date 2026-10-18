@@ -209,18 +209,22 @@ RECENT_ON_TODAY = 4
 
 
 def player_reflections(player_id: str, tab: str, job_id: str | None):
-    private = tab == "private"
-    entries = [e for e in db.entries_for_player(player_id)
-               if (e["visibility"] == "private") == private
-               and (e["author_id"] == player_id or not private)]
-    entries.reverse()
+    """One box, two buttons.
 
-    # The last few, not the term. Everything older lives in the journal, and
-    # showing it twice is how this page became unreadable.
+    This used to be two tabs, Shared and Just me. The tab is gone and the
+    choice is not: a private space is worth having, but it is not worth a
+    whole second screen for something a player uses occasionally. More to the
+    point, the value of being able to keep something back is mostly in what
+    it does to everything else — a player who knows every word reaches their
+    coach writes more carefully in the shared box too.
+
+    So: write, then choose where it goes. Private entries appear in the same
+    list with a lock on them, because it is one journal.
+    """
+    entries = list(reversed(db.entries_for_player(player_id)))
     shown = entries[:RECENT_ON_TODAY]
     cards = [c for c in (entry_card(e, "player") for e in shown) if c]
-    body = cards or [html.Div(
-        "Nothing here yet." if private else "Nothing shared yet.", className="empty")]
+    body = cards or [html.Div("Nothing yet.", className="empty")]
     if len(entries) > len(shown):
         body.append(html.Div(
             f"{len(entries) - len(shown)} older — they are in your journal.",
@@ -229,39 +233,30 @@ def player_reflections(player_id: str, tab: str, job_id: str | None):
     state = job(job_id)
     status = []
     if state["state"] == "running":
-        status = [html.Span(className="spinner"), html.Span("  Filing it…", className="hint")]
+        status = [html.Span(className="spinner"),
+                  html.Span("  Filing it…", className="hint")]
     elif state["state"] == "error":
-        status = [html.Span(f"Could not save that: {state['message']}", className="hint")]
-
-    note = []
-    if private:
-        note = [html.Div(
-            "🔒 Only you can read this tab. Your coaches cannot see it and are not told "
-            "it exists. If you write something that makes us worried about you, a "
-            "designated adult and your parent will be told — and so will you.",
-            className="private-note")]
+        status = [html.Span(f"Could not save that: {state['message']}",
+                            className="hint")]
 
     return html.Div([
         html.Div([
-            html.Button("Shared with my coaches", id="tab-shared",
-                        className=f"tab-btn{'' if private else ' active'}"),
-            html.Button("🔒 Just me", id="tab-private",
-                        className=f"tab-btn private{' active' if private else ''}"),
-        ], className="tab-row"),
-        html.Div([
-            *note,
+            dcc.Textarea(id="composer"),
             html.Div([
-                dcc.Textarea(id="composer"),
-                html.Div([
-                    html.Button("🎤", id="mic", className="mic", title="Speak instead"),
-                    html.Button("Save", id="save", className="primary"),
-                    html.Span(status),
-                ], className="composer-row"),
-            ], className="composer"),
+                html.Button("🎤", id="mic", className="mic", title="Speak instead"),
+                html.Button("Save", id="save", className="primary"),
+                html.Button("🔒 Keep private", id="save-private", className="tab-btn",
+                            title="Your coaches will not see this one"),
+                html.Span(status),
+            ], className="composer-row"),
+            html.Div("Private entries are yours alone — no coach sees them or is told "
+                     "they exist. If you write something that worries us, a designated "
+                     "adult and your parent are told, and so are you.",
+                     className="hint", style={"marginTop": "8px"}),
             html.Hr(style={"border": 0, "borderTop": "1px solid var(--line)",
                            "margin": "18px 0"}),
             *body,
-        ], className=f"card{' private-pane' if private else ''}"),
+        ], className="card composer"),
     ])
 
 
@@ -328,7 +323,6 @@ def people_options():
 
 
 app.layout = html.Div([
-    dcc.Store(id="tab", data="shared"),
     dcc.Store(id="nav", data="today"),
     dcc.Store(id="sel-player", data=None),
     dcc.Store(id="pb-sec", data=1),
@@ -462,27 +456,6 @@ def reset_nav(_who):
     return "today"
 
 
-@app.callback(
-    Output("tab", "data"),
-    Input("tab-shared", "n_clicks"), Input("tab-private", "n_clicks"),
-    State("tab", "data"), prevent_initial_call=True,
-)
-def switch_tab(shared_clicks, private_clicks, current):
-    # These buttons are rebuilt on every render, and a freshly mounted button
-    # fires with n_clicks of None. Without the truthiness check, saving would
-    # throw the user out of the private tab — not a cosmetic bug on that tab.
-    if ctx.triggered_id == "tab-private" and private_clicks:
-        return "private"
-    if ctx.triggered_id == "tab-shared" and shared_clicks:
-        return "shared"
-    return current
-
-
-# One callback per button, never several buttons in one. A Dash callback is
-# dead while any of its Inputs is missing from the layout, and these buttons
-# live on different screens — bundling them meant that saving a reflection
-# stopped working whenever the coach's screens were not rendered.
-
 @app.callback(Output("sel-player", "data"), Output("review", "data"),
               Input({"type": "open-player", "id": ALL}, "n_clicks"),
               prevent_initial_call=True)
@@ -530,15 +503,17 @@ def set_theme(n, shot):
 
 @app.callback(
     Output("job", "data"), Output("poll", "disabled"), Output("composer", "value"),
-    Input("save", "n_clicks"),
-    State("composer", "value"), State("who", "value"), State("tab", "data"),
+    Input("save", "n_clicks"), Input("save-private", "n_clicks"),
+    State("composer", "value"), State("who", "value"),
     prevent_initial_call=True,
 )
-def start_save(n, text, who, tab):
-    person = db.person(who)
-    if not n or not text or not text.strip() or not person or person["role"] != "player":
+def start_save(save_clicks, private_clicks, text, who):
+    if not clicked(save_clicks, private_clicks):
         return no_update, no_update, no_update
-    visibility = "private" if tab == "private" else "shared"
+    person = db.person(who)
+    if not text or not text.strip() or not person or person["role"] != "player":
+        return no_update, no_update, no_update
+    visibility = "private" if ctx.triggered_id == "save-private" else "shared"
     return save_reflection(who, text.strip(), visibility), False, ""
 
 
@@ -836,7 +811,7 @@ def write_up_lesson(n, player_id):
 
 @app.callback(
     Output("page", "children"),
-    Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
+    Input("who", "value"), Input("nav", "data"),
     Input("sel-player", "data"), Input("pb-sec", "data"),
     Input("today-label", "children"), Input("poll", "disabled"),
     Input("review", "data"), Input("answer", "data"),
@@ -846,7 +821,7 @@ def write_up_lesson(n, player_id):
     Input("lesson-arc", "data"), Input("focus-tick", "data"),
     State("job", "data"),
 )
-def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
+def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 job_id):
@@ -869,7 +844,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
             return cv.calendar_view(who, "player", cal_offset or 0)
         if nav == "recap":
             return cv.recap_view(who, "player", recap_range, recap, running)
-        return html.Div([*player_today(who), player_reflections(who, tab, job_id)])
+        return html.Div([*player_today(who),
+                         player_reflections(who, "shared", job_id)])
     if role == "parent":
         return cv.parent_page(who)
     if role in ("coach", "admin"):
