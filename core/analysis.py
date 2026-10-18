@@ -269,3 +269,99 @@ def digest(player_id: str) -> str:
             lines.append(f"  [{where}, {entry['setting']}] ({who['role']} "
                          f"{who['name']}) {_clip(db.agent_text(entry), 200)}")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- periods
+
+CATEGORIES = ("technical", "tactical", "physical", "psychological")
+
+
+def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player") -> dict:
+    """Everything countable about one stretch of time.
+
+    The recap agent gets these numbers rather than deriving them. "Eleven
+    entries across six sessions, eight of them technical" has to be right —
+    a recap that miscounts is worse than no recap, because a coach or a
+    player will believe it.
+    """
+    rows = (db.entries_for_player(player_id) if viewer == "player"
+            else db.entries_for_coach(player_id))
+    rows = [e for e in rows if start <= e["occurred_on"] <= end]
+
+    by_category: dict[str, list] = {c: [] for c in CATEGORIES}
+    by_setting: dict[str, int] = defaultdict(int)
+    by_shot: dict[str, int] = defaultdict(int)
+    by_rung: dict[str, int] = defaultdict(int)
+    cue_hits: dict[str, int] = defaultdict(int)
+    days: set[str] = set()
+
+    for entry in rows:
+        if entry["category"] in by_category:
+            by_category[entry["category"]].append(entry)
+        by_setting[entry["setting"]] += 1
+        days.add(entry["occurred_on"])
+        if entry["shot"]:
+            by_shot[entry["shot"]] += 1
+        if entry["rung"]:
+            by_rung[entry["rung"]] += 1
+        if entry["cue_id"]:
+            cue_hits[entry["cue_id"]] += 1
+
+    with db.connect() as conn:
+        names = {r["id"]: r["canonical"]
+                 for r in conn.execute("SELECT id, canonical FROM cues")}
+
+    recurring = sorted(
+        ({"cue_id": c, "canonical": names.get(c, c), "count": n}
+         for c, n in cue_hits.items() if n > 1),
+        key=lambda r: -r["count"])
+
+    counts = {c: len(v) for c, v in by_category.items()}
+    emphasis = max(counts, key=lambda c: counts[c]) if rows else None
+
+    return {
+        "player_id": player_id,
+        "start": start,
+        "end": end,
+        "total": len(rows),
+        "sessions": len(days),
+        "by_category": by_category,
+        "counts": counts,
+        "untouched": [c for c in CATEGORIES if not counts[c]],
+        "emphasis": emphasis if rows and counts[emphasis] else None,
+        "by_setting": dict(by_setting),
+        "by_shot": dict(by_shot),
+        "by_rung": dict(by_rung),
+        "recurring": recurring,
+    }
+
+
+def period_digest(stats: dict) -> str:
+    """The compact brief the recap agent reads."""
+    player = db.person(stats["player_id"])
+    lines = [
+        f"PLAYER: {player['name']}, age {player['age']}",
+        f"PERIOD: {stats['start']} to {stats['end']}",
+        f"COUNTED: {stats['total']} entries across {stats['sessions']} days "
+        f"({', '.join(f'{k} {v}' for k, v in stats['by_setting'].items()) or 'none'})",
+        f"BY CATEGORY: " + ", ".join(f"{c} {n}" for c, n in stats["counts"].items()),
+    ]
+    if stats["untouched"]:
+        lines.append(f"NOTHING RECORDED FOR: {', '.join(stats['untouched'])}")
+    if stats["by_shot"]:
+        lines.append("SHOTS: " + ", ".join(f"{k} {v}" for k, v in stats["by_shot"].items()))
+    if stats["by_rung"]:
+        lines.append("RUNGS: " + ", ".join(f"{k} {v}" for k, v in stats["by_rung"].items()))
+    if stats["recurring"]:
+        lines.append("CAME BACK MORE THAN ONCE: " + "; ".join(
+            f"{r['canonical']} x{r['count']}" for r in stats["recurring"]))
+
+    for category, entries in stats["by_category"].items():
+        if not entries:
+            continue
+        lines.append(f"\n{category.upper()} ({len(entries)}):")
+        for entry in entries:
+            who = db.person(entry["author_id"])
+            lines.append(f"  [{entry['occurred_on']}, {entry['setting']}] "
+                         f"({who['role']}) {_clip(db.agent_text(entry), 130)}")
+    return "\n".join(lines)

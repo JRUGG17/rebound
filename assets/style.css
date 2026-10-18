@@ -430,3 +430,96 @@ table.matrix td.has { background: var(--orange-soft); color: var(--amber); font-
   background: var(--wash); border-radius: 5px; font-size: 13px;
 }
 .pb-body pre { padding: 12px 14px; overflow-x: auto; }
+
+/* ---------------------------------------------------------- shell + sidebar */
+
+.shell { display: flex; align-items: flex-start; }
+
+.sidebar {
+  width: 200px; flex: 0 0 200px; min-height: calc(100vh - 60px);
+  background: var(--paper); border-right: 1px solid var(--line);
+  padding: 18px 10px; position: sticky; top: 60px;
+}
+
+.side-heading {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.9px;
+  color: var(--muted); font-weight: 650; padding: 16px 10px 5px;
+}
+
+.side-btn {
+  display: block; width: 100%; text-align: left; background: transparent;
+  border: 0; border-radius: 7px; padding: 9px 11px; margin-bottom: 1px;
+  font: inherit; font-size: 14px; font-weight: 550; color: var(--slate);
+  cursor: pointer;
+}
+.side-btn:hover { background: var(--wash); color: var(--ink); }
+.side-btn.active { background: var(--orange-soft); color: var(--amber); font-weight: 650; }
+
+.side-note {
+  font-size: 12px; color: var(--muted); padding: 10px 11px; margin-top: 10px;
+  border-top: 1px solid var(--line); line-height: 1.45;
+}
+
+.shell .page { flex: 1 1 auto; max-width: 820px; margin: 0; }
+
+/* ---------------------------------------------------------- calendar */
+
+.cal-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.cal-title { font-size: 17px; font-weight: 650; min-width: 160px; text-align: center; }
+button.step.dark { background: var(--wash); color: var(--ink); border: 1px solid var(--line); }
+button.step.dark:hover { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+table.calendar { width: 100%; border-collapse: collapse; }
+table.calendar th {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-weight: 600; padding: 6px; text-align: center;
+}
+td.cal-cell, td.cal-out {
+  border: 1px solid var(--line); height: 62px; width: 14.28%;
+  vertical-align: top; padding: 5px 6px;
+}
+td.cal-out { background: var(--wash); border-color: var(--wash); }
+td.cal-cell.has { background: #fffaf4; }
+td.cal-cell.today { outline: 2px solid var(--orange); outline-offset: -2px; }
+.cal-day { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cal-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--muted); }
+.dot.technical { background: #1f5fa8; }
+.dot.tactical { background: #b26a00; }
+.dot.physical { background: #1f7a56; }
+.dot.psychological { background: #7a3fa0; }
+.dot.none { background: var(--line); }
+
+.legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+.legend-item { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+
+/* ---------------------------------------------------------- recap */
+
+.recap-overview {
+  font-size: 17px; line-height: 1.6; margin: 14px 0 16px; color: var(--ink);
+}
+
+.recur-box {
+  background: var(--orange-soft); border: 1px solid #f3d5b0;
+  border-radius: 9px; padding: 13px 16px; margin-bottom: 16px;
+}
+.recur-box .label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--amber); font-weight: 650; margin-bottom: 6px;
+}
+.recur-line { font-size: 15px; font-weight: 600; padding: 2px 0; }
+
+details.bucket { border-top: 1px solid var(--line); padding: 2px 0; }
+details.bucket summary {
+  display: flex; align-items: center; gap: 9px; padding: 12px 2px;
+  cursor: pointer; list-style: none;
+}
+details.bucket summary::-webkit-details-marker { display: none; }
+details.bucket summary::before {
+  content: "▸"; color: var(--muted); font-size: 11px; width: 10px;
+}
+details.bucket[open] summary::before { content: "▾"; }
+details.bucket summary:hover { background: var(--wash); }
+.bucket-head { font-size: 15px; line-height: 1.45; }
+.bucket-body { padding: 4px 0 12px 19px; border-left: 2px solid var(--line); margin-left: 4px; }

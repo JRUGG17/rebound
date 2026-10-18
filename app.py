@@ -22,7 +22,7 @@ from dash import ALL, Dash, Input, Output, State, ctx, dcc, html, no_update
 import coach_views as cv
 from core import analysis, clock, db, metering
 from core import playbook as pb
-from core.agents import comparison, methodology, organizer
+from core.agents import comparison, methodology, organizer, recap as recap_agent
 from core.config import MODEL_NAME, key_is_set
 from data import seed
 
@@ -88,6 +88,14 @@ def run_comparison(player_id: str):
     def work():
         review, _usage = asyncio.run(comparison.review_player(player_id))
         return review.model_dump()
+    return _run_job(work)
+
+
+def run_recap(player_id: str, start: str, end: str, audience: str):
+    def work():
+        output, _usage = asyncio.run(
+            recap_agent.recap_period(player_id, start, end, audience=audience))
+        return {"recap": output.model_dump() if output else None}
     return _run_job(work)
 
 
@@ -286,6 +294,9 @@ app.layout = html.Div([
     # take an Input from a component it is itself responsible for creating.
     dcc.Store(id="theme-tick", data=None),
     dcc.Store(id="draft", data=None),
+    dcc.Store(id="recap-range", data="block"),
+    dcc.Store(id="recap", data=None),
+    dcc.Store(id="cal-offset", data=0),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -301,8 +312,10 @@ app.layout = html.Div([
         ], className="datebar"),
     ], className="topbar"),
 
-    html.Div(id="subnav", className="subnav"),
-    html.Div(id="page", className="page"),
+    html.Div([
+        html.Div(id="sidebar", className="sidebar"),
+        html.Div(id="page", className="page"),
+    ], className="shell"),
 ])
 
 
@@ -324,21 +337,41 @@ def move_clock(_b, _f, _r, _nav):
     return f"{label} · {week['theme_name']}" if week else label
 
 
-@app.callback(Output("subnav", "children"), Input("who", "value"), Input("nav", "data"))
-def render_subnav(who, nav):
+PLAYER_NAV = [
+    (None, [("today", "Today")]),
+    ("Journal", [("calendar", "Calendar"), ("recap", "Recap")]),
+    (None, [("usage", "Usage")]),
+]
+COACH_NAV = [
+    (None, [("today", "Today"), ("players", "Players"), ("note", "Add note")]),
+    ("Journal", [("calendar", "Calendar"), ("recap", "Recap")]),
+    (None, [("resources", "Coach resources"), ("usage", "Usage")]),
+]
+
+
+@app.callback(Output("sidebar", "children"), Input("who", "value"), Input("nav", "data"),
+              Input("sel-player", "data"))
+def render_sidebar(who, nav, sel_player):
     person = db.person(who)
     if person is None:
         return None
-    if person["role"] in ("coach", "admin"):
-        tabs = [("today", "Today"), ("players", "Players"), ("note", "Add note"),
-                ("resources", "Coach resources"), ("usage", "Usage")]
-    else:
-        tabs = [("today", "Today"), ("usage", "Usage")]
-    return html.Div([
-        html.Button(label, id={"type": "nav", "key": key},
-                    className=f"nav-btn{' active' if nav == key else ''}")
-        for key, label in tabs
-    ], className="page", style={"paddingTop": "14px", "paddingBottom": 0})
+    groups = COACH_NAV if person["role"] in ("coach", "admin") else PLAYER_NAV
+
+    out = []
+    for heading, items in groups:
+        if heading:
+            out.append(html.Div(heading, className="side-heading"))
+        for key, label in items:
+            out.append(html.Button(label, id={"type": "nav", "key": key},
+                                   className=f"side-btn{' active' if nav == key else ''}"))
+    # Whose journal a coach is reading has to be visible, or the Calendar and
+    # Recap tabs silently mean a different player than the one they picked.
+    if person["role"] in ("coach", "admin") and nav in ("calendar", "recap"):
+        subject = db.person(sel_player) if sel_player else None
+        out.append(html.Div(
+            f"Showing {subject['name']}" if subject
+            else "Pick a player under Players first", className="side-note"))
+    return html.Div(out)
 
 
 @app.callback(Output("nav", "data"), Output("sel-player", "data", allow_duplicate=True),
@@ -466,22 +499,25 @@ def start_ask(n, question):
     Output("review", "data", allow_duplicate=True),
     Output("answer", "data", allow_duplicate=True),
     Output("draft", "data", allow_duplicate=True),
+    Output("recap", "data", allow_duplicate=True),
     Input("poll", "n_intervals"), State("job", "data"), State("draft", "data"),
     prevent_initial_call=True,
 )
 def collect(_n, job_id, draft):
     state = job(job_id)
     if state["state"] == "running":
-        return False, no_update, no_update, no_update
+        return False, no_update, no_update, no_update, no_update
     result = state.get("result")
     if state["state"] == "done" and isinstance(result, dict):
         if "findings" in result:
-            return True, result, no_update, no_update
+            return True, result, no_update, no_update, no_update
         if "answer" in result:
-            return True, no_update, result, no_update
+            return True, no_update, result, no_update, no_update
         if "coach_note" in result and draft:
-            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}
-    return True, no_update, no_update, no_update
+            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}, no_update
+        if "recap" in result:
+            return True, no_update, no_update, no_update, result["recap"]
+    return True, no_update, no_update, no_update, no_update
 
 
 # --------------------------------------------------- writing a lesson note
@@ -531,6 +567,48 @@ def save_note(_release, _keep, draft, player_text, coach_id):
     return {"saved": f"Saved{' and released to ' + name if release else ' as coach-only'}."}
 
 
+@app.callback(Output("cal-offset", "data"),
+              Input("cal-prev", "n_clicks"), Input("cal-next", "n_clicks"),
+              State("cal-offset", "data"), prevent_initial_call=True)
+def move_calendar(prev_clicks, next_clicks, offset):
+    offset = offset or 0
+    if ctx.triggered_id == "cal-prev" and prev_clicks:
+        return offset - 1
+    if ctx.triggered_id == "cal-next" and next_clicks:
+        return offset + 1
+    return offset
+
+
+@app.callback(Output("recap-range", "data"), Output("recap", "data"),
+              Input({"type": "recap-range", "k": ALL}, "n_clicks"),
+              State("recap-range", "data"), prevent_initial_call=True)
+def pick_range(clicks, current):
+    if not any(c for c in clicks if c):
+        return current, no_update
+    # A recap belongs to the stretch it was written about, so changing the
+    # range clears it rather than leaving last week's text above new numbers.
+    return ctx.triggered_id["k"], None
+
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Input("run-recap", "n_clicks"),
+    State("who", "value"), State("sel-player", "data"), State("recap-range", "data"),
+    prevent_initial_call=True,
+)
+def start_recap(n, who, sel_player, range_key):
+    person = db.person(who)
+    if not n or person is None:
+        return no_update, no_update
+    is_player = person["role"] == "player"
+    subject = who if is_player else sel_player
+    if not subject:
+        return no_update, no_update
+    start, end, _label = cv.range_bounds(range_key or "block")
+    return run_recap(subject, start, end, "player" if is_player else "coach"), False
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
@@ -538,10 +616,12 @@ def save_note(_release, _keep, draft, player_text, coach_id):
     Input("today-label", "children"), Input("poll", "disabled"),
     Input("review", "data"), Input("answer", "data"),
     Input("theme-tick", "data"), Input("draft", "data"),
+    Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
-                review, answer, theme_msg, draft, job_id):
+                review, answer, theme_msg, draft, recap, recap_range,
+                cal_offset, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -552,10 +632,22 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
 
     role = person["role"]
     if role == "player":
+        if nav == "calendar":
+            return cv.calendar_view(who, "player", cal_offset or 0)
+        if nav == "recap":
+            return cv.recap_view(who, "player", recap_range, recap, running)
         return html.Div([*player_today(who), player_reflections(who, tab, job_id)])
     if role == "parent":
         return cv.parent_page(who)
     if role in ("coach", "admin"):
+        if nav == "calendar":
+            if not sel_player:
+                return html.Div("Open a player under Players first.", className="card")
+            return cv.calendar_view(sel_player, "coach", cal_offset or 0)
+        if nav == "recap":
+            if not sel_player:
+                return html.Div("Open a player under Players first.", className="card")
+            return cv.recap_view(sel_player, "coach", recap_range, recap, running)
         if nav == "note":
             return cv.note_composer(draft, running)
         if nav == "resources":

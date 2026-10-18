@@ -324,6 +324,8 @@ def build(*, reset: bool = True) -> dict:
     for row in ENTRIES:
         week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text = row[:11]
         author_id = player if author == "self" else author
+        player_text = (row[11] if len(row) > 11
+                       else (player_text_for(text) if author != "self" else None))
         db.add_entry(
             player_id=player,
             author_id=author_id,
@@ -334,10 +336,11 @@ def build(*, reset: bool = True) -> dict:
             category=category,
             cue_id=cue,
             raw_text=text,
-            player_text=row[11] if len(row) > 11 else None,
-            # Seeded rewrites are pre-approved by their author — they stand for
-            # notes the coach already read and released.
-            approved_by=author_id if len(row) > 11 else None,
+            player_text=player_text,
+            # Seeded rewrites stand for notes the coach already read and
+            # released. A coach note with no rewrite stays unreleased, which
+            # is what fills the approvals queue.
+            approved_by=author_id if player_text else None,
             visibility=vis,
             occurred_on=day_in_week(week_no, weekday),
         )
@@ -362,3 +365,75 @@ if __name__ == "__main__":
     for table, count in build().items():
         print(f"  {count:>4}  {table}")
     print(f"\n  database: {db.DB_PATH}")
+
+
+# Kid-facing versions of the seeded coach notes, keyed by a snippet of the
+# original. In the running app the Organizer drafts these and the coach edits
+# and releases them; here they stand for notes already released, so a player's
+# journal has history in it. Keys must stay unique within the seed.
+PLAYER_TEXTS = {
+    "Blocked drop work": "Your prep was early and clean the whole way through the "
+        "blocked drops today. That's exactly it.",
+    "Long/long/short with dead quarters": "In the game your prep went back to late — "
+        "feet first most rallies. It held up in the blocked work, so the question is "
+        "what changes once you're choosing where to hit.",
+    "Back to racket before feet": "We're back on racket before feet. It's there when "
+        "you're thinking about it and gone when you're not, so let's make it automatic.",
+    "Drive/drop strict pattern": "Prep held for the first few in the pattern, then "
+        "started drifting late. Longer than last time though.",
+    "Third Drop Week running": "This is the third Drop Week we've worked on racket "
+        "before feet. That tells me something else is going on underneath it, so let's "
+        "look at when you're picking the ball up rather than just the prep itself.",
+    "Cross lob blocks": "Your cross lob in the blocks was textbook — good height, "
+        "nothing touching the side wall.",
+    "Drive/boast/cross-lob routine": "Lob still holding up well in the routine, "
+        "diagonals included.",
+    "Went for the side wall under pressure": "Under pressure you went for the side wall "
+        "three times and two went out. When you're stretched, take the back wall on the "
+        "fly instead — that's what the lob is for.",
+    "Lost 3-1 at the Mid-Atlantic": "Tough one. The pattern was the same as in training: "
+        "every reset went for the nick and you couldn't get out of the back. Good thing "
+        "to work on next.",
+    "Swing is far too big": "Your boast swing is bigger than it needs to be. Shorten it "
+        "right down — compact and controlled, and let your body rotation do the work.",
+    "Told him to let the follow through go": "You're cutting the swing off early, so the "
+        "ball dies before it reaches the side wall. Let the follow through go through "
+        "the shot.",
+    "Stepping in now without being told": "You're stepping in now without me saying it. "
+        "That's a big improvement in four weeks.",
+    "Ready for routines now": "You're ready for routines. Next thing is getting lower — "
+        "soften the knees, get your hand closer to the floor.",
+    "Prep is late on the drop": "Your prep is late on the drop when you're moving "
+        "forward. Racket up before you move.",
+    "Racket coming up after the first step": "Your racket is coming up after the first "
+        "step. Try to get it up before you move.",
+    "Very upright into the front corners": "You're staying quite tall into the front "
+        "corners. Soften the knees and get down to the ball.",
+    "Standing tall on the drop": "You're standing tall on the drop, so you're reaching "
+        "for it instead of stepping in. Get lower and step.",
+    "Left arm doing nothing": "Your left arm isn't doing anything on the backhand — use "
+        "it as a counterbalance.",
+    "Left arm is in now": "Left arm is in now, and it's stuck in the patterns too. "
+        "Really good four weeks.",
+    "Holding up in conditioned games": "Boast is holding up in conditioned games. "
+        "Nothing to fix — time for harder drills.",
+    "Height is better": "Lob height is better. Still comes out flat when you're rushed, "
+        "so that's the next bit.",
+    "Semi-final at the qualifier": "Really tight semi-final. Tactically that was some of "
+        "your best squash.",
+    "Won her group at the Philadelphia Open": "Won your group. Drives were a foot off the "
+        "wall all day but you played the percentages and it held up.",
+    "Blocked drives — the face is still opening": "The racket face is still opening up as "
+        "soon as there's pace on the ball. We're working around it this term rather than "
+        "changing anything mid-season.",
+    "Fourth time this block": "Same note as the last few times on your grip. You're "
+        "managing around it really well and winning matches — we'll do the proper fix in "
+        "the spring, not now.",
+}
+
+
+def player_text_for(raw: str) -> str | None:
+    for key, text in PLAYER_TEXTS.items():
+        if key in raw:
+            return text
+    return None

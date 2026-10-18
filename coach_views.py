@@ -426,3 +426,173 @@ def note_composer(draft: dict | None, running: bool):
             ], className="composer-row"),
         ], className="card composer"),
     ])
+
+
+# ------------------------------------------------------------------ journal
+
+import calendar as _cal
+from datetime import date as _date
+
+
+CATEGORY_ORDER = ("technical", "tactical", "physical", "psychological")
+
+
+def _plural(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
+def _month_bounds(day: _date) -> tuple[str, str]:
+    last = _cal.monthrange(day.year, day.month)[1]
+    return (day.replace(day=1).isoformat(), day.replace(day=last).isoformat())
+
+
+def calendar_view(player_id: str, viewer_role: str, offset: int = 0):
+    """A month at a glance. Which days had anything, and what kind."""
+    today = clock.today()
+    month = today.month + offset
+    year = today.year + (month - 1) // 12
+    month = (month - 1) % 12 + 1
+    first = _date(year, month, 1)
+    start, end = _month_bounds(first)
+
+    rows = (db.entries_for_player(player_id) if viewer_role == "player"
+            else db.entries_for_coach(player_id))
+    by_day: dict[str, list] = {}
+    for entry in rows:
+        if start <= entry["occurred_on"] <= end:
+            by_day.setdefault(entry["occurred_on"], []).append(entry)
+
+    weeks = _cal.Calendar(firstweekday=0).monthdatescalendar(year, month)
+    grid = []
+    for week in weeks:
+        cells = []
+        for day in week:
+            if day.month != month:
+                cells.append(html.Td("", className="cal-out"))
+                continue
+            entries = by_day.get(day.isoformat(), [])
+            dots = [html.Span(className=f"dot {e['category'] or 'none'}")
+                    for e in entries[:4]]
+            cells.append(html.Td([
+                html.Div(str(day.day), className="cal-day"),
+                html.Div(dots, className="cal-dots"),
+            ], className="cal-cell" + (" has" if entries else "")
+               + (" today" if day == today else "")))
+        grid.append(html.Tr(cells))
+
+    legend = html.Div([
+        html.Span([html.Span(className=f"dot {c}"), " ", c], className="legend-item")
+        for c in CATEGORY_ORDER
+    ], className="legend")
+
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.Button("‹", id="cal-prev", className="step dark"),
+                html.Span(first.strftime("%B %Y"), className="cal-title"),
+                html.Button("›", id="cal-next", className="step dark"),
+            ], className="cal-head"),
+            html.Table([
+                html.Thead(html.Tr([html.Th(d) for d in
+                                    ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")])),
+                html.Tbody(grid),
+            ], className="calendar"),
+            legend,
+            html.Div(_plural(sum(len(v) for v in by_day.values()), "entry", "entries")
+                     + " on " + _plural(len(by_day), "day", "days") + " this month",
+                     className="hint", style={"marginTop": "10px"}),
+        ], className="card"),
+    ])
+
+
+RANGES = [
+    ("week", "This week"),
+    ("month", "This month"),
+    ("block", "The whole block"),
+]
+
+
+def range_bounds(key: str) -> tuple[str, str, str]:
+    today = clock.today()
+    if key == "week":
+        start = clock.monday_of(today)
+        return start.isoformat(), today.isoformat(), "this week"
+    if key == "month":
+        a, b = _month_bounds(today)
+        return a, b, today.strftime("%B %Y")
+    return clock.BLOCK_START.isoformat(), today.isoformat(), "the whole block"
+
+
+def recap_view(player_id: str, viewer_role: str, range_key: str,
+               result: dict | None, running: bool):
+    start, end, label = range_bounds(range_key)
+    stats = analysis.period_stats(
+        player_id, start, end, viewer="player" if viewer_role == "player" else "coach")
+
+    picker = html.Div([
+        html.Button(label_, id={"type": "recap-range", "k": key},
+                    className=f"tab-btn{' active' if key == range_key else ''}")
+        for key, label_ in RANGES
+    ], className="tab-row")
+
+    tiles = html.Div([
+        html.Div([html.Div("Entries", className="label"),
+                  html.Div(str(stats["total"]), className="value")], className="stat"),
+        html.Div([html.Div("Days trained", className="label"),
+                  html.Div(str(stats["sessions"]), className="value")], className="stat"),
+        *[html.Div([html.Div(c, className="label"),
+                    html.Div(str(stats["counts"][c]), className="value")],
+                   className="stat") for c in CATEGORY_ORDER],
+    ], className="stat-row")
+
+    if running:
+        body = [html.Span(className="spinner"),
+                html.Span("  Reading it back…", className="hint")]
+    elif not stats["total"]:
+        body = [html.Div(f"Nothing recorded for {label}.", className="empty")]
+    elif result:
+        body = [html.Div(result["overview"], className="recap-overview")]
+        if result.get("recurring"):
+            body.append(html.Div([
+                html.Div("What kept coming back", className="label"),
+                *[html.Div(r, className="recur-line") for r in result["recurring"]],
+            ], className="recur-box"))
+        for bucket in result["buckets"]:
+            entries = stats["by_category"].get(bucket["category"], [])
+            body.append(html.Details([
+                html.Summary([
+                    html.Span(bucket["category"], className=f"tag {bucket['category']}"),
+                    html.Span(f"{len(entries)}", className="count-pill"),
+                    html.Span(bucket["headline"], className="bucket-head"),
+                ]),
+                html.Div([
+                    html.Div([html.Strong("Worth noticing. "), bucket["standout"]],
+                             className="hint") if bucket.get("standout") else html.Span(),
+                    *[html.Div([
+                        html.Div(f"{e['occurred_on']} · {e['setting']}"
+                                 + (f" · {e['rung'].replace('_',' ')}" if e["rung"] else ""),
+                                 className="meta"),
+                        html.Div(db.render_for(e, viewer_role) or db.agent_text(e),
+                                 className="body"),
+                    ], className="entry") for e in entries],
+                ], className="bucket-body"),
+            ], className="bucket"))
+        if result.get("gap"):
+            body.append(html.Div([html.Strong("Gap. "), result["gap"]],
+                                 className="timing-box"))
+    else:
+        body = [html.Div("Pick a stretch of time and read it back. "
+                         "Costs one model call.", className="empty")]
+
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.H2(f"Recap · {label}"),
+                html.Button("Read it back", id="run-recap", className="primary"),
+            ], style={"display": "flex", "justifyContent": "space-between",
+                      "alignItems": "center"}),
+            picker,
+            tiles,
+            html.Div(body, style={"marginTop": "6px"}),
+        ], className="card"),
+    ])
