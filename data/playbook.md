@@ -136,6 +136,11 @@ To the back of the court, straight or cross.
   has to be **wide around the opponent's volley**, striking the side wall behind the back of
   the service box. More height on the front wall when in doubt.
 
+**Front-wall targets for drives are variable** — they shift with the player, the
+conditions, how loose the ball is and what the shot is for. Coaches talk about them in
+the moment. Do not treat any particular front-wall height as the club's number, and do
+not correct a coach's note against one. Floor targets are the stabler reference.
+
 **The straight-drive target moves with the player's stage.** This matters — the same cue
 means different things to a nine-year-old and a sixteen-year-old:
 
@@ -206,6 +211,21 @@ possible. Straight or cross.
   balloons off the walls. Cut brings it down.
 - The general principle: in squash, you cut the ball on the strings.
 
+### Racket preparation
+
+**The single biggest technical theme in the program, across every age and level.**
+
+> **Racket up before your feet leave the T.**
+
+A player who runs first and prepares on arrival is already too late — the shot is chosen
+for them by how late the racket is. It is also the cue most likely to look fixed in a
+drill and vanish the moment a player has a decision to make, which is why it shows up so
+often in this record and why it is worth tracking across weeks rather than treating each
+mention as new.
+
+Said many ways: early twitch, high neutral, hand higher on prep, racket before feet,
+shoulder back early, start the swing while moving.
+
 ### Footwork — three jobs
 
 Footwork is judged against three things, in this order:
@@ -214,9 +234,6 @@ Footwork is judged against three things, in this order:
 2. **Range of shot on arrival.** If a player can only play one shot from where they end up,
    a good opponent reads them. Arriving well is what keeps the options open.
 3. **Recovery to the T.** Do not get stuck, and do not fall away from the T as you strike.
-
-And the preparation rule that makes all three possible: **racket up before your feet leave
-the T.** A player who runs first and prepares on arrival is already too late.
 
 ---
 
@@ -302,51 +319,23 @@ Drop Weeks" means twelve weeks of the same unresolved problem, not three.
 
 ### The weeks
 
-A theme week is named for its shot. Observed weeks:
+A theme week is named for its shot. A week is built by climbing the ladder with that
+shot: a graded warm-up, then blocked work, then routines, then patterns, then conditioned
+games.
 
-### Lob Week
-- **Sort:** 1. Above or behind · 2. Side vs. side · 3. Match play
-- **Block:** 1. Cross-court lob and boast/nick, 2-man · 2. As above, 3-man
-- **Routine:** Drive / boast / cross-lob — diagonals then random; counters as required
-- **Shot targets:** almost touches ceiling · no side wall · back wall on the fly
-- **Technique keys:** medium/small swing · hitting under the ball · extend follow through
-  up · posture low, bending from the knees (links to Drop Week)
+**The academy runs many drills for each shot, and which ones get used varies by coach,
+group and level.** A few examples, to show the shape rather than to fix it:
 
-### Drop Week
-- **Sort:** 1. Two-bounce / volley drop option · 2. Front wall first · 3. Match play
-- **Routine:** 1. Drive / drop · 2. Drive / drive / drop
-- **Modified game:** 1. Long / long / short with dead quarters · 2. Straight / straight /
-  cross
-- **Shot targets:** put it up · front wall first · front wall then floor · soft
-- **Technique keys:** mid/small swing · horizontal racket shaft, extend volley drop ·
-  cut/slice/work on the ball
+- **Drop Week** — sort on two-bounce with a volley-drop option; routines of drive/drop and
+  drive/drive/drop; modified game of long/long/short with dead quarters.
+- **Lob Week** — blocked cross-court lob and boast; a drive/boast/cross-lob routine on
+  diagonals, then random.
+- **Boast Week** — cross-court and boast in twos or threes; drive/boast/cross routines
+  with a counter allowance.
 
-### Volley Drop Week
-- **Sort:** 1. Above or behind / dead 1 · 2. Dead 2 / dead 3 · 3. Dead 4 / match play
-- **Routine:** 1. Drive / drop · 2. Drive / drive / drop · 3. Front court driving
-- **Pattern:** Drive / drop, strict — diagonals, straight, randoms, then counter drops
-- **Shot targets and technique keys:** as Drop Week
-
-### Lob / B Drive Week (summer)
-- **Sort:** 1. Above or behind (just above if desired) · 2. Add volley option · 3. Match
-  play
-- **Block:** 1. 3 vs. 4, one- or two-bounce rules · 2. Straight / straight / cross lob,
-  boast options
-- **Pattern:** Drive / boast / drop / lob — remove counter if needed, add counter drops
-- **Shot targets:** lob for the back wall · B drive floor target halfway between the back
-  of the service box and the back wall · shifting front-wall targets
-- **Technique keys:** size of swing · stance · racket head speed and follow through
-
-### Boast Week
-- **Sort:** 1. Above or behind / volley-boast option · 2. Side vs. side · 3. Match play
-- **Blocks:** 1. Cross-court and boast, 2 or 3 person · 2. Stuart's cross and boast, a
-  three-person routine · 3. Front court driving
-- **Routines:** Drive / boast / cross (right, left, straight, random) — second boast option
-  or counter off the second boast, or one counter per player per rally. Front vs. back,
-  rail option.
-- **Shot targets:** 2-wall, narrow angles · front wall on the same side as the side wall
-  struck
-- **Technique keys:** mid-size swing · use rotation · heavy slice
+These are illustrations. **Do not treat a drill as missing because it is not on this list,
+and never tell a coach a drill is not part of the program.** Each week also carries shot
+targets and technique keys, which the coach running it sets.
 
 ### Non-shot themes
 Occasionally a week is built around an idea rather than a shot:
@@ -384,9 +373,13 @@ Observations frequently touch two categories. File under the primary one, note t
 
 ### What "psychological" means here — read this before tagging one
 
-This category is **narrower than the everyday sense of the word.** It is not mood, and it
-is not how a player felt about a session afterwards. It is **what is happening in a
-player's head while the rally is going on.** Three things live here:
+The test is **during play, not afterwards.** What was going on in the player's head while
+the rally was happening. Four things live here:
+
+**0. Emotional regulation on court.** Frustration, nerves, tilt, how a player handles a
+bad call or a run of errors, whether they can reset between points. This is squarely
+psychological — it is the most common thing in the category and it belongs here, not
+filed away as a feeling.
 
 **1. Where the attention is.** The academy uses Nideffer's two axes — attention has a
 *width* (broad or narrow) and a *direction* (internal or external):
@@ -408,11 +401,12 @@ up a run of three points, and do not end one with an unforced error.**
 
 **3. Sticking to the game plan.** Having one, and not abandoning it after two lost points.
 
-**What does not belong here.** Being annoyed with yourself after a session is a feeling
-about training, not a mindset during it — if the entry is really about a technical cue
-that keeps failing, file it technical and let the frustration sit in the summary.
-Confusion about conflicting coaching is not psychological either; that is a signal about
-the coaching, and the Comparison agent is what should notice it.
+**The edge case.** An entry can be both: "I lost the prep again and got annoyed with
+myself" is technical in substance and psychological in what happened next. File the
+primary and note the second. If the frustration is the story, it is psychological.
+
+Confusion about conflicting coaching is the one thing that does not belong here — that
+is a signal about the coaching, and the Comparison agent is what should notice it.
 
 ### The fifth trainable
 
