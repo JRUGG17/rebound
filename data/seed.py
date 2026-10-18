@@ -45,6 +45,12 @@ PARENTS = [
     ("parent_shah", "Hiren Shah", "priya"),
 ]
 
+# Head of program development. The only role that can edit the playbook, which
+# is the only way the agents' knowledge ever changes.
+ADMINS = [
+    ("admin_jamie", "Jamie Ruggiero"),
+]
+
 ROTATION = ["drive", "boast", "drop", "lob"]
 THEME_NAMES = {
     "drive": "Drive Week",
@@ -278,6 +284,11 @@ def build(*, reset: bool = True) -> dict:
                 "INSERT INTO people (id, name, role, child_id, joined_on) "
                 "VALUES (?,?,'parent',?,?)",
                 (pid, name, child, BLOCK_START.isoformat()),
+            )
+        for pid, name in ADMINS:
+            conn.execute(
+                "INSERT INTO people (id, name, role, joined_on) VALUES (?,?,'admin',?)",
+                (pid, name, BLOCK_START.isoformat()),
             )
         for cue_id, canonical, category in CUES:
             conn.execute("INSERT INTO cues (id, canonical, category) VALUES (?,?,?)",

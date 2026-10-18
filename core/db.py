@@ -34,10 +34,13 @@ RUNGS: tuple[str, ...] = ("solo", "block", "routine", "pattern", "conditioned_ga
 SHOTS: tuple[str, ...] = ("drive", "boast", "drop", "lob")
 
 SCHEMA = """
+-- role is validated in Python, not by a CHECK. A CHECK constraint cannot be
+-- altered in SQLite without rebuilding the table, and roles are exactly the
+-- sort of thing that gains a member later — 'admin' did.
 CREATE TABLE IF NOT EXISTS people (
     id          TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
-    role        TEXT NOT NULL CHECK (role IN ('player', 'coach', 'parent')),
+    role        TEXT NOT NULL,
     age         INTEGER,
     child_id    TEXT REFERENCES people(id),   -- parents only
     joined_on   TEXT
@@ -161,6 +164,23 @@ def _migrate(conn: sqlite3.Connection) -> None:
         for name, decl in columns:
             if name not in existing:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
+
+    # The original people table had CHECK (role IN ('player','coach','parent')),
+    # which 'admin' now violates. SQLite cannot drop a CHECK, so rebuild once.
+    sql = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='people'"
+    ).fetchone()
+    if sql and "CHECK" in (sql["sql"] or ""):
+        conn.executescript("""
+            ALTER TABLE people RENAME TO people_old;
+            CREATE TABLE people (
+                id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL,
+                age INTEGER, child_id TEXT REFERENCES people(id), joined_on TEXT
+            );
+            INSERT INTO people SELECT id, name, role, age, child_id, joined_on
+              FROM people_old;
+            DROP TABLE people_old;
+        """)
 
 
 # ---------------------------------------------------------------- settings
