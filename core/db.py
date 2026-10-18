@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS entries (
     cue_id        TEXT,
     raw_text      TEXT NOT NULL,               -- what was actually said
     summary       TEXT,                        -- what the Organizer made of it
+    player_text   TEXT,                        -- a coach note rewritten for the kid
     visibility    TEXT NOT NULL DEFAULT 'shared'
                   CHECK (visibility IN ('shared', 'private')),
     media_url     TEXT,                        -- optional clip link, never uploaded
@@ -133,8 +134,25 @@ def init_db() -> None:
     conn = _open()
     try:
         conn.executescript(SCHEMA)
+        _migrate(conn)
     finally:
         conn.close()
+
+
+# Columns added after the first release. CREATE TABLE IF NOT EXISTS will not add
+# a column to a table that already exists, so widen it here instead of making
+# anyone delete their database.
+_ADDED_COLUMNS = {
+    "entries": [("player_text", "TEXT")],
+}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    for table, columns in _ADDED_COLUMNS.items():
+        existing = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        for name, decl in columns:
+            if name not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
 
 
 # ---------------------------------------------------------------- settings
@@ -186,6 +204,7 @@ def add_entry(
     category: str | None = None,
     cue_id: str | None = None,
     summary: str | None = None,
+    player_text: str | None = None,
     visibility: str = "shared",
     media_url: str | None = None,
 ) -> int:
@@ -194,14 +213,29 @@ def add_entry(
     with connect() as conn:
         cursor = conn.execute(
             """INSERT INTO entries (player_id, author_id, author_role, setting, rung,
-                   shot, category, cue_id, raw_text, summary, visibility, media_url,
-                   occurred_on, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   shot, category, cue_id, raw_text, summary, player_text, visibility,
+                   media_url, occurred_on, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (player_id, author_id, author_role, setting, rung, shot, category, cue_id,
-             raw_text, summary, visibility, media_url, occurred_on,
+             raw_text, summary, player_text, visibility, media_url, occurred_on,
              datetime.now(timezone.utc).isoformat()),
         )
         return int(cursor.lastrowid or 0)
+
+
+def render_for(entry: sqlite3.Row, viewer_role: str) -> str:
+    """The text a given audience should actually be shown.
+
+    A coach writes in coach language. The kid and their parents get the
+    rewritten version when one exists — same entry, two renderings — so a
+    coach never has to write anything twice, and a kid never reads a note
+    that was not written for them.
+    """
+    if viewer_role == "coach":
+        return entry["raw_text"]
+    if entry["author_role"] == "coach":
+        return entry["player_text"] or entry["raw_text"]
+    return entry["raw_text"]
 
 
 # "private" means different things depending on who wrote it:

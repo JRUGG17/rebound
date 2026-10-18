@@ -85,16 +85,18 @@ def day_in_week(week_no: int, weekday: int) -> str:
 # ---------------------------------------------------------------- entries
 #
 # (week, weekday, player, author, setting, rung, shot, category, cue, visibility, text)
-# Author "self" means the player wrote it.
-
-E = tuple
+# Author "self" means the player wrote it. An optional twelfth element is the
+# kid-facing rewrite of a coach note — same entry, two renderings.
 ENTRIES: list[tuple] = [
 
     # ---------------- Maya: the chronic cue, and a lob that will not transfer
     (3, 1, "maya", "coach_stuart", "lesson", None, "drop", "technical",
      "racket_before_feet", "shared",
      "Focus for the next few weeks: racket before feet. She is moving first and "
-     "preparing late, so everything in the front is rushed. Showed her the early twitch."),
+     "preparing late, so everything in the front is rushed. Showed her the early twitch.",
+     "This month we're working on getting your racket up BEFORE you move. Right now "
+     "your feet go first and your racket catches up late, which is why the front of "
+     "the court feels rushed. Racket first, then run."),
     (3, 2, "maya", "coach_stuart", "squad", "block", "drop", "technical",
      "racket_before_feet", "shared",
      "Blocked drop work — prep was early and clean all session. Looked solved."),
@@ -176,7 +178,9 @@ ENTRIES: list[tuple] = [
     (1, 2, "tomas", "coach_nia", "squad", "block", "drive", "technical",
      "step_then_swing", "shared",
      "Nine years old, first full block. Working on step then swing — he swings "
-     "standing still. Keep it to one thing at a time."),
+     "standing still. Keep it to one thing at a time.",
+     "Step, THEN hit. One big step before you swing. That's the only thing to "
+     "remember today!"),
     (1, 2, "tomas", "self", "reflection", None, "drive", "technical", None, "shared",
      "i did the stepping thing. it was fun"),
     (5, 2, "tomas", "coach_nia", "squad", "block", "drive", "technical",
@@ -192,7 +196,10 @@ ENTRIES: list[tuple] = [
     (4, 1, "priya", "coach_stuart", "lesson", None, "lob", "technical",
      "effect_on_ball", "shared",
      "Lob is flat and quick — needs more height and more under the ball. "
-     "Recruiting year, so keeping the changes small."),
+     "Recruiting year, so keeping the changes small.",
+     "Your lob is coming out flat and fast, so it isn't buying you the time you "
+     "need. More height, and get under the ball more. Small change, nothing drastic "
+     "— this is your season."),
     (4, 2, "priya", "self", "reflection", None, "lob", "psychological", None, "private",
      "honestly i have been dreading squad all week. every session feels like a "
      "trial for college coaches and i cannot enjoy playing any more. i do not want "
@@ -277,7 +284,8 @@ def build(*, reset: bool = True) -> dict:
                  (week_no - 1) // 4 + 1),
             )
 
-    for week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text in ENTRIES:
+    for row in ENTRIES:
+        week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text = row[:11]
         author_id = player if author == "self" else author
         db.add_entry(
             player_id=player,
@@ -289,6 +297,7 @@ def build(*, reset: bool = True) -> dict:
             category=category,
             cue_id=cue,
             raw_text=text,
+            player_text=row[11] if len(row) > 11 else None,
             visibility=vis,
             occurred_on=day_in_week(week_no, weekday),
         )

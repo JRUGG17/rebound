@@ -101,6 +101,26 @@ def visibility_report() -> None:
     check("the parent does not see a coach's private note",
           not any(e["visibility"] == "private" for e in ellie_parent))
 
+    # Same entry, two renderings: the coach's own words, and the kid's version.
+    note = next(e for e in db.entries_for_coach("maya")
+                if e["author_role"] == "coach" and e["player_text"])
+    coach_view = db.render_for(note, "coach")
+    kid_view = db.render_for(note, "player")
+    check("a coach note renders differently for the kid", coach_view != kid_view)
+    check("the coach reads their own words",
+          coach_view == note["raw_text"], coach_view[:48] + "…")
+    check("the kid reads the rewrite",
+          kid_view == note["player_text"], kid_view[:48] + "…")
+
+    plain = next(e for e in db.entries_for_coach("maya")
+                 if e["author_role"] == "coach" and not e["player_text"])
+    check("a note with no rewrite falls back to the original",
+          db.render_for(plain, "player") == plain["raw_text"])
+
+    kid_own = next(e for e in db.entries_for_player("maya") if e["author_role"] == "player")
+    check("a kid's own words are never rewritten at them",
+          db.render_for(kid_own, "player") == kid_own["raw_text"])
+
     # The role dispatcher must not let one player read another.
     check("a player cannot read another player",
           db.visible_to("maya", "priya") == [])
