@@ -88,28 +88,26 @@ class Organized(BaseModel):
 
 
 class OrganizedCoachNote(Organized):
-    """A coach's note, plus the version a child would read."""
+    """A coach's note, filed. Their words are not touched.
 
-    player_text: str = Field(
-        description="The same note rewritten for the player to read. Keep every piece of "
-        "coaching content, including any qualifier about timing, caution or how much to "
-        "change — those are the parts that matter most. Drop only the coach's notes to "
-        "self about how to handle the player. Match the player's age."
-    )
-    dropped_qualifier: bool = Field(
-        default=False,
-        description="True if you could not carry a caveat, number or condition from the "
-        "original into the player's version. The coach is shown this before it is released.",
-    )
-    raw_send_warning: str | None = Field(
+    An earlier version of this produced a kid-friendly rewrite, and it was
+    removed: paraphrasing a coach loses the meaning they chose their words
+    for, and the coach cannot see that it has happened because they only ever
+    read their own version. The note a player gets is now the note the coach
+    wrote.
+
+    What remains is a check, not an edit.
+    """
+
+    send_warning: str | None = Field(
         default=None,
-        description="The coach may choose to send their own note unchanged instead of "
-        "your rewrite. If the original would land badly on this player, say in one "
-        "sentence what in it would — it talks about them rather than to them, it "
-        "contains shorthand or notes-to-self, it is blunt in a way meant for another "
-        "adult, it mentions their age or temperament, or it is not something a child "
-        "should read. Null if the original is fine to send as it stands. Do not rewrite "
-        "it here and do not soften it: flag it and let the coach decide.",
+        description="If this note would land badly on this player, say in one sentence "
+        "what in it would — it talks about them rather than to them, it carries "
+        "shorthand or notes-to-self, it is blunt in a way meant for another adult, it "
+        "mentions their age or temperament, or it is simply not for a child to read. "
+        "Null if it is fine as written, which most notes are. Never rewrite it, never "
+        "soften it, never suggest wording: say what you noticed and let the coach "
+        "decide whether to send it, reword it themselves, or keep it as a coach record.",
     )
 
 
@@ -135,24 +133,16 @@ the record.
 """
 
 COACH_INSTRUCTIONS = """
-You are the Organizer. A coach has written a note about a player. File it, and
-write the version that player will read.
+You are the Organizer. A coach has written a note about a player. File it.
 
-The rewrite is the delicate part. A coach's note carries qualifiers that change
-what the player should do — "keep the changes small", "this is your season",
-"one thing at a time". Losing one of those is worse than a clumsy sentence:
-it can send a player off to overhaul something mid-season. Carry every
-qualifier. If you cannot, set dropped_qualifier so the coach is warned before
-anything is released.
+You do not rewrite it. The player reads the coach's own words, because a
+coach chooses them for a reason and a paraphrase loses it.
 
-Drop only what is genuinely about managing the player rather than coaching
-them — their age, their temperament, how to pitch it.
-
-Separately, the coach can skip your rewrite and send their own words
-unchanged. Judge whether that would be fine. Most of the time it is, and
-saying so matters: a coach's own wording carries meaning a paraphrase loses,
-and warning about every note would train them to ignore you. Flag only what
-would actually land badly on the child.
+Your one extra job is a check: would this note land badly on this child if
+they read it as written? Most notes are fine, and saying so matters — a
+warning on every note is a warning on none, and coaches will stop reading
+them. Flag the ones that genuinely should not go out unchanged, say what in
+them you mean, and stop there. The coach decides.
 """
 
 

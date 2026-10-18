@@ -98,51 +98,50 @@ ENTRIES: list[tuple] = [
     # ---------------- Maya: the chronic cue, and a lob that will not transfer
     (3, 1, "maya", "coach_stuart", "lesson", None, "drop", "technical",
      "racket_before_feet", "shared",
-     "Focus for the next few weeks: racket before feet. She is moving first and "
-     "preparing late, so everything in the front is rushed. Showed her the early twitch.",
-     "This month we're working on getting your racket up BEFORE you move. Right now "
-     "your feet go first and your racket catches up late, which is why the front of "
-     "the court feels rushed. Racket first, then run."),
+     "Focus for the next few weeks: racket before feet. Right now your feet go first "
+     "and the racket catches up late, which is why the front of the court feels "
+     "rushed. Racket first, then run.", "release"),
     (3, 2, "maya", "coach_stuart", "squad", "block", "drop", "technical",
      "racket_before_feet", "shared",
-     "Blocked drop work — prep was early and clean all session. Looked solved."),
+     "Blocked drop work — prep was early and clean all session. That is exactly it.", "release"),
     (3, 3, "maya", "coach_stuart", "squad", "conditioned_game", "drop", "technical",
      "racket_before_feet", "shared",
-     "Long/long/short with dead quarters. Prep gone completely, feet first every rally. "
-     "She cannot hold it once she has decisions to make."),
+     "Long/long/short with dead quarters. Prep gone completely, feet first every "
+     "rally. You cannot hold it yet once you have decisions to make.", "release"),
     (3, 3, "maya", "self", "reflection", "conditioned_game", "drop", "psychological",
      None, "shared",
      "the blocked stuff felt good today but in the game i just forgot about it, "
-     "was thinking about where to hit it"),
+     "was thinking about where to hit it", "release"),
 
     (7, 1, "maya", "coach_stuart", "lesson", None, "drop", "technical",
      "racket_before_feet", "shared",
-     "Back to racket before feet. Same as four weeks ago. Fine when she is thinking "
-     "about it, gone when she is not."),
+     "Back to racket before feet, same as four weeks ago. It is there when you are "
+     "thinking about it and gone when you are not.", "release"),
     (7, 3, "maya", "coach_nia", "squad", "pattern", "drop", "technical",
      "racket_before_feet", "shared",
-     "Drive/drop strict pattern. Prep held for the first few then drifted late."),
+     "Drive/drop strict pattern. Prep held for the first few, then drifted late.", "release"),
     (7, 4, "maya", "self", "reflection", None, "drop", "technical", None, "shared",
-     "coach said racket before feet again. i thought i fixed this"),
+     "coach said racket before feet again. i thought i fixed this", "release"),
 
     (11, 1, "maya", "coach_stuart", "lesson", None, "drop", "technical",
      "racket_before_feet", "shared",
-     "Third Drop Week running on the same cue. Not a reminder any more. Something "
-     "else is going on — possibly she cannot see the ball early enough to start."),
+     "Third Drop Week running on the same cue. This is not a reminder any more. "
+     "Something else is going on — I think you may not be picking the ball up early "
+     "enough to start the racket.", "release"),
 
     # Maya's lob: clean low on the ladder, gone high
     (4, 2, "maya", "coach_nia", "squad", "block", "lob", "tactical",
      None, "shared",
-     "Cross lob blocks — height was good, nothing touching the side wall. Textbook."),
+     "Cross lob blocks — height good, nothing touching the side wall. Textbook.", "release"),
     (4, 3, "maya", "coach_nia", "squad", "routine", "lob", "tactical", None, "shared",
-     "Drive/boast/cross-lob routine, diagonals. Still holding up well."),
+     "Drive/boast/cross-lob routine on diagonals. Still holding up well.", "release"),
     (8, 4, "maya", "coach_nia", "squad", "conditioned_game", "lob", "tactical",
      None, "shared",
-     "Went for the side wall under pressure three times, two went out. Under pressure "
-     "she reverts to the thing we tell them not to do."),
+     "You went for the side wall under pressure three times and two went out. Under "
+     "pressure you are going back to the thing we tell you not to do.", "release"),
     (8, 5, "maya", "coach_rob", "tournament", "match", "lob", "tactical", None, "shared",
      "Lost 3-1 at the Mid-Atlantic qualifier. Same lob problem — every reset went for "
-     "the nick and she could not get out of the back."),
+     "the nick and you could not get out of the back.", "release"),
 
     # ---------------- Week 11, this week: what the squad is actually on.
     # Several players on the same cue is normal, and it is the whole point of
@@ -150,118 +149,122 @@ ENTRIES: list[tuple] = [
     # lead with whatever most of the group is working on.
     (11, 2, "priya", "coach_nia", "squad", "block", "drop", "technical",
      "racket_before_feet", "shared",
-     "Prep is late on the drop when she is moving forward. Same note as half the group "
-     "this week."),
+     "Prep is late on the drop when you are moving forward. Same note as half the group "
+     "this week.", "release"),
     (11, 2, "jonah", "coach_nia", "squad", "block", "drop", "technical",
      "racket_before_feet", "shared",
-     "Racket coming up after the first step rather than before it. Worth a group cue."),
+     "Racket is coming up after the first step rather than before it.", "release"),
     (11, 3, "tomas", "coach_nia", "squad", "routine", "drop", "physical",
      "get_lower", "shared",
-     "Very upright into the front corners. Needs to soften the knees."),
+     "Very upright into the front corners. Soften the knees.", "release"),
     (11, 3, "dev", "coach_nia", "squad", "routine", "drop", "physical",
      "get_lower", "shared",
-     "Standing tall on the drop, so he is reaching rather than stepping in."),
+     "Standing tall on the drop, so you are reaching rather than stepping in.", "release"),
 
     # ---------------- Dev: two coaches, opposite advice, same week
     (6, 1, "dev", "coach_stuart", "lesson", None, "boast", "technical",
      "follow_through", "shared",
-     "Boast swing is loose and flappy — too much arm, no shape. Bring it back toward "
-     "a drive swing, maybe a touch smaller, and let the rotation do the work."),
+     "Boast swing is getting loose — too much arm and not much shape. Bring it back "
+     "toward a drive swing, maybe a touch smaller, and let the rotation do the work.", "release"),
     (6, 3, "dev", "coach_nia", "squad", "routine", "boast", "technical",
      "follow_through", "shared",
-     "Told him to let the follow through go — he is cutting the swing off early and "
-     "the ball dies before the side wall. Needs more through the shot."),
+     "Let the follow through go — you are cutting the swing off early and the ball "
+     "dies before the side wall. More through the shot.", "release"),
     (6, 4, "dev", "self", "reflection", None, "boast", "technical", None, "shared",
      "stuart said smaller swing and nia said bigger follow through. i dont know "
-     "which one to do so i just did what i normally do"),
+     "which one to do so i just did what i normally do", "release"),
     (10, 2, "dev", "coach_nia", "squad", "block", "boast", "technical", None, "shared",
-     "Still inconsistent on the boast. Hard to tell what he is trying to do."),
+     "Still inconsistent on the boast. Hard to tell what you are going for."),
 
     # ---------------- Ellie: grip rebuild flagged mid competitive season
     (2, 1, "ellie", "coach_stuart", "lesson", None, "drive", "technical",
      "squeeze_grip", "shared",
      "Her grip is too far into the palm. It is costing her racket face control on "
      "everything. Proper fix is a rebuild, but she has states in six weeks — "
-     "not touching it now. Logging it for the off-season."),
+     "not touching it now. Logging it for the off-season.", "release"),
     (2, 1, "ellie", "coach_stuart", "lesson", None, "drive", "technical",
      None, "private",
      "Long term the grip has to change or she will plateau at this level. Needs a "
      "conversation with her and her parents about when, probably April."),
     (5, 3, "ellie", "coach_stuart", "squad", "pattern", "drive", "technical",
      "squeeze_grip", "shared",
-     "Racket face opening up on the backhand again under pace. Same root cause. "
-     "Working around it for now — aiming higher and tighter instead."),
+     "Racket face opening on the backhand again under pace. Same root cause. We are "
+     "working around it for now — aim higher and tighter instead.", "release"),
     (9, 2, "ellie", "coach_rob", "tournament", "match", "drive", "tactical",
      "aim_the_drive", "shared",
-     "Won her group at the Philadelphia Open. Drives were a foot off the wall all "
-     "day but she played the percentages and it held up."),
+     "Won your group at the Philadelphia Open. Drives were a foot off the wall all "
+     "day but you played the percentages and it held up.", "release"),
     (8, 3, "ellie", "coach_nia", "squad", "block", "drive", "technical",
      "squeeze_grip", "shared",
-     "Blocked drives — the face is still opening up as soon as there is any pace on "
-     "the ball. It is the grip, same as always. Nothing to do about it this term."),
+     "Blocked drives — the face still opens as soon as there is pace on the ball. It "
+     "is the grip, same as always, and we are not changing that this term.", "release"),
     (11, 2, "ellie", "self", "reflection", None, "drive", "technical", None, "shared",
-     "backhand still feels loose when they hit it hard at me. been like this all season"),
+     "backhand still feels loose when they hit it hard at me. been like this all season", "release"),
     (11, 3, "ellie", "coach_stuart", "squad", "pattern", "drive", "technical",
      "squeeze_grip", "shared",
+     # Written, not sent. The coach has not decided how to say this one yet.
      "Fourth time this block I have written the same thing about her grip. She is "
      "managing around it well and winning matches, but it is a ceiling."),
 
     # ---------------- Tomas: nine, short entries, age-appropriate
+    # A coach note that is about managing the player, not coaching them. With
+    # no rewrite to hide behind, this is where it belongs: coaches only.
+    (1, 2, "tomas", "coach_nia", "squad", "block", "drive", "technical",
+     "step_then_swing", "private",
+     "Nine years old, first full block. Keep it to one thing at a time or he will "
+     "lose both. Do not start on the grip this year."),
     (1, 2, "tomas", "coach_nia", "squad", "block", "drive", "technical",
      "step_then_swing", "shared",
-     "Nine years old, first full block. Working on step then swing — he swings "
-     "standing still. Keep it to one thing at a time.",
      "Step, THEN hit. One big step before you swing. That's the only thing to "
-     "remember today!"),
+     "remember today!", "release"),
     (1, 2, "tomas", "self", "reflection", None, "drive", "technical", None, "shared",
-     "i did the stepping thing. it was fun"),
+     "i did the stepping thing. it was fun", "release"),
     (5, 2, "tomas", "coach_nia", "squad", "block", "drive", "technical",
      "step_then_swing", "shared",
-     "Stepping in now without being told. Big improvement for four weeks."),
+     "Stepping in now without being told. Big improvement in four weeks.", "release"),
     (5, 2, "tomas", "self", "reflection", None, "drive", "psychological", None, "shared",
      "i won a point against a big kid. i was really nervous at the start but i stopped "
-     "being scared of him after that"),
+     "being scared of him after that", "release"),
     (9, 2, "tomas", "coach_nia", "squad", "routine", "drive", "physical",
      "get_lower", "shared",
-     "Ready for routines now. Next thing is getting lower — he is very upright."),
+     "Ready for routines now. Next thing is getting lower — you are very upright.", "release"),
 
     # ---------------- Priya: private entries. These must never reach a coach agent.
     (4, 1, "priya", "coach_stuart", "lesson", None, "lob", "technical",
      "effect_on_ball", "shared",
-     "Lob is flat and quick — needs more height and more under the ball. "
-     "Recruiting year, so keeping the changes small.",
-     "Your lob is coming out flat and fast, so it isn't buying you the time you "
-     "need. More height, and get under the ball more. Small change, nothing drastic "
-     "— this is your season."),
+     "Your lob is coming out flat and fast, so it isn't buying you the time you need. "
+     "More height, and get under the ball. Small change, nothing drastic — this is "
+     "your season.", "release"),
     (4, 2, "priya", "self", "reflection", None, "lob", "psychological", None, "private",
      "honestly i have been dreading squad all week. every session feels like a "
      "trial for college coaches and i cannot enjoy playing any more. i do not want "
      "stuart to know i feel like this"),
     (6, 3, "priya", "self", "reflection", None, "boast", "technical", None, "shared",
-     "boast felt much better today, the rotation thing clicked"),
+     "boast felt much better today, the rotation thing clicked", "release"),
     (8, 2, "priya", "self", "reflection", None, None, "psychological", None, "private",
      "did not sleep before the qualifier. kept thinking about messing up in front "
      "of the coach from Trinity"),
     (8, 4, "priya", "coach_rob", "tournament", "match", "lob", "tactical",
      None, "shared",
-     "Semi-final at the qualifier. Very tight, lost 3-2. Tactically excellent, "
-     "seemed tense between games but would not say much."),
+     "Semi-final at the qualifier, lost 3-2. Tactically excellent. You seemed tense "
+     "between games — worth talking about when you want to.", "release"),
     (10, 1, "priya", "coach_stuart", "lesson", None, "lob", "technical",
      "effect_on_ball", "shared",
-     "Height is better. Still quite flat when she is rushed."),
+     "Height is better. Still quite flat when you are rushed.", "release"),
 
     # ---------------- Jonah: the control. Nothing is wrong here.
     (2, 2, "jonah", "coach_nia", "squad", "routine", "drive", "technical",
      "left_arm", "shared",
-     "Left arm doing nothing on the backhand. Showed him the counterbalance."),
+     "Left arm is doing nothing on the backhand. Use it as a counterbalance.", "release"),
     (6, 2, "jonah", "coach_nia", "squad", "pattern", "boast", "technical",
      "left_arm", "shared",
-     "Left arm is in now, and it has stuck in patterns too. Good four weeks."),
+     "Left arm is in now and it has stuck in patterns too. Good four weeks.", "release"),
     (10, 3, "jonah", "coach_nia", "squad", "conditioned_game", "boast", "technical",
      None, "shared",
-     "Holding up in conditioned games. Nothing to fix — give him harder drills."),
+     "Holding up in conditioned games. Nothing to fix — time for harder drills.", "release"),
     (10, 4, "jonah", "self", "reflection", None, "boast", "tactical", None, "shared",
-     "feeling good about my boast, want to try it more in matches"),
+     "feeling good about my boast, want to try it more in matches", "release"),
+
 ]
 
 FOCUSES = [
@@ -326,13 +329,10 @@ def build(*, reset: bool = True) -> dict:
     for row in ENTRIES + _TERM:
         week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text = row[:11]
         author_id = player if author == "self" else author
-        player_text = (row[11] if len(row) > 11
-                       else (player_text_for(text) if author != "self" else None))
-        # Generated term notes are already written to the player, so they ship
-        # as the coach wrote them. The hand-written storyline notes are not,
-        # and keep their separate player version or stay unreleased.
-        if player_text is None and author != "self" and row in _TERM:
-            player_text = text
+        # A coach note is released, or it is not. There is no second version:
+        # the player reads what the coach wrote. Notes left unreleased stay
+        # coach records, which is where anything not meant for a child goes.
+        released = (author != "self" and len(row) > 11 and row[11] == "release")
         db.add_entry(
             player_id=player,
             author_id=author_id,
@@ -343,11 +343,10 @@ def build(*, reset: bool = True) -> dict:
             category=category,
             cue_id=cue,
             raw_text=text,
-            player_text=player_text,
             # Seeded rewrites stand for notes the coach already read and
             # released. A coach note with no rewrite stays unreleased, which
             # is what fills the approvals queue.
-            approved_by=author_id if player_text else None,
+            approved_by=author_id if released else None,
             visibility=vis,
             occurred_on=day_in_week(week_no, weekday),
         )
@@ -372,79 +371,6 @@ if __name__ == "__main__":
     for table, count in build().items():
         print(f"  {count:>4}  {table}")
     print(f"\n  database: {db.DB_PATH}")
-
-
-# Kid-facing versions of the seeded coach notes, keyed by a snippet of the
-# original. In the running app the Organizer drafts these and the coach edits
-# and releases them; here they stand for notes already released, so a player's
-# journal has history in it. Keys must stay unique within the seed.
-PLAYER_TEXTS = {
-    "Blocked drop work": "Your prep was early and clean the whole way through the "
-        "blocked drops today. That's exactly it.",
-    "Long/long/short with dead quarters": "In the game your prep went back to late — "
-        "feet first most rallies. It held up in the blocked work, so the question is "
-        "what changes once you're choosing where to hit.",
-    "Back to racket before feet": "We're back on racket before feet. It's there when "
-        "you're thinking about it and gone when you're not, so let's make it automatic.",
-    "Drive/drop strict pattern": "Prep held for the first few in the pattern, then "
-        "started drifting late. Longer than last time though.",
-    "Third Drop Week running": "This is the third Drop Week we've worked on racket "
-        "before feet. That tells me something else is going on underneath it, so let's "
-        "look at when you're picking the ball up rather than just the prep itself.",
-    "Cross lob blocks": "Your cross lob in the blocks was textbook — good height, "
-        "nothing touching the side wall.",
-    "Drive/boast/cross-lob routine": "Lob still holding up well in the routine, "
-        "diagonals included.",
-    "Went for the side wall under pressure": "Under pressure you went for the side wall "
-        "three times and two went out. When you're stretched, take the back wall on the "
-        "fly instead — that's what the lob is for.",
-    "Lost 3-1 at the Mid-Atlantic": "Tough one. The pattern was the same as in training: "
-        "every reset went for the nick and you couldn't get out of the back. Good thing "
-        "to work on next.",
-    "Boast swing is loose and flappy": "Your boast swing is getting loose — too much "
-        "arm and not much shape. Build it like a drive swing, maybe a touch smaller, "
-        "and let your body rotation do the work.",
-    "Told him to let the follow through go": "You're cutting the swing off early, so the "
-        "ball dies before it reaches the side wall. Let the follow through go through "
-        "the shot.",
-    "Stepping in now without being told": "You're stepping in now without me saying it. "
-        "That's a big improvement in four weeks.",
-    "Ready for routines now": "You're ready for routines. Next thing is getting lower — "
-        "soften the knees, get your hand closer to the floor.",
-    "Prep is late on the drop": "Your prep is late on the drop when you're moving "
-        "forward. Racket up before you move.",
-    "Racket coming up after the first step": "Your racket is coming up after the first "
-        "step. Try to get it up before you move.",
-    "Very upright into the front corners": "You're staying quite tall into the front "
-        "corners. Soften the knees and get down to the ball.",
-    "Standing tall on the drop": "You're standing tall on the drop, so you're reaching "
-        "for it instead of stepping in. Get lower and step.",
-    "Left arm doing nothing": "Your left arm isn't doing anything on the backhand — use "
-        "it as a counterbalance.",
-    "Left arm is in now": "Left arm is in now, and it's stuck in the patterns too. "
-        "Really good four weeks.",
-    "Holding up in conditioned games": "Boast is holding up in conditioned games. "
-        "Nothing to fix — time for harder drills.",
-    "Height is better": "Lob height is better. Still comes out flat when you're rushed, "
-        "so that's the next bit.",
-    "Semi-final at the qualifier": "Really tight semi-final. Tactically that was some of "
-        "your best squash.",
-    "Won her group at the Philadelphia Open": "Won your group. Drives were a foot off the "
-        "wall all day but you played the percentages and it held up.",
-    "Blocked drives — the face is still opening": "The racket face is still opening up as "
-        "soon as there's pace on the ball. We're working around it this term rather than "
-        "changing anything mid-season.",
-    "Fourth time this block": "Same note as the last few times on your grip. You're "
-        "managing around it really well and winning matches — we'll do the proper fix in "
-        "the spring, not now.",
-}
-
-
-def player_text_for(raw: str) -> str | None:
-    for key, text in PLAYER_TEXTS.items():
-        if key in raw:
-            return text
-    return None
 
 
 # ---------------------------------------------------------------- the term
@@ -673,13 +599,13 @@ def term_entries() -> list[tuple]:
                 if weekday <= 1:
                     rung = db.RUNGS[max(0, db.RUNGS.index(week_rung) - 1)]
                 out.append((week_no, weekday, pid, coach, "squad", rung, shot,
-                            "technical", cue_for(text), "shared", text))
+                            "technical", cue_for(text), "shared", text, "release"))
                 step += 1
 
             lesson_rung, lesson_text = pool[(week_no * 5) % len(pool)]
             out.append((week_no, bank["lesson_day"], pid, coach, "lesson", None, shot,
                         "technical", cue_for(lesson_text), "shared",
-                        f"Lesson. {lesson_text}"))
+                        f"Lesson. {lesson_text}", "release"))
 
             voice = bank["voice"]
             # A reflection on the lesson day itself, most weeks. The lesson is
@@ -700,5 +626,5 @@ def term_entries() -> list[tuple]:
             if week_no % 4 == 0:
                 out.append((week_no, 4, pid, coach, "solo", "solo", shot,
                             "technical", None, "shared",
-                            f"Solo assigned: {shot} work, 20 minutes."))
+                            f"Solo assigned: {shot} work, 20 minutes.", "release"))
     return out

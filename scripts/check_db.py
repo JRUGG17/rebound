@@ -115,20 +115,15 @@ def visibility_report() -> None:
           not any(e["visibility"] == "private" for e in ellie_parent))
 
     # Same entry, two renderings: the coach's own words, and the kid's version.
-    # Most term notes are written to the player already, so coach text and
-    # player text are the same string by design. The pair that matters is a
-    # note written in coach voice with a separate version for the kid.
-    note = next(e for e in db.entries_for_coach("maya")
-                if e["author_role"] == "coach" and e["player_text"]
-                and e["player_text_approved_at"]
-                and e["player_text"] != e["raw_text"])
-    coach_view = db.render_for(note, "coach")
-    kid_view = db.render_for(note, "player")
-    check("a coach note renders differently for the kid", coach_view != kid_view)
-    check("the coach reads their own words",
-          coach_view == note["raw_text"], coach_view[:48] + "…")
-    check("the kid reads the rewrite",
-          kid_view == note["player_text"], kid_view[:48] + "…")
+    # There is no second version of a coach note any more. The player reads
+    # the coach's own words, or — until the coach releases it — nothing.
+    released = next(e for e in db.entries_for_coach("maya")
+                    if e["author_role"] == "coach" and e["player_text_approved_at"])
+    check("a released note reads the same to both",
+          db.render_for(released, "coach") == db.render_for(released, "player")
+          == released["raw_text"])
+    check("no paraphrase is stored alongside it", not released["player_text"],
+          str(released["player_text"])[:40])
 
     kid_own = next(e for e in db.entries_for_player("maya") if e["author_role"] == "player")
     check("a kid's own words are never rewritten at them",
@@ -147,7 +142,7 @@ def visibility_report() -> None:
     if not check("the seed leaves something unreleased", unreleased is not None):
         return
     subject = unreleased["player_id"]
-    check("an unapproved rewrite is withheld from the kid",
+    check("an unreleased note is withheld from the kid",
           db.render_for(unreleased, "player") is None)
     check("...and the coach still has their own note",
           db.render_for(unreleased, "coach") == unreleased["raw_text"])
@@ -161,16 +156,19 @@ def visibility_report() -> None:
     check("the coach has an approval queue", len(queue) > 0, f"{len(queue)} waiting")
 
     db.approve_player_text(unreleased["id"], author,
-                           edited="Rewritten by the coach, not the model.")
+                           edited="Reworded by the coach on the way out.")
     released = next(e for e in db.entries_for_player(subject) if e["id"] == unreleased["id"])
-    check("approving releases it to the kid",
-          db.render_for(released, "player") == "Rewritten by the coach, not the model.")
-    check("the coach's edit is what shipped, not the model's",
-          released["player_text"] == "Rewritten by the coach, not the model.")
-    check("the approval is attributed",
+    check("releasing it shows it to the kid",
+          db.render_for(released, "player") == "Reworded by the coach on the way out.")
+    # Editing on release rewrites the note. There is deliberately no second
+    # copy: one note, in the coach's words, the same for everyone who sees it.
+    check("the edit replaces the note rather than shadowing it",
+          released["raw_text"] == "Reworded by the coach on the way out."
+          and not released["player_text"])
+    check("the coach and the kid read the same thing",
+          db.render_for(released, "coach") == db.render_for(released, "player"))
+    check("the release is attributed",
           released["player_text_approved_by"] == author)
-    check("the original note is untouched",
-          released["raw_text"] == unreleased["raw_text"])
     check("the queue shrinks",
           len(db.pending_approval(author)) == len(queue) - 1)
     print()
