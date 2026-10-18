@@ -91,6 +91,16 @@ class OrganizedCoachNote(Organized):
         description="True if you could not carry a caveat, number or condition from the "
         "original into the player's version. The coach is shown this before it is released.",
     )
+    raw_send_warning: str | None = Field(
+        default=None,
+        description="The coach may choose to send their own note unchanged instead of "
+        "your rewrite. If the original would land badly on this player, say in one "
+        "sentence what in it would — it talks about them rather than to them, it "
+        "contains shorthand or notes-to-self, it is blunt in a way meant for another "
+        "adult, it mentions their age or temperament, or it is not something a child "
+        "should read. Null if the original is fine to send as it stands. Do not rewrite "
+        "it here and do not soften it: flag it and let the coach decide.",
+    )
 
 
 PLAYER_INSTRUCTIONS = """
@@ -116,6 +126,12 @@ anything is released.
 
 Drop only what is genuinely about managing the player rather than coaching
 them — their age, their temperament, how to pitch it.
+
+Separately, the coach can skip your rewrite and send their own words
+unchanged. Judge whether that would be fine. Most of the time it is, and
+saying so matters: a coach's own wording carries meaning a paraphrase loses,
+and warning about every note would train them to ignore you. Flag only what
+would actually land badly on the child.
 """
 
 

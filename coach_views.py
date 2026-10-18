@@ -411,6 +411,22 @@ def note_composer(draft: dict | None, running: bool):
                                   "This will be routed to the player's parent."],
                                  className="timing-box"))
 
+    warning = organized.get("raw_send_warning")
+    as_is = html.Div([
+        html.H2("Or send your own words"),
+        html.Div("Your note exactly as you wrote it, no rewrite.", className="hint"),
+        html.Div(draft.get("text", ""), className="body",
+                 style={"margin": "10px 0", "padding": "11px 13px",
+                        "background": "var(--wash)", "borderRadius": "7px"}),
+        html.Div([html.Strong("Worth a look first. "), warning],
+                 className="timing-box") if warning else
+        html.Div("Nothing in it looks like it would land badly — fine to send as "
+                 "written.", className="hint"),
+        html.Div([
+            html.Button("Send my words as-is", id="send-raw", className="tab-btn"),
+        ], className="composer-row"),
+    ], className="card")
+
     return html.Div([
         form,
         html.Div([
@@ -431,6 +447,7 @@ def note_composer(draft: dict | None, running: bool):
                 html.Span(draft.get("saved", ""), className="hint"),
             ], className="composer-row"),
         ], className="card composer"),
+        as_is,
     ])
 
 

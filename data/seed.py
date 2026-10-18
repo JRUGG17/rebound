@@ -165,8 +165,8 @@ ENTRIES: list[tuple] = [
     # ---------------- Dev: two coaches, opposite advice, same week
     (6, 1, "dev", "coach_stuart", "lesson", None, "boast", "technical",
      "follow_through", "shared",
-     "Swing is far too big for an eleven-year-old boast. Shortened him right down — "
-     "compact, controlled, let the rotation do it."),
+     "Boast swing is loose and flappy — too much arm, no shape. Bring it back toward "
+     "a drive swing, maybe a touch smaller, and let the rotation do the work."),
     (6, 3, "dev", "coach_nia", "squad", "routine", "boast", "technical",
      "follow_through", "shared",
      "Told him to let the follow through go — he is cutting the swing off early and "
@@ -322,7 +322,7 @@ def build(*, reset: bool = True) -> dict:
                  (week_no - 1) // 4 + 1),
             )
 
-    for row in ENTRIES:
+    for row in ENTRIES + routine_entries():
         week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text = row[:11]
         author_id = player if author == "self" else author
         player_text = (row[11] if len(row) > 11
@@ -395,8 +395,9 @@ PLAYER_TEXTS = {
     "Lost 3-1 at the Mid-Atlantic": "Tough one. The pattern was the same as in training: "
         "every reset went for the nick and you couldn't get out of the back. Good thing "
         "to work on next.",
-    "Swing is far too big": "Your boast swing is bigger than it needs to be. Shorten it "
-        "right down — compact and controlled, and let your body rotation do the work.",
+    "Boast swing is loose and flappy": "Your boast swing is getting loose — too much "
+        "arm and not much shape. Build it like a drive swing, maybe a touch smaller, "
+        "and let your body rotation do the work.",
     "Told him to let the follow through go": "You're cutting the swing off early, so the "
         "ball dies before it reaches the side wall. Let the follow through go through "
         "the shot.",
@@ -438,3 +439,182 @@ def player_text_for(raw: str) -> str | None:
         if key in raw:
             return text
     return None
+
+
+# ---------------------------------------------------------------- routine weeks
+#
+# The hand-written entries above carry each player's storyline. These fill in
+# the ordinary weeks around them, so the record looks like a term of coaching
+# rather than six dramatic moments, and so frequency counts have something to
+# count. Every pool is written to reinforce that player's thread, never to
+# cut across it: Jonah's lines stay clean because he is the control, Ellie's
+# keep circling the grip, Maya's keep losing prep above the routine rung.
+
+ROUTINE = {
+    "maya": {
+        "coach": "coach_stuart",
+        "drive": [
+            ("block", "Straight drive length is good. Prep still arriving late when "
+                      "she has to move for it."),
+            ("pattern", "Drive/boast pattern — length held, prep went when the options "
+                        "opened up. Same story as the drop."),
+            ("conditioned_game", "Above-or-behind game. Length fine, prep late again "
+                                 "once she was choosing."),
+        ],
+        "boast": [
+            ("routine", "Two-wall boast is coming on. Good cut, staying down off the "
+                        "side wall."),
+            ("block", "Boast blocks were clean. She likes this shot."),
+            ("pattern", "Boast held up in the pattern. No prep problem here, which is "
+                        "interesting — she has more time on it."),
+        ],
+        "lob": [
+            ("routine", "Cross lob height good in the routine."),
+            ("pattern", "Lob fine until the pattern opened up, then she started "
+                        "reaching for the side wall again."),
+        ],
+        "drop": [
+            ("block", "Drop blocks clean, prep early throughout."),
+            ("routine", "Drive/drop routine — held together."),
+        ],
+        "reflections": [
+            "boast week is my favourite, it just feels easy",
+            "did solo for 20 mins on prep. felt fine on my own obviously",
+            "drive length was good today but i know i was late again",
+            "feel like i have been working on the same thing forever",
+        ],
+    },
+    "dev": {
+        "coach": "coach_nia",
+        "drive": [
+            ("block", "Drive length improving. Still reaching rather than stepping in."),
+            ("routine", "Drive/drive/drop routine. Length good, short ball rushed."),
+        ],
+        "boast": [
+            ("block", "Boast is inconsistent. Hard to tell what shape he is going for."),
+            ("routine", "Boast again — some good, some loose. Needs one clear idea of "
+                        "the swing."),
+        ],
+        "drop": [
+            ("block", "Drop is actually his best shot. Soft hands."),
+            ("routine", "Good drops in the routine. Confidence is up on it."),
+        ],
+        "lob": [
+            ("routine", "Lob height fine for eleven. Gets it to the back wall."),
+        ],
+        "reflections": [
+            "drops went really well today",
+            "boast is confusing me a bit",
+            "i beat someone two courts up in the sort",
+        ],
+    },
+    "ellie": {
+        "coach": "coach_stuart",
+        "drive": [
+            ("pattern", "Face opening under pace again on the backhand. Managing it."),
+            ("conditioned_game", "Two-bounce length game. Percentages held, drives a "
+                                 "foot off the wall all session."),
+        ],
+        "boast": [
+            ("routine", "Boast is solid. Rotation is good, plenty of cut."),
+        ],
+        "drop": [
+            ("pattern", "Drop under pressure is where the grip costs her most — face "
+                        "opens, ball sits up."),
+        ],
+        "lob": [
+            ("routine", "Lob is reliable. One of the better ones in the squad."),
+        ],
+        "reflections": [
+            "backhand felt loose again under pace",
+            "good session, won most of my games in the sort",
+            "states in a few weeks and i feel ready-ish",
+        ],
+    },
+    "tomas": {
+        "coach": "coach_nia",
+        "drive": [
+            ("block", "Stepping in on most of them now. Big progress."),
+            ("block", "Step then swing is becoming automatic. Ready for more."),
+        ],
+        "boast": [
+            ("block", "First go at boasts. Getting the idea of side wall first."),
+        ],
+        "drop": [
+            ("block", "Drops are hard at nine. Keeping it to one cue."),
+        ],
+        "lob": [
+            ("block", "Lob is a good shot for him — gets height easily."),
+        ],
+        "reflections": [
+            "i like lob week",
+            "i did 50 good ones in a row",
+            "squash was fun today",
+        ],
+    },
+    "priya": {
+        "coach": "coach_stuart",
+        "drive": [
+            ("pattern", "Drives are tight and deliberate. Tactically she is the most "
+                        "mature in the squad."),
+            ("conditioned_game", "Controlled the game from the T throughout."),
+        ],
+        "boast": [
+            ("routine", "Boast rotation clicked this week. Much better."),
+        ],
+        "drop": [
+            ("pattern", "Drop is accurate. Occasionally too safe when she could attack."),
+        ],
+        "lob": [
+            ("routine", "Lob still coming out flat and quick under any rush."),
+            ("pattern", "Lob height better in the routine, flat again in the pattern."),
+        ],
+        "reflections": [
+            "good session. felt in control",
+            "lob still flat when im rushed",
+            "tired this week",
+        ],
+    },
+    "jonah": {
+        "coach": "coach_nia",
+        "drive": [
+            ("routine", "Drive is clean. Left arm doing its job now."),
+            ("pattern", "Held up well in the pattern. Nothing to fix."),
+        ],
+        "boast": [
+            ("routine", "Boast is good. Ready for harder constraints."),
+            ("conditioned_game", "Used the boast well in the game without forcing it."),
+        ],
+        "drop": [
+            ("routine", "Drop is improving steadily. No complaints."),
+        ],
+        "lob": [
+            ("routine", "Lob solid. Good height, good width."),
+        ],
+        "reflections": [
+            "good week",
+            "want to play more matches",
+            "enjoyed the conditioned games",
+        ],
+    },
+}
+
+
+def routine_entries() -> list[tuple]:
+    """One coach note per player per week, plus a reflection now and then."""
+    out: list[tuple] = []
+    for week_no in range(1, 13):
+        shot = ROTATION[(week_no - 1) % 4]
+        for pid, profile in ROUTINE.items():
+            pool = profile.get(shot) or []
+            if not pool:
+                continue
+            rung, text = pool[(week_no - 1) // 4 % len(pool)]
+            out.append((week_no, 2, pid, profile["coach"], "squad", rung, shot,
+                        "technical", None, "shared", text))
+            refs = profile["reflections"]
+            if refs and week_no % 3 == 0:
+                out.append((week_no, 4, pid, "self", "reflection", None, shot,
+                            "technical", None, "shared",
+                            refs[(week_no // 3 - 1) % len(refs)]))
+    return out

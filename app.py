@@ -569,14 +569,21 @@ def start_file_note(n, player_id, text, setting):
 @app.callback(
     Output("draft", "data", allow_duplicate=True),
     Input("release-note", "n_clicks"), Input("keep-note", "n_clicks"),
+    Input("send-raw", "n_clicks"),
     State("draft", "data"), State("note-player-text", "value"), State("who", "value"),
     prevent_initial_call=True,
 )
-def save_note(_release, _keep, draft, player_text, coach_id):
+def save_note(_release, _keep, _raw, draft, player_text, coach_id):
     if not draft or not draft.get("organized"):
         return no_update
-    release = ctx.triggered_id == "release-note"
+    trigger = ctx.triggered_id
+    release = trigger in ("release-note", "send-raw")
     organized = draft["organized"]
+    # "Send as-is" means the coach's own words reach the player, not a
+    # paraphrase of them. A rewrite can lose the thing the coach meant, and
+    # the coach is the one who knows whether it has.
+    if trigger == "send-raw":
+        player_text = draft["text"]
     db.add_entry(
         player_id=draft["player_id"], author_id=coach_id, author_role="coach",
         setting=draft["setting"], rung=organized.get("rung"),
@@ -591,7 +598,13 @@ def save_note(_release, _keep, draft, player_text, coach_id):
         occurred_on=clock.today_iso(),
     )
     name = db.person(draft["player_id"])["name"].split()[0]
-    return {"saved": f"Saved{' and released to ' + name if release else ' as coach-only'}."}
+    if trigger == "send-raw":
+        note = f"Saved. {name} sees your own words, unchanged."
+    elif release:
+        note = f"Saved and released to {name}."
+    else:
+        note = "Saved as a coach record. Nothing shown to the player."
+    return {"saved": note}
 
 
 @app.callback(Output("cal-offset", "data"),

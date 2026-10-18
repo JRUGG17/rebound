@@ -52,7 +52,12 @@ def rotation_report() -> None:
           all(a != b for a, b in zip(shots, shots[1:])))
     drop_weeks = [w["id"] for w in weeks if w["theme_shot"] == "drop"]
     check("three Drop Weeks in the block", len(drop_weeks) == 3, f"weeks {drop_weeks}")
-    check("they span twelve weeks", drop_weeks[-1] - drop_weeks[0] == 8)
+    check("they span eight weeks", drop_weeks[-1] - drop_weeks[0] == 8)
+
+    with db.connect() as conn:
+        latest = conn.execute("SELECT MAX(occurred_on) AS d FROM entries").fetchone()["d"]
+    check("nothing is dated in the future", latest <= clock.today_iso(),
+          f"latest entry {latest}, today {clock.today_iso()}")
 
 
 def clock_report() -> None:
@@ -62,7 +67,15 @@ def clock_report() -> None:
     week = db.week_of(clock.today_iso())
     check("today resolves to a curriculum week", week is not None,
           f"{start} → week {week['id']}, {week['theme_name']}" if week else "")
-    check("it opens in a Drop Week", bool(week) and week["theme_shot"] == "drop")
+    check("it opens on the last day of the block", bool(week) and week["id"] == 12)
+    # The chronic-cue demo needs the third Drop Week to be recent history, not
+    # today — a coach looking back at it is the situation being shown.
+    with db.connect() as conn:
+        last_drop = conn.execute(
+            "SELECT * FROM weeks WHERE theme_shot = 'drop' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    check("the last Drop Week is recent", last_drop["id"] == 11,
+          f"week {last_drop['id']}, starting {last_drop['starts_on']}")
     clock.shift(7)
     check("clock moves forward a week", clock.today() > start, str(clock.today()))
     clock.reset()

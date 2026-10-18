@@ -16,10 +16,11 @@ from datetime import date, timedelta
 from core import db
 
 SETTING_KEY = "simulated_today"
-BLOCK_START = date(2026, 9, 7)  # a Monday; week 1 of the seeded twelve-week block
-# The demo opens in week 11 — the third Drop Week of the block — so there are ten
-# weeks of history behind it and the chronic-cue detection has something to find.
-DEFAULT_TODAY = date(2026, 11, 16)
+# Week 1 of the seeded block. Twelve weeks of drive/boast/drop/lob puts the
+# three Drop Weeks eight weeks apart and lands the final day on DEFAULT_TODAY,
+# so the record covers August to mid-October and nothing sits in the future.
+BLOCK_START = date(2026, 7, 27)   # a Monday
+DEFAULT_TODAY = date(2026, 10, 18)
 
 
 def today() -> date:
