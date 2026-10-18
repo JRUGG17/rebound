@@ -75,55 +75,148 @@ why capture is conversational and spoken, never a form.
 
 ---
 
-## 2. The four shots
+## 2. How the game is played
 
-The curriculum is built on four shots. Nearly every drill, theme and cue reduces to one of
-them, or to a permutation of one.
+### The governing idea
+
+Squash is played in open space: **move the ball away from your opponent, hit it where they
+are not.** Simple to say, hard to do.
+
+From that follows the rule the whole program hangs on:
+
+> **Long from behind. Look to take it short when in front.**
+
+Behind your opponent, drive to the back and contain. In front of them, attack. And a
+standing theme across every age group: **try to stay in front of your opponent.** Squash is
+a far better game from in front.
+
+The rule is a default, not a cage. Playing short from behind is allowed, it is just
+riskier. Driving long from in front is allowed when you are unsure. **The court is never
+closed down so far that it stifles a kid's creativity** — constraints bias choices, they do
+not remove them.
+
+### The T, and what pressure means
+
+**The T** is the middle of the court, roughly equidistant from all four corners. It is what
+you recover to after every shot.
+
+Pressure has an operational definition here, and agents should use it:
+
+> **You are under pressure when your body weight is moving away from the T as you strike
+> the ball.**
+
+That is checkable, it is what "responsible under pressure" refers to, and it is the trigger
+for resetting instead of attacking.
+
+### Tempo and accuracy
+
+Two ways to win a rally, and a player should know which one they are using.
+
+- **Tempo** — give the opponent less time. There are only two ways to raise it: **hit the
+  ball harder**, or **take it earlier**.
+- **Accuracy** — take your own time and contain. Tight straight balls, precise length.
+
+A caution on pace from behind: banging one through occasionally is fine, but **the harder
+you hit it, the faster it comes back**. The opponent reaches it earlier, and you can put
+yourself under pressure with your own shot.
+
+---
+
+## The shots
 
 ### Drive
-Straight or cross-court, hit to the back of the court.
+To the back of the court, straight or cross.
 
-- **A drive** — attacking. Taken earlier, more pace or more cut, used to pressure an
-  opponent who is out of position.
-- **B drive** — the standard defensive / positional drive from the back. The workhorse
-  shot. Floor target is roughly **halfway between the back of the service box and the back
-  wall**. Aim high and tight when under pressure.
-- Front-wall target shifts depending on which of the two you are playing — a higher,
-  tighter aim for B, a flatter, more direct aim for A.
+- **B drive** (defensive / positional) — the workhorse. Floor target is **halfway between
+  the back of the service box and the back wall**.
+- **A drive** (attacking) — second bounce in the **back wall nick**. This is *dying
+  length*: it fades into the back corner instead of coming out, and forces something loose,
+  often a weak boast.
+- **Cross-court from behind is the riskier one**, because it travels through the middle. It
+  has to be **wide around the opponent's volley**, striking the side wall behind the back of
+  the service box. More height on the front wall when in doubt.
+
+**The straight-drive target moves with the player's stage.** This matters — the same cue
+means different things to a nine-year-old and a sixteen-year-old:
+
+| Stage | What "good" means |
+|---|---|
+| Younger | Just get the depth. Far enough back is the whole job. |
+| Developing | Tighter, thought about in **floorboards from the side wall** |
+| Advanced | Glue it to the side wall. Contain, open the court, create the opening. |
 
 ### Boast
-Side wall first.
+Side wall first. **This academy emphasises the attacking two-wall boast more than most
+programs do** — kids rarely see it, so they handle it badly, which makes it a
+differentiator.
 
-- **2-wall boast** — the attacking version. Narrow angle, heavy slice. The ball should
-  strike the front wall on the **same side as the side wall it came off**.
-- **3-wall boast** — wider, more defensive, used to escape the back corners.
-- Played with a mid-size swing and body rotation.
+- **Deception is the point.** Shape up bigger, as though driving, freeze the opponent
+  behind you, then change the racket face angle so it goes side wall first and cuts in
+  short.
+- **Angles:** either bounce twice before the third wall, or carry a little more — a
+  *working boast*, second bounce in the third-wall nick.
+- **Avoid the two-and-a-half wall boast**: it bounces on the floor, kicks into the side
+  wall off that bounce, pops up and hangs. That is the one that loses points.
+- **Cut it**, so it stays down off the wall instead of ballooning.
 
 ### Drop
-Short, into the front of the court.
+Short, into the front. Three drops are taught as distinct shots, not variations:
 
-Three drops are taught as distinct shots, not variations:
+1. **Straight drop** — floor target about **a racket-and-a-half to two racket lengths from
+   the front wall**, staying tight to the side wall.
+2. **Cross-court drop into the nick** — rolls out when it lands, pops up loose when it
+   misses.
+3. **Cross-court drop at a narrow angle** — bounces twice before the side wall. Harder and
+   more advanced, but lower risk when it works.
 
-1. **Straight drop** — down the wall.
-2. **Cross-court drop into the nick** — aiming to die in the join between side wall and
-   floor.
-3. **Cross-court drop at a narrow angle** — the safer cross, not going for the nick.
-- **Volley drop** — taken out of the air. Horizontal racket shaft, extended through.
-- **Counter drop** — a drop played in response to an opponent's drop, from the front of
-  the court, usually under pressure.
-- Targets: front wall first, then floor. Soft. "Put it up" — aim above the tin with
-  margin rather than shaving it.
-- Worked with cut and slice.
+**Front-wall target: about a racket head above the tin.** Not an inch above — margin for
+error matters more than perfection, because missing low loses the point outright.
+
+Two ways to play a straight drop, and the choice is tactical:
+
+- **Front wall then floor, tight to the side wall** — hangs a little longer, but tight
+  means the opponent can do little with it.
+- **Catch the nick** — bounces twice faster, but kicks out loose when it misses.
+
+Use the second when the rally needs to end now; the first when staying safe matters more.
+
+> Some players work from a front-wall target, others from a floor target. Either is fine.
+> Do not correct a player onto the other one.
+
+Also in this family: the **volley drop** (out of the air, horizontal racket shaft, extended
+through) and the **counter drop** (a drop answering a drop, from the front, usually under
+pressure).
 
 ### Lob
-The reset shot. Height, played to take time back when under pressure.
+The reset shot, used **under pressure**, especially from the front of the court.
 
-- The academy teaches the **cross-court lob** as the default. Deliberately **not** going
-  for the side wall: under pressure, from an awkward position, a side-wall lob risks going
-  out.
-- Targets: almost touches the ceiling; no side wall; reaches the back wall on the fly.
+- **Cross-court**, and deliberately **not** threading the side wall. The lob is high, above
+  the out line, and feathering it onto the side wall to die in the back is too hard to do
+  reliably when you are already in trouble.
+- **Aim for the back wall on the fly.** That guarantees the opponent is moved all the way
+  back and buys time to recover to the T.
 - Medium-to-small swing, hitting under the ball, follow through extended upward, posture
   low and bending from the knees.
+
+### Kill
+A hybrid, played from in front: **hit down on the ball** so it bounces twice as fast as
+possible. Straight or cross.
+
+- **Heavy slice is mandatory.** A flat ball struck with that much racket head speed just
+  balloons off the walls. Cut brings it down.
+- The general principle: in squash, you cut the ball on the strings.
+
+### Footwork — three jobs
+
+Footwork is judged against three things, in this order:
+
+1. **Efficiency** — get there without waste.
+2. **Range of shot on arrival.** If a player can only play one shot from where they end up,
+   a good opponent reads them. Arriving well is what keeps the options open.
+3. **Recovery to the T.** Do not get stuck, and do not fall away from the T as you strike.
+
+And the preparation rule that makes all three possible: **racket up before your feet leave
+the T.** A player who runs first and prepares on arrival is already too late.
 
 ---
 
@@ -166,6 +259,29 @@ Warmup → Sort → [Block / Routine / Pattern / Modified Game] → Stretchdown
 
 "Sort" is the graded warm-up progression that opens the session, usually three steps
 ending in match play.
+
+### The bleachers moment
+
+Coaching method is **deliberate practice**: targeted repetitions of one narrow thing,
+usually shaped by a constraint rather than an instruction. The session runs in a loop:
+
+```
+drill on court  →  come off, sit on the bleachers  →  group feedback  →  back on
+```
+
+Three things govern that feedback and they make it harder than it looks:
+
+- **It is given to the group**, not to one player. Nobody gets singled out in front of
+  everyone. A coach who wants to say something personal pulls that player aside.
+- **The group is mixed-level**, so one piece of feedback does not fit everyone.
+- **It is sometimes split by age** — one coach takes the younger players, another the
+  older ones — which means neither coach has the whole picture.
+
+The coach has about two minutes and no notes. **This is the moment the app is most useful
+to a coach:** if four of eight players on court are working on racket preparation this
+week, that is what the group feedback should lead with, and right now there is no way to
+know it. Surfacing the overlap across a squad — without naming anyone — turns a guess into
+a decision.
 
 ---
 
@@ -255,6 +371,35 @@ keys" (technical).
 | **Psychological** | Focus, nerves, composure, intent, confidence | "Responsible under pressure — reset rather than forcing it" |
 
 Observations frequently touch two categories. File under the primary one, note the second.
+
+### Where each one is coached
+
+- **Technical** — the private lesson, rehearsed at the block and routine rungs of a squad.
+- **Tactical** — the squad, through constraints-based drills.
+- **Physical** — on-court movement and ghosting in squad; at some times of year a strength
+  and conditioning coach runs separate off-court sessions. **Off-court training is out of
+  scope for this app** — it records what happens on court.
+- **Psychological** — mostly surfaces in the one-to-one lesson, where a player will talk
+  about pressure and how they handled a match.
+
+### The fifth trainable
+
+There is a fifth that the program acknowledges but does not systematically coach: **life
+skills** — sleeping, eating, hydration, what a player does away from the court. It is the
+largest untouched lever in junior development and the hardest to get a child to engage
+with.
+
+**Scope for this app: sleep and hydration only, plus how a player felt energy-wise.**
+
+Food intake is deliberately excluded. Asking adolescent athletes — a population already at
+elevated risk — to log what they eat, in an app their coach and parents can see, is not a
+neutral feature. **No agent asks about food, weight, body composition or diet.** If a
+player raises any of those unprompted, the agent does not engage with the content, does not
+advise, and the entry routes to the designated safety adult under the same handling as any
+other welfare signal.
+
+Sleep and hydration are safe to ask about, easy to answer honestly, and already the two
+that matter most at this age.
 
 ---
 
