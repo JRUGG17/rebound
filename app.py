@@ -324,12 +324,13 @@ app.layout = html.Div([
     # take an Input from a component it is itself responsible for creating.
     dcc.Store(id="theme-tick", data=None),
     dcc.Store(id="draft", data=None),
-    dcc.Store(id="recap-range", data="block"),
+    dcc.Store(id="recap-range", data="30"),
     dcc.Store(id="recap", data=None),
     dcc.Store(id="cal-offset", data=0),
     dcc.Store(id="sel-day", data=None),
     dcc.Store(id="day-summary", data=None),
     dcc.Store(id="lesson-arc", data=None),
+    dcc.Store(id="focus-tick", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -372,13 +373,14 @@ def move_clock(_b, _f, _r, _nav):
 
 PLAYER_NAV = [
     (None, [("today", "Today")]),
-    ("Journal", [("lessons", "Lessons"), ("calendar", "Calendar"),
+    ("Journal", [("calendar", "Calendar"), ("lessons", "Lessons"),
                  ("recap", "Recap")]),
     (None, [("usage", "Usage")]),
 ]
 COACH_NAV = [
     (None, [("today", "Today"), ("players", "Players"), ("note", "Add note")]),
-    ("Journal", [("lessons", "Lessons"), ("calendar", "Calendar"),
+    ("Mine", [("mylog", "My log")]),
+    ("Journal", [("calendar", "Calendar"), ("lessons", "Lessons"),
                  ("recap", "Recap")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
 ]
@@ -416,6 +418,28 @@ def switch_nav(clicks, current):
     if not ctx.triggered_id or not any(c for c in clicks if c):
         return current, no_update
     return ctx.triggered_id["key"], None
+
+
+@app.callback(Output("sel-day", "data", allow_duplicate=True),
+              Input({"type": "nav", "key": ALL}, "n_clicks"),
+              prevent_initial_call=True)
+def leave_open_day(clicks):
+    # Calendar should mean the calendar. Without this, clicking it while a day
+    # was open just re-rendered that day and looked like a dead button.
+    if not any(c for c in clicks if c):
+        return no_update
+    return None
+
+
+@app.callback(Output("recap-range", "data", allow_duplicate=True),
+              Output("nav", "data", allow_duplicate=True),
+              Output("recap", "data", allow_duplicate=True),
+              Input({"type": "month-recap", "m": ALL}, "n_clicks"),
+              prevent_initial_call=True)
+def recap_a_month(clicks):
+    if not any(c for c in clicks if c):
+        return no_update, no_update, no_update
+    return f"month:{ctx.triggered_id['m']}", "recap", None
 
 
 @app.callback(Output("nav", "data", allow_duplicate=True),
@@ -760,6 +784,31 @@ def start_lesson_arc(n, who, sel_player):
     return run_lesson_arc(subject, "player" if is_player else "coach"), False
 
 
+@app.callback(Output("focus-tick", "data"),
+              Input("set-focus", "n_clicks"),
+              State("focus-text", "value"), State("focus-category", "value"),
+              State("sel-player", "data"), State("who", "value"),
+              prevent_initial_call=True)
+def set_focus(n, text, category, player_id, coach_id):
+    if not n or not text or not text.strip() or not player_id:
+        return no_update
+    person = db.person(coach_id)
+    if person is None or person["role"] not in ("coach", "admin"):
+        return no_update
+    today = clock.today_iso()
+    with db.connect() as conn:
+        # One live focus at a time. Setting a new one closes the old rather
+        # than leaving two, so "what are they working on" has one answer.
+        conn.execute(
+            "UPDATE focuses SET resolved_on = ? WHERE player_id = ? "
+            "AND resolved_on IS NULL", (today, player_id))
+        conn.execute(
+            """INSERT INTO focuses (player_id, coach_id, text, category, set_on)
+               VALUES (?,?,?,?,?)""",
+            (player_id, coach_id, text.strip(), category or "technical", today))
+    return f"Set. {db.person(player_id)['name'].split()[0]} sees it on their Today."
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"), Input("tab", "data"),
@@ -769,12 +818,13 @@ def start_lesson_arc(n, who, sel_player):
     Input("theme-tick", "data"), Input("draft", "data"),
     Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
     Input("sel-day", "data"), Input("day-summary", "data"),
-    Input("lesson-arc", "data"),
+    Input("lesson-arc", "data"), Input("focus-tick", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
-                cal_offset, sel_day, day_summary, lesson_arc, job_id):
+                cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
+                job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -798,6 +848,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
     if role == "parent":
         return cv.parent_page(who)
     if role in ("coach", "admin"):
+        if nav == "mylog":
+            return cv.coach_log_view(who, cal_offset or 0)
         if nav == "lessons":
             if not sel_player:
                 return html.Div("Open a player under Players first.", className="card")
@@ -820,7 +872,8 @@ def render_page(who, nav, tab, sel_player, pb_sec, _label, _polling,
             return cv.resources(answer, running, pb_sec or 1)
         if nav == "players":
             if sel_player:
-                return cv.player_detail(sel_player, review, running)
+                return cv.player_detail(sel_player, review, running,
+                                        focus_msg)
             return cv.roster()
         return cv.coach_today(who, theme_msg)
     return html.Div("Nothing here.", className="card")

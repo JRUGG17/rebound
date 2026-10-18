@@ -456,3 +456,46 @@ def lessons(player_id: str, *, viewer: str = "player") -> list[dict]:
                                      for e in day["coach"]})
         out.append(day)
     return out
+
+
+def coach_log(coach_id: str, start: str | None = None,
+              end: str | None = None) -> list[dict]:
+    """Everything this coach wrote, across every player, newest first.
+
+    The coach-side views until now were all one player at a time, which is
+    the wrong axis for a coach: between lessons they want their own week, not
+    somebody's record.
+    """
+    with db.connect() as conn:
+        sql = "SELECT * FROM entries WHERE author_id = ? AND author_role = 'coach'"
+        args: list = [coach_id]
+        if start:
+            sql += " AND occurred_on >= ?"
+            args.append(start)
+        if end:
+            sql += " AND occurred_on <= ?"
+            args.append(end)
+        rows = conn.execute(sql + " ORDER BY occurred_on DESC, id DESC", args).fetchall()
+
+    out = []
+    for entry in rows:
+        player = db.person(entry["player_id"])
+        out.append({"entry": entry, "player": player,
+                    "week": db.week_of(entry["occurred_on"])})
+    return out
+
+
+def by_month(items: list[dict], key) -> list[tuple[str, list]]:
+    """Group dated things into months, newest first.
+
+    A term is a long list and a career is an unusable one, so anything that
+    accumulates gets siloed by month before it reaches a screen.
+    """
+    from datetime import date as _d
+
+    buckets: dict[str, list] = {}
+    for item in items:
+        day = key(item)
+        buckets.setdefault(day[:7], []).append(item)
+    return [(_d.fromisoformat(month + "-01").strftime("%B %Y"), rows)
+            for month, rows in sorted(buckets.items(), reverse=True)]

@@ -149,11 +149,25 @@ sentence of its own — say both and whose each is.
 
 
 async def recap_period(player_id: str, start: str, end: str,
-                       *, audience: Audience = "player"):
+                       *, audience: Audience = "player", force: bool = False):
+    """A recap of one stretch of time. Written once, then kept.
+
+    Re-reading an unchanged September costs exactly what reading it the first
+    time cost and returns the same thing, so it is not re-read. The stored
+    copy is invalidated by the entry count changing, which is what happens
+    when somebody adds to the period.
+    """
+    from core import db
+
     stats = analysis.period_stats(
         player_id, start, end, viewer="player" if audience == "player" else "coach")
     if not stats["total"]:
         return None, None
+
+    if not force:
+        hit = db.get_summary(player_id, "recap", audience, start, end, stats["total"])
+        if hit:
+            return Recap.model_validate(hit["payload"]), hit
 
     instructions = PLAYER_INSTRUCTIONS if audience == "player" else COACH_INSTRUCTIONS
     agent = make_agent(instructions, Recap)
@@ -164,6 +178,8 @@ async def recap_period(player_id: str, start: str, end: str,
         "Write the recap."
     )
     output, usage = await run(agent, prompt, name=f"recap:{audience}")
+    db.put_summary(player_id, "recap", audience, start, end,
+                   output.model_dump(), stats["total"], usage)
     return output, usage
 
 
@@ -194,6 +210,8 @@ You do not coach and you do not give advice.
 
 
 async def summarise_day(player_id: str, day: str, *, audience: Audience = "player"):
+    from core import db
+
     viewer = "player" if audience == "player" else "coach"
     stats = analysis.period_stats(player_id, day, day, viewer=viewer)
     if not stats["total"]:
@@ -206,13 +224,20 @@ async def summarise_day(player_id: str, day: str, *, audience: Audience = "playe
         f"{sorted(set(r.weeks))}{'  <-- chronic' if r.is_chronic else ''}"
         for r in runs) or "  nothing has recurred yet"
 
+    hit = db.get_summary(player_id, "day", audience, day, day, stats["total"])
+    if hit:
+        return DaySummary.model_validate(hit["payload"]), hit
+
     agent = make_agent(DAY_INSTRUCTIONS, DaySummary)
     prompt = (
         f"{analysis.period_digest(stats)}\n\n"
         f"FOR CONTEXT — what has been recurring over the whole record:\n{context}\n\n"
         f"Summarise {day}."
     )
-    return await run(agent, prompt, name=f"day:{audience}")
+    output, usage = await run(agent, prompt, name=f"day:{audience}")
+    db.put_summary(player_id, "day", audience, day, day,
+                   output.model_dump(), stats["total"], usage)
+    return output, usage
 
 
 class Phase(BaseModel):
@@ -266,13 +291,21 @@ You do not coach and you do not prescribe drills.
 """
 
 
-async def recap_lessons(player_id: str, *, audience: Audience = "player"):
+async def recap_lessons(player_id: str, *, audience: Audience = "player",
+                        force: bool = False):
     from core import db
 
     viewer = "player" if audience == "player" else "coach"
     items = analysis.lessons(player_id, viewer=viewer)
     if not items:
         return None, None
+
+    span = (items[-1]["on"], items[0]["on"])
+    total = sum(len(i["coach"]) + len(i["player"]) for i in items)
+    if not force:
+        hit = db.get_summary(player_id, "lessons", audience, span[0], span[1], total)
+        if hit:
+            return LessonArc.model_validate(hit["payload"]), hit
 
     player = db.person(player_id)
     lines = [f"PLAYER: {player['name']}, age {player['age']}",
@@ -289,5 +322,8 @@ async def recap_lessons(player_id: str, *, audience: Audience = "player"):
             lines.append(f"  (player) {analysis._clip(db.agent_text(entry), 180)}")
 
     agent = make_agent(LESSON_INSTRUCTIONS, LessonArc)
-    return await run(agent, "\n".join(lines) + "\n\nRead this thread.",
-                     name=f"lessons:{audience}")
+    output, usage = await run(agent, "\n".join(lines) + "\n\nRead this thread.",
+                              name=f"lessons:{audience}")
+    db.put_summary(player_id, "lessons", audience, span[0], span[1],
+                   output.model_dump(), total, usage)
+    return output, usage

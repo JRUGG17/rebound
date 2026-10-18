@@ -70,6 +70,9 @@
     recognition.lang = "en-GB";
     recognition.interimResults = true;
     recognition.continuous = true;
+    // Ask for several guesses so the squash-aware chooser has something to
+    // choose between. The right word is often the recogniser's second pick.
+    recognition.maxAlternatives = 4;
 
     // The only thing we remember: the provisional words we last wrote, so we
     // can take them back out again. If they are no longer at the end of the
@@ -97,14 +100,19 @@
     }
 
     recognition.onresult = function (event) {
+      var squash = window.ReboundSquash;
       var settled = "";
       var provisional = "";
       for (var i = event.resultIndex; i < event.results.length; i++) {
-        var chunk = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          settled += chunk;
+        var result = event.results[i];
+        if (result.isFinal) {
+          // Only final results get the full treatment: interim guesses change
+          // every few hundred milliseconds and correcting them mid-flight
+          // makes the text jump about while the player is still talking.
+          var text = squash ? squash.best(result) : result[0].transcript;
+          settled += squash ? squash.correct(text) : text;
         } else {
-          provisional += chunk;
+          provisional += result[0].transcript;
         }
       }
       write(settled, provisional);

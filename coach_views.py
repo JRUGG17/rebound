@@ -171,7 +171,8 @@ def finding_card(finding):
     return html.Div(bits, className="entry")
 
 
-def player_detail(player_id: str, review: dict | None, running: bool):
+def player_detail(player_id: str, review: dict | None, running: bool,
+                  focus_msg: str | None = None):
     player = db.person(player_id)
     focus = db.current_focus(player_id)
 
@@ -195,11 +196,9 @@ def player_detail(player_id: str, review: dict | None, running: bool):
             html.Span("Their Calendar and Recap are in the sidebar under Journal.",
                       className="hint"),
         ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
-        html.Div([
-            html.H2("Focus"),
-            html.Div(focus["text"] if focus else "No focus set", className="focus-text"),
-            html.Div(f"{player['name']} · age {player['age']}", className="hint"),
-        ], className="card focus-card"),
+        html.Div(f"{player['name']} · age {player['age']}", className="hint",
+                 style={"margin": "10px 0 4px"}),
+        focus_control(player_id, focus_msg),
 
         html.Div([
             html.H2("Where the evidence sits"),
@@ -270,7 +269,9 @@ def resources(answer: dict | None, running: bool, section_no: int):
             html.H2("Ask the playbook"),
             dcc.Textarea(id="ask-box",
                          placeholder="What's the floor target for a B drive?"),
-            html.Div([html.Button("Ask", id="ask-btn", className="primary")],
+            html.Div([html.Button("Ask", id="ask-btn", className="primary"),
+                      html.Span("Enter to ask · Shift+Enter for a new line",
+                                className="hint")],
                      className="composer-row"),
             html.Div(result, style={"marginTop": "14px"}),
         ], className="card composer"),
@@ -456,7 +457,7 @@ def note_composer(draft: dict | None, running: bool):
 # ------------------------------------------------------------------ journal
 
 import calendar as _cal
-from datetime import date as _date
+from datetime import date as _date, timedelta
 
 
 CATEGORY_ORDER = ("technical", "tactical", "physical", "psychological")
@@ -525,9 +526,16 @@ def calendar_view(player_id: str, viewer_role: str, offset: int = 0):
                 html.Tbody(grid),
             ], className="calendar"),
             legend,
-            html.Div(_plural(sum(len(v) for v in by_day.values()), "entry", "entries")
-                     + " on " + _plural(len(by_day), "day", "days") + " this month",
-                     className="hint", style={"marginTop": "10px"}),
+            html.Div([
+                html.Span(_plural(sum(len(v) for v in by_day.values()),
+                                  "entry", "entries")
+                          + " on " + _plural(len(by_day), "day", "days")
+                          + " this month", className="hint"),
+                html.Button(f"Recap {first.strftime('%B')}",
+                            id={"type": "month-recap", "m": first.isoformat()},
+                            className="tab-btn") if by_day else html.Span(),
+            ], style={"display": "flex", "justifyContent": "space-between",
+                      "alignItems": "center", "marginTop": "10px"}),
         ], className="card"),
     ])
 
@@ -536,22 +544,31 @@ DIRECTION_LABEL = {
     "climbing": "▲", "flat": "▬", "slipping": "▼", "new": "✦", "unclear": "·",
 }
 
+# Rolling windows rather than everything. A recap over the whole record costs
+# the most and says the least — the useful question is almost always "what has
+# been going on lately". Whole months are reachable from the calendar, where
+# they are a deliberate choice rather than the default.
 RANGES = [
-    ("week", "This week"),
-    ("month", "This month"),
-    ("block", "The whole block"),
+    ("7", "Last 7 days"),
+    ("14", "Last 2 weeks"),
+    ("30", "Last 30 days"),
+    ("block", "Whole block"),
 ]
 
 
 def range_bounds(key: str) -> tuple[str, str, str]:
     today = clock.today()
-    if key == "week":
-        start = clock.monday_of(today)
-        return start.isoformat(), today.isoformat(), "this week"
-    if key == "month":
-        a, b = _month_bounds(today)
-        return a, b, today.strftime("%B %Y")
-    return clock.BLOCK_START.isoformat(), today.isoformat(), "the whole block"
+    if key and key.startswith("month:"):
+        first = _date.fromisoformat(key.split(":", 1)[1])
+        a, b = _month_bounds(first)
+        return a, min(b, today.isoformat()), first.strftime("%B %Y")
+    if key == "block":
+        return (clock.BLOCK_START.isoformat(), today.isoformat(), "the whole block")
+    days = int(key) if str(key).isdigit() else 30
+    start = today - timedelta(days=days - 1)
+    label = {7: "the last 7 days", 14: "the last 2 weeks"}.get(days,
+                                                              f"the last {days} days")
+    return start.isoformat(), today.isoformat(), label
 
 
 def recap_view(player_id: str, viewer_role: str, range_key: str,
@@ -749,6 +766,9 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
                         className="card")
 
     cards = []
+    months = analysis.by_month([{"on": i["on"], "lesson": i} for i in items],
+                               lambda i: i["on"])
+    newest_month = months[0][0] if months else None
     for lesson in items:
         day = lesson["on"]
         pretty = _date.fromisoformat(day).strftime("%a %-d %b")
@@ -859,6 +879,113 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
                      "side by side." if viewer_role == "player"
                      else "Private lessons, newest first.", className="hint",
                      style={"marginBottom": "12px"}),
-            *cards,
+            # Grouped by month: a term is a long list and a couple of years is
+            # an unusable one.
+            *[html.Div([
+                html.Div(month, className="side-heading",
+                         style={"paddingLeft": 0}),
+                *[c for c, lesson in zip(cards, items)
+                  if _date.fromisoformat(lesson["on"]).strftime("%B %Y") == month],
+            ]) for month, _rows in months],
         ], className="card"),
     ])
+
+
+# ------------------------------------------------------------------ coach's own
+
+def coach_log_view(coach_id: str, offset: int = 0):
+    """A coach's own teaching log, their lessons and notes, grouped by month."""
+    items = analysis.coach_log(coach_id)
+    if not items:
+        return html.Div([html.H2("My log"),
+                         html.Div("You have not written anything yet.",
+                                  className="empty")], className="card")
+
+    lessons = [i for i in items if i["entry"]["setting"] == "lesson"]
+    players = {i["player"]["id"] for i in items}
+    pending = len(db.pending_approval(coach_id))
+
+    cards = [html.Div([
+        html.Div([
+            html.Div([html.Div("Notes written", className="label"),
+                      html.Div(str(len(items)), className="value")], className="stat"),
+            html.Div([html.Div("Lessons", className="label"),
+                      html.Div(str(len(lessons)), className="value")], className="stat"),
+            html.Div([html.Div("Players", className="label"),
+                      html.Div(str(len(players)), className="value")], className="stat"),
+            html.Div([html.Div("Unreleased", className="label"),
+                      html.Div(str(pending), className="value"),
+                      html.Div("not shown to the player", className="sub")],
+                     className="stat"),
+        ], className="stat-row"),
+    ])]
+
+    for month, rows in analysis.by_month(items, lambda i: i["entry"]["occurred_on"]):
+        month_lessons = [r for r in rows if r["entry"]["setting"] == "lesson"]
+        cards.append(html.Details([
+            html.Summary([
+                html.Span(month, className="lesson-date"),
+                html.Span(f"{_plural(len(rows), 'note', 'notes')} · "
+                          f"{_plural(len(month_lessons), 'lesson', 'lessons')}",
+                          className="hint"),
+            ]),
+            html.Div([html.Div([
+                html.Div([
+                    html.Span(r["entry"]["occurred_on"], className="hint"),
+                    html.Span(r["player"]["name"], className="who-chip player"),
+                    html.Span(r["entry"]["setting"], className="tag"),
+                    html.Span("unreleased", className="tag")
+                    if not r["entry"]["player_text_approved_at"] else html.Span(),
+                ], className="meta"),
+                html.Div(r["entry"]["raw_text"], className="body"),
+            ], className="entry from-coach") for r in rows], className="bucket-body"),
+        ], className="bucket", open=(month == analysis.by_month(
+            items, lambda i: i["entry"]["occurred_on"])[0][0])))
+
+    return html.Div([
+        html.H2("My log"),
+        html.Div("Everything you have written, across all your players, newest "
+                 "first.", className="hint", style={"marginBottom": "12px"}),
+        *cards,
+    ], className="card")
+
+
+def focus_control(player_id: str, saved: str | None = None):
+    """Setting a player's focus — the thing a lesson is actually for."""
+    current = db.current_focus(player_id)
+    history = []
+    with db.connect() as conn:
+        rows = conn.execute(
+            """SELECT * FROM focuses WHERE player_id = ?
+               ORDER BY set_on DESC LIMIT 6""", (player_id,)).fetchall()
+    for row in rows:
+        coach = db.person(row["coach_id"])
+        history.append(html.Div([
+            html.Div([html.Span(row["set_on"], className="hint"),
+                      html.Span(coach["name"] if coach else "", className="hint"),
+                      html.Span("current" if row["resolved_on"] is None
+                                else "ended", className="tag")], className="meta"),
+            html.Div(row["text"], className="body"),
+        ], className="entry"))
+
+    return html.Div([
+        html.H2("Focus"),
+        html.Div(current["text"] if current else "No focus set",
+                 className="focus-text"),
+        html.Div("What this player is working on between lessons. Setting a new one "
+                 "closes the old.", className="hint", style={"margin": "8px 0 12px"}),
+        dcc.Textarea(id="focus-text", style={"minHeight": "60px"}),
+        html.Div([
+            dcc.Dropdown(id="focus-category",
+                         options=[{"label": c.title(), "value": c}
+                                  for c in CATEGORY_ORDER],
+                         value="technical", clearable=False,
+                         style={"width": "190px"}),
+            html.Button("Set as the focus", id="set-focus", className="primary"),
+            html.Span(saved or "", className="hint"),
+        ], className="composer-row"),
+        html.Details([
+            html.Summary(html.Span("Earlier focuses", className="hint")),
+            html.Div(history, className="bucket-body"),
+        ], className="bucket", style={"marginTop": "14px"}) if history else html.Span(),
+    ], className="card focus-card composer")

@@ -101,6 +101,22 @@ CREATE TABLE IF NOT EXISTS cues (
     category   TEXT NOT NULL
 );
 
+-- Generated summaries, kept so a stretch of time is paid for once.
+CREATE TABLE IF NOT EXISTS summaries (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id    TEXT NOT NULL,
+    kind         TEXT NOT NULL,        -- recap | day | lessons
+    audience     TEXT NOT NULL,
+    span_start   TEXT NOT NULL,
+    span_end     TEXT NOT NULL,
+    payload      TEXT NOT NULL,        -- the agent's output as JSON
+    entry_count  INTEGER NOT NULL,     -- what it was built from
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    created_at   TEXT NOT NULL,
+    UNIQUE (player_id, kind, audience, span_start, span_end)
+);
+
 CREATE TABLE IF NOT EXISTS settings (
     key    TEXT PRIMARY KEY,
     value  TEXT NOT NULL
@@ -476,3 +492,80 @@ def adopt_cue(phrase: str, category: str) -> str:
                WHERE cue_id IS NULL AND lower(trim(proposed_cue)) = lower(trim(?))""",
             (cue_id, phrase))
     return cue_id
+
+
+# ---------------------------------------------------------------- summaries
+
+def get_summary(player_id: str, kind: str, audience: str,
+                start: str, end: str, entry_count: int) -> dict | None:
+    """A summary already written for this exact stretch, if it is still true.
+
+    Re-reading an unchanged month costs the same as reading it the first
+    time, and gives the same answer, so it is paid for once. The entry count
+    is part of the test: if something has been added to the period since, the
+    stored summary no longer describes it and is ignored rather than served
+    stale.
+    """
+    import json
+
+    with connect() as conn:
+        row = conn.execute(
+            """SELECT * FROM summaries
+               WHERE player_id = ? AND kind = ? AND audience = ?
+                 AND span_start = ? AND span_end = ?""",
+            (player_id, kind, audience, start, end),
+        ).fetchone()
+    if row is None or row["entry_count"] != entry_count:
+        return None
+    try:
+        payload = json.loads(row["payload"])
+    except json.JSONDecodeError:
+        return None
+    return {"payload": payload, "created_at": row["created_at"],
+            "input_tokens": row["input_tokens"],
+            "output_tokens": row["output_tokens"], "cached": True}
+
+
+def put_summary(player_id: str, kind: str, audience: str, start: str, end: str,
+                payload: dict, entry_count: int, usage=None) -> None:
+    import json
+    from datetime import datetime, timezone
+
+    with connect() as conn:
+        conn.execute(
+            """INSERT INTO summaries (player_id, kind, audience, span_start, span_end,
+                   payload, entry_count, input_tokens, output_tokens, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT (player_id, kind, audience, span_start, span_end)
+               DO UPDATE SET payload = excluded.payload,
+                             entry_count = excluded.entry_count,
+                             input_tokens = excluded.input_tokens,
+                             output_tokens = excluded.output_tokens,
+                             created_at = excluded.created_at""",
+            (player_id, kind, audience, start, end, json.dumps(payload), entry_count,
+             getattr(usage, "input_tokens", 0) or 0,
+             getattr(usage, "output_tokens", 0) or 0,
+             datetime.now(timezone.utc).isoformat()),
+        )
+
+
+def drop_summary(player_id: str, kind: str, audience: str,
+                 start: str, end: str) -> None:
+    with connect() as conn:
+        conn.execute(
+            """DELETE FROM summaries
+               WHERE player_id = ? AND kind = ? AND audience = ?
+                 AND span_start = ? AND span_end = ?""",
+            (player_id, kind, audience, start, end))
+
+
+def summary_savings() -> dict:
+    """What the cache has been worth, for the Usage page."""
+    with connect() as conn:
+        row = conn.execute(
+            """SELECT COUNT(*) AS stored,
+                      COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                      COALESCE(SUM(output_tokens), 0) AS output_tokens
+               FROM summaries"""
+        ).fetchone()
+    return dict(row)
