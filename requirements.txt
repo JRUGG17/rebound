@@ -1,0 +1,5 @@
+# Python 3.11+ (built and tested on 3.14)
+dash==3.3.0               # the web app
+pydantic-ai==2.55.0       # the agents
+openai==3.28.0            # model client, used through Portkey
+python-dotenv==1.2.4      # loads PORTKEY_API_KEY from .env (this folder, or one above)
