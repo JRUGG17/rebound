@@ -62,7 +62,10 @@ data; only the buttons that call the model will fail, and they say so.
 
 Start as **Maya Okonkwo**, the player selected by default. The "I am" dropdown
 at the top switches between every player, coach, parent and the admin — there
-is no login, deliberately (see the report's Limits section).
+is no login: the switcher is scaffolding so you can see all four points of
+view in a few minutes. In a real deployment it would not exist — every coach,
+player and parent would sign in as themselves. See the report's Limits and
+Next Steps sections.
 
 **1. See the problem the app is for.** As Maya, go to **My lessons** and press
 **Summarize**. About twenty seconds. It reads her fifteen lessons end to end

@@ -74,6 +74,14 @@ body {
 }
 .mark-words span { color: #ff6520; }
 
+.demo-note {
+  font-size: 10px;
+  color: #8b9299;
+  margin-left: 9px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
 .topbar label {
   font-size: 11px;
   text-transform: uppercase;

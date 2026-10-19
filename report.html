@@ -775,8 +775,16 @@ list, and the Organizer proposes new cues where a theme recurs in people's own
 words and nothing covers it. The vocabulary is meant to end up coming from what
 the club writes. Today it mostly comes from the archive it started with.</p>
 
-<p><strong>Single-process, local, no authentication.</strong> The role switcher
-is a demo convenience. Section 11 treats that as one problem, not two.</p>
+<p><strong>There is no authentication, and the role switcher is not a
+feature.</strong> The <code>I am: [dropdown]</code> in the top bar exists so
+that one person can demonstrate and develop all four points of view in a few
+minutes — it is scaffolding, not the product, and in a real deployment it does
+not exist at all. Everyone would reach the app through their own login:
+coaches, players and parents each signing in as themselves and seeing only
+what that account is entitled to see. That the dropdown currently lets anyone
+be anyone is the most obvious thing a reader will notice, so it is worth being
+unambiguous: it is there to make the thing reviewable in ten minutes, and
+section 11 says what replaces it.</p>
 
 <h2 id="next">11. Next steps</h2>
 
@@ -800,15 +808,26 @@ observation in section 9 turned into a feature, and it is the one I would build
 first after a pilot, because it changes what a coach does rather than what they
 know.</p>
 
-<p><strong>Deployment and real authentication, as one piece of work.</strong>
-These are not separable. The moment this is on a URL that several coaches reach
-from different devices, <code>I am: [dropdown]</code> stops being a convenience
-and becomes the entire access control story. The visibility rules are already
-enforced in SQL, which is the right foundation — what is missing is knowing who
-is asking. Doing deployment without auth would be the worst version of this.
-This is also the step that makes the thing real rather than a demo: coaches
-adding players as they join, seeing what colleagues wrote, and the record
-simply persisting between them.</p>
+<p><strong>Accounts and deployment, as one piece of work.</strong> These are
+not separable, and this is the step that turns a demo into something a club
+could use. Every person gets their own login — each coach, each player, each
+parent — and the app knows who is asking instead of being told. The demo
+dropdown disappears entirely.</p>
+
+<p>The work is smaller than it sounds, because the hard half is already done.
+The visibility rules live in SQL, not in prompts: there are three separate
+query functions and no function anywhere that returns everything about a
+player. A coach signing in would hit <code>entries_for_coach</code> and a
+parent <code>entries_for_parent</code>, exactly as they do now — the only
+missing piece is a session establishing which of those you are, rather than a
+dropdown asserting it. Authorisation is built; authentication is not.</p>
+
+<p>Deployment follows immediately and for the same reason: a shared record is
+only shared if it is somewhere everyone can reach. Four coaches on four
+devices, players writing from phones after a session, players added as they
+join the club, and the record simply persisting. Doing deployment <em>without</em>
+accounts would be the worst version of this — a public URL where the dropdown
+still lets anybody read any child's record.</p>
 
 <p><strong>Coach-authored curriculum, with a gate.</strong> The obvious feature
 request — let coaches extend the playbook from inside the app — and the one I

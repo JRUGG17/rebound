@@ -405,9 +405,15 @@ app.layout = html.Div([
                    rel="noopener noreferrer", title="Squash Tigers Academy"),
             html.Span(["Re", html.Span("bound")], className="mark-words"),
         ], className="brand"),
+        # Labelled as scaffolding on purpose. In a deployment every coach,
+        # player and parent signs in as themselves and this does not exist;
+        # it is here so one person can see all four points of view without
+        # four accounts. Nobody should mistake it for the product.
         html.Label("I am"),
         dcc.Dropdown(id="who", options=people_options(), value="maya",
                      clearable=False, style={"width": "250px"}),
+        html.Span("demo switcher — real accounts replace this",
+                  className="demo-note"),
         # roster-changed is bumped whenever somebody is added or removed, so
         # the switcher can rebuild. Without it a new player had no way in.
         dcc.Store(id="roster-changed", data=0),
