@@ -50,6 +50,10 @@
 .n{text-align:right;font-variant-numeric:tabular-nums}
 .hit{color:var(--orange);font-weight:800}
 .foot{font-size:.5em;color:var(--muted);margin-top:.9em!important}
+.shot{width:100%;border:1px solid var(--line);border-radius:7px;
+      box-shadow:0 2px 14px rgba(0,0,0,.09);display:block}
+.shot.crop{object-fit:cover;object-position:top;max-height:330px}
+.shotcap{font-size:.52em;color:var(--muted);margin-top:.45em!important}
 </style>
 </head>
 <body>
@@ -64,6 +68,9 @@
   <h1>A program's memory</h1>
   <p class="sub">A shared training diary for Squash Tigers Academy, and four
   agents that read it.</p>
+  <p class="sub" style="margin-top:.5em!important"><em>Re-bound</em> — bind the
+  session again so it sticks, then bound forward. In that order, or you repeat
+  last week.</p>
   <p class="by">Jamie Ruggiero · MGT&nbsp;409 AI Foundations · Yale SOM ·
   October 2026</p>
 </section>
@@ -94,9 +101,18 @@
   <p style="font-size:.82em">A founding member of the academy — as motivated as
   anyone could be — still lost the thread. <em>The problem is structural:</em> one person's
   notes do not compose into a program's memory.</p>
-  <blockquote>Every time, I'd ask "what did we work on last time?" and the kid
-  would look back at me with a blank stare. So you end up doing a lot of the
-  same stuff. You just have the same lesson over and over again.</blockquote>
+  <div class="cols" style="grid-template-columns:1.1fr .9fr;gap:1.1em;align-items:center">
+    <blockquote style="margin:.2em 0 0">Every time, I'd ask "what did we work
+    on last time?" and the kid would look back at me with a blank stare. So you
+    end up doing a lot of the same stuff. You just have the same lesson over and
+    over again.</blockquote>
+    <div>
+      <img class="shot crop" src="assets/shots/player-today.jpg"
+           alt="A player's screen">
+      <p class="shotcap">One box, a microphone, a choice about who sees it.
+      Thirty seconds, or it will not happen.</p>
+    </div>
+  </div>
 </section>
 
 <!-- 4 -->
@@ -140,23 +156,36 @@
   A <code>WHERE</code> clause cannot.</p>
 </section>
 
+<!-- 5b folded -->
+
 <!-- 6 -->
 <section>
   <h2>Four agents over one record</h2>
-  <div class="cols">
-    <div class="card"><b>Organizer</b>Files every entry against the curriculum —
-    shot, drill-ladder rung, recurring cue. Flags injection and welfare rather
-    than fixing them.</div>
-    <div class="card"><b>Comparison</b>Transfer gaps, chronic cues, coaches
-    contradicting each other, blind spots.</div>
-    <div class="card"><b>Recap</b>Reads a period, a day, or the lesson thread
-    end to end. Names what is happening instead of listing days.</div>
-    <div class="card"><b>Methodology</b>Answers from the 6,898-word playbook
-    with citations — and refuses when it cannot cite.</div>
+  <div class="cols" style="grid-template-columns:.88fr 1.12fr;gap:1.1em">
+    <div>
+      <div class="card" style="margin-bottom:.45em"><b>Organizer</b>Files every
+      entry against the curriculum — shot, rung, cue. Flags injection and
+      welfare rather than fixing them.</div>
+      <div class="card" style="margin-bottom:.45em"><b>Comparison</b>Transfer
+      gaps, chronic cues, coaches contradicting each other.</div>
+      <div class="card" style="margin-bottom:.45em"><b>Recap</b>A period, a
+      day, or the lesson thread end to end.</div>
+      <div class="card"><b>Methodology</b>Answers from the playbook with
+      citations — refuses when it cannot cite.</div>
+    </div>
+    <div>
+      <img class="shot" src="assets/shots/coach-findings.jpg"
+           alt="What no single coach can see">
+      <p class="shotcap">Two transfer gaps, a chronic cue at ten weeks, and the
+      timing caution: October is in the Sep–Mar season, so this waits for the
+      March–May technical window.</p>
+    </div>
   </div>
   <p class="by">Shared 7,386-token playbook prefix, placed first on every call
   so it caches.</p>
 </section>
+
+<!-- 6b is folded into 7 -->
 
 <!-- 7 -->
 <section>
@@ -210,17 +239,24 @@
 <!-- 9 -->
 <section>
   <h2>What it found that I did not design for</h2>
-  <p style="font-size:.76em">Reading one player's fifteen lessons end to end,
-  as her coach:</p>
-  <blockquote>On August 24 she wrote that she was bored of hearing about her
-  racket. <em>No later lesson note acknowledges that concern.</em></blockquote>
-  <p style="font-size:.74em">A child said in writing that she was tired of a
-  piece of feedback, and the program never answered. No human reading fifteen
-  lessons reliably catches that — it is not a mistake, it is an
-  <em>absence</em>.</p>
-  <p class="by">Also found: the transfer gap (prep holds in slow work, dies in
-  the game) and the same cue across three consecutive Drop Weeks — twelve weeks
-  unresolved.</p>
+  <div class="cols" style="grid-template-columns:1.05fr .95fr;gap:1.1em">
+    <div>
+      <blockquote style="font-size:.82em;margin-top:0">On August 24 she wrote
+      that she was bored of hearing about her racket. <em>No later lesson note
+      acknowledges that concern.</em></blockquote>
+      <p style="font-size:.68em">A child said in writing that she was tired of
+      a piece of feedback, and the program never answered. No human reading
+      fifteen lessons reliably catches that — it is not a mistake, it is an
+      <em>absence</em>.</p>
+      <p style="font-size:.68em">Alongside it: the transfer gap, and the same
+      cue across three consecutive Drop Weeks.</p>
+    </div>
+    <div>
+      <img class="shot" src="assets/shots/lesson-thread.jpg"
+           alt="The lesson thread, read end to end">
+      <p class="shotcap">Reading fifteen lessons end to end, in the app.</p>
+    </div>
+  </div>
 </section>
 
 <!-- 10 -->
