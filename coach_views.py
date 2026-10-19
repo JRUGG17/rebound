@@ -896,6 +896,56 @@ FILTERS = [("", "Everything"), ("lesson", "Lessons"), ("squad", "Squad"),
            ("reflection", "Reflections")]
 
 
+def recap_summary(player_id: str, viewer_role: str, range_key: str,
+                  result: dict | None, running: bool):
+    """The short version, for the page you land on.
+
+    Enough to know where you are — the counts, and the headline if somebody
+    has asked for one. The filters, the entry list and the full read live on
+    the Recap tab, because a profile that opens with all of that is a report,
+    not a landing page.
+    """
+    start, end, label = range_bounds(range_key or "30")
+    stats = analysis.period_stats(
+        player_id, start, end,
+        viewer="player" if viewer_role == "player" else "coach")
+
+    if running:
+        body = [html.Span(className="spinner"),
+                html.Span("  Reading it back…", className="hint")]
+    elif not stats["total"]:
+        body = [html.Div(f"Nothing recorded for {label}.", className="empty")]
+    elif result:
+        body = [html.Div(result["headline"], className="recap-headline"),
+                html.Div(result["overview"], className="recap-overview")]
+    else:
+        body = [html.Div("Ask for a read of the last 30 days, or open the full "
+                         "recap to filter and browse.", className="empty")]
+
+    return html.Div([
+        html.Div([
+            html.H2(f"Last 30 days"),
+            html.Div([
+                html.Button("Read it back", id="run-recap", className="ghost"),
+                html.Button("Full recap →", id="open-recap", className="primary"),
+            ], style={"display": "flex", "gap": "8px"}),
+        ], className="card-head"),
+        html.Div([
+            html.Div([html.Div("Entries", className="label"),
+                      html.Div(str(stats["total"]), className="value")],
+                     className="stat"),
+            html.Div([html.Div("Days", className="label"),
+                      html.Div(str(stats["sessions"]), className="value")],
+                     className="stat"),
+            *[html.Div([html.Div(c, className="label"),
+                        html.Div(str(stats["counts"][c]), className="value")],
+                       className="stat") for c in CATEGORY_ORDER
+              if stats["counts"][c]],
+        ], className="stat-row"),
+        html.Div(body),
+    ], className="card")
+
+
 def recap_panel(player_id: str, viewer_role: str, range_key: str,
                 result: dict | None, running: bool, show_entries: bool = False,
                 setting: str | None = None, author: str | None = None):
@@ -1133,14 +1183,37 @@ PRIVATE_PROMPT = (
 )
 
 
-def coach_lesson_picker(coach_id: str):
+def coach_lesson_picker(coach_id: str, adding: bool = False,
+                        added: str | None = None):
     """Whose lessons. Only the players this coach teaches, and nothing else."""
     mine = analysis.my_players(coach_id)
+    new_form = html.Div([
+        html.Div("Lesson with somebody new", className="label"),
+        html.Div([
+            dcc.Input(id="lesson-new-name", placeholder="Full name",
+                      className="search"),
+            dcc.Input(id="lesson-new-age", type="number", min=5, max=21,
+                      placeholder="Age", className="search",
+                      style={"width": "90px"}),
+            html.Button("Add and start", id="start-new-lesson",
+                        className="primary"),
+            html.Span(added or "", className="hint"),
+        ], className="composer-row"),
+        html.Div("Puts them on the roster and opens their page so you can "
+                 "write the lesson up now.", className="hint"),
+    ], className="card") if adding else html.Span()
+
+    head = html.Div([
+        html.H2("My lessons"),
+        html.Button("+ New player", id="new-lesson-open", className="ghost"),
+    ], className="card-head")
+
     if not mine:
         return html.Div([
-            html.H2("My lessons"),
+            head,
+            new_form,
             html.Div("You have not written up a lesson yet. Start one from a "
-                     "player's page.", className="empty"),
+                     "player's page, or add somebody above.", className="empty"),
         ], className="card")
 
     rows = [html.Button([
@@ -1156,7 +1229,8 @@ def coach_lesson_picker(coach_id: str):
         for p in mine]
 
     return html.Div([
-        html.H2("My lessons"),
+        head,
+        new_form,
         html.Div(rows, className="roster"),
     ], className="card")
 

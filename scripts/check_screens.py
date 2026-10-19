@@ -64,6 +64,12 @@ def main() -> int:
          "themes": [{"title": "t", "category": "technical", "cue_id": None,
                      "direction": "flat", "what_it_is": "w", "evidence": "e"}],
          "gap": "g"}, False))
+    check("lesson picker, adding",
+          lambda: cv.coach_lesson_picker(coach, True, "Added Sam."))
+    check("recap summary", lambda: cv.recap_summary(player, "player", "30", None, False))
+    check("recap summary with a result",
+          lambda: cv.recap_summary(player, "player", "30",
+                                   {"headline": "h", "overview": "o"}, False))
     check("usage", application.usage_page)
 
     print("\n[coach]")

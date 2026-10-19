@@ -420,7 +420,8 @@ def move_clock(_b, _f, _r, _nav, _theme):
 # Five places to stand. Everything else is reached by drilling in from one
 # of them, because eleven parallel destinations is how this got lost.
 PLAYER_NAV = [
-    (None, [("training", "My training"), ("lessons", "My lessons")]),
+    (None, [("training", "My training"), ("lessons", "My lessons"),
+            ("recap", "Recap")]),
     (None, [("usage", "Usage")]),
 ]
 COACH_NAV = [
@@ -936,6 +937,28 @@ def open_add_player(n, showing):
     return (not showing) if clicked(n) else no_update
 
 
+def new_player(name: str, age) -> str:
+    """Put a player on the roster and hand back their id.
+
+    Both the roster form and the new-lesson shortcut come through here, so an
+    id made one way is made the same way the other.
+    """
+    slug = "".join(ch for ch in name.lower().split()[0] if ch.isalpha()) or "player"
+    pid, n_try = slug, 1
+    while db.person(pid):
+        n_try += 1
+        pid = f"{slug}{n_try}"
+    # Read everything the write needs *before* opening the transaction.
+    # Calling anything that touches the database from inside one deadlocks.
+    joined = clock.today_iso()
+    with db.connect() as conn:
+        conn.execute(
+            "INSERT INTO people (id, name, role, age, joined_on) "
+            "VALUES (?,?,'player',?,?)",
+            (pid, name.strip(), int(age) if age else None, joined))
+    return pid
+
+
 @app.callback(Output("added-msg", "data"),
               Output("roster-changed", "data", allow_duplicate=True),
               Output("new-player-name", "value"),
@@ -956,23 +979,43 @@ def add_player(n, name, age, who, tick):
         return no_update, no_update, no_update, no_update
     if not name or not name.strip():
         return "Needs a name.", no_update, no_update, no_update
-    slug = "".join(ch for ch in name.lower().split()[0] if ch.isalpha()) or "player"
-    pid, n_try = slug, 1
-    while db.person(pid):
-        n_try += 1
-        pid = f"{slug}{n_try}"
-    # Read everything the write needs *before* opening the transaction.
-    # Calling anything that touches the database from inside one deadlocks.
-    joined = clock.today_iso()
-    with db.connect() as conn:
-        conn.execute(
-            "INSERT INTO people (id, name, role, age, joined_on) "
-            "VALUES (?,?,'player',?,?)",
-            (pid, name.strip(), int(age) if age else None, joined))
+    new_player(name, age)
     # The form stays open with the fields cleared, so you can see it worked
     # and add the next one. Closing it on success looked like nothing had
     # happened, because the confirmation closed with it.
     return f"Added {name.strip()}.", (tick or 0) + 1, "", None
+
+
+@app.callback(Output("adding-player", "data", allow_duplicate=True),
+              Input("new-lesson-open", "n_clicks"),
+              State("adding-player", "data"), prevent_initial_call=True)
+def open_new_lesson(n, showing):
+    return (not showing) if clicked(n) else no_update
+
+
+@app.callback(Output("added-msg", "data", allow_duplicate=True),
+              Output("roster-changed", "data", allow_duplicate=True),
+              Output("sel-player", "data", allow_duplicate=True),
+              Output("nav", "data", allow_duplicate=True),
+              Input("start-new-lesson", "n_clicks"),
+              State("lesson-new-name", "value"), State("lesson-new-age", "value"),
+              State("who", "value"), State("roster-changed", "data"),
+              prevent_initial_call=True)
+def start_lesson_with_new_player(n, name, age, who, tick):
+    """A coach picking up somebody who is not in the system yet.
+
+    The lesson is the thing they came to write; the roster entry is
+    bookkeeping. So this does both and lands them on the player's page with
+    the composer open, rather than making them go to Players, add, come back
+    and find the name.
+    """
+    person = db.person(who)
+    if not clicked(n) or person is None or person["role"] not in ("coach", "admin"):
+        return no_update, no_update, no_update, no_update
+    if not name or not name.strip():
+        return "Needs a name.", no_update, no_update, no_update
+    pid = new_player(name, age)
+    return f"Added {name.strip()}.", (tick or 0) + 1, pid, "players"
 
 
 @app.callback(Output("plan-edit", "data"),
@@ -1018,6 +1061,12 @@ def refresh_people(_tick):
     return people_options()
 
 
+@app.callback(Output("nav", "data", allow_duplicate=True),
+              Input("open-recap", "n_clicks"), prevent_initial_call=True)
+def go_to_recap(n):
+    return "recap" if clicked(n) else no_update
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -1057,12 +1106,14 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         if nav == "lessons":
             return cv.lesson_months(who, None, "player", open_month, year,
                                     sel_day, running, editing)
+        if nav == "recap":
+            return cv.recap_panel(who, "player", recap_range, recap, running,
+                                  show_entries, f_setting, f_author)
         return html.Div([
             *player_today(who),
             cv.focus_pair(who, "player", focus_msg, focus_edit, focus_hist),
             player_reflections(who, "shared", job_id, kind),
-            cv.recap_panel(who, "player", recap_range, recap, running,
-                           show_entries, f_setting, f_author),
+            cv.recap_summary(who, "player", recap_range, recap, running),
         ])
 
     if role == "parent":
@@ -1075,17 +1126,22 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             return cv.note_composer(draft, running)
         if nav == "lessons":
             if not sel_player:
-                return cv.coach_lesson_picker(who)
+                return cv.coach_lesson_picker(who, adding, added_msg)
             return cv.lesson_months(sel_player, who, "coach", open_month,
                                     year, sel_day, running, editing)
+        if nav == "recap":
+            if not sel_player:
+                return cv.coach_lesson_picker(who, adding, added_msg)
+            return cv.recap_panel(sel_player, "coach", recap_range, recap, running,
+                                  show_entries, f_setting, f_author)
         if nav == "players":
             if sel_player:
                 return html.Div([
                     cv.player_detail(sel_player, review, running, focus_msg,
                                      focus_edit, focus_hist,
                                      person['role'] == 'admin'),
-                    cv.recap_panel(sel_player, "coach", recap_range, recap, running,
-                                   show_entries, f_setting, f_author),
+                    cv.recap_summary(sel_player, "coach", recap_range, recap,
+                                     running),
                 ])
             return cv.roster(search, adding, added_msg)
         return cv.coach_today(who, theme_msg, plan_edit)
