@@ -3,7 +3,8 @@
 A shared training diary for Squash Tigers Academy, a junior squash club — and
 four agents that read it.
 
-Players reflect on a session in a sentence. Coaches write up a lesson in their
+Players write up a session in their own words — a line if that is all they
+have, or more if it comes, typed or spoken. Coaches write up a lesson in their
 own language. The app files both against the club's curriculum, and reads the
 record back: what a player is working on, which cue has stopped transferring
 between drill types, and which problem has been coming back for three months.

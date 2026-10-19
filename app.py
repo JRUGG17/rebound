@@ -257,9 +257,17 @@ def player_reflections(player_id: str, tab: str, job_id: str | None,
     return html.Div([
         html.Div([
             cv.session_picker(kind),
-            dcc.Textarea(id="composer"),
+            # No length hint and no character count. A one-liner is a fine
+            # entry, and the prompt asks a second question so that a player
+            # who has more to say has somewhere to put it.
+            dcc.Textarea(id="composer",
+                         placeholder="What did you work on, and how did it go? "
+                                     "As much or as little as you like — or "
+                                     "press the mic and talk."),
             html.Div([
-                html.Button("🎤", id="mic", className="mic", title="Speak instead"),
+                html.Button("🎤", id="mic", className="mic",
+                            title="Speak instead — easier when you have "
+                                  "more than a line to say"),
                 html.Button("Save", id="save", className="primary"),
                 html.Button("🔒 Keep private", id="save-private", className="tab-btn",
                             title="Your coaches will not see this one"),
