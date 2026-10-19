@@ -873,6 +873,7 @@ RANGES = [
     ("14", "Last 2 weeks"),
     ("30", "Last 30 days"),
     ("block", "Whole block"),
+    ("all", "Everything"),
 ]
 
 
@@ -884,6 +885,8 @@ def range_bounds(key: str) -> tuple[str, str, str]:
         return a, min(b, today.isoformat()), first.strftime("%B %Y")
     if key == "block":
         return (clock.BLOCK_START.isoformat(), today.isoformat(), "the whole block")
+    if key == "all":
+        return ("0001-01-01", today.isoformat(), "everything on file")
     days = int(key) if str(key).isdigit() else 30
     start = today - timedelta(days=days - 1)
     label = {7: "the last 7 days", 14: "the last 2 weeks"}.get(days,
@@ -948,7 +951,8 @@ def recap_summary(player_id: str, viewer_role: str, range_key: str,
 
 def recap_panel(player_id: str, viewer_role: str, range_key: str,
                 result: dict | None, running: bool, show_entries: bool = False,
-                setting: str | None = None, author: str | None = None):
+                setting: str | None = None, author: str | None = None,
+                year: int | None = None):
     start, end, label = range_bounds(range_key)
     stats = analysis.period_stats(
         player_id, start, end,
@@ -1070,10 +1074,23 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
                          className="body"),
             ], className=f"entry from-{side}")
 
+        # Months inside a year, the same control Lessons uses. Over a short
+        # range there is only ever one year in the list and the dropdown is
+        # a label; over Everything it is the thing doing the work.
+        years = sorted({e["occurred_on"][:4] for e in rows}, reverse=True)
+        chosen = str(year) if year and str(year) in years else (
+            years[0] if years else None)
+        in_year = [e for e in rows if e["occurred_on"].startswith(chosen or "")]
+
         raw = [html.Div([
-            html.Div("Every entry in this stretch, by month",
-                     className="label"),
-            *(month_buckets(rows, lambda e: e["occurred_on"], one_entry,
+            html.Div([
+                html.Div("Every entry, by month", className="label"),
+                dcc.Dropdown(id="recap-year-pick",
+                             options=[{"label": y, "value": int(y)} for y in years],
+                             value=int(chosen) if chosen else None,
+                             clearable=False, style={"width": "110px"}),
+            ], className="card-head"),
+            *(month_buckets(in_year, lambda e: e["occurred_on"], one_entry,
                             ("entry", "entries"))
               or [html.Div("Nothing in this stretch.", className="empty")]),
         ], className="card")]

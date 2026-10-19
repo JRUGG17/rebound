@@ -360,6 +360,7 @@ app.layout = html.Div([
     dcc.Store(id="year-sel", data=None),
     dcc.Store(id="open-month", data=None),
     dcc.Store(id="show-entries", data=False),
+    dcc.Store(id="recap-year", data=None),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
@@ -814,6 +815,15 @@ def open_lesson(clicks):
     return ctx.triggered_id["d"]
 
 
+@app.callback(Output("recap-year", "data"),
+              Input("recap-year-pick", "value"), prevent_initial_call=True)
+def pick_recap_year(value):
+    """Its own callback with one Input. The dropdown only exists while the
+    entries are showing, and a callback that bundles a sometimes-absent
+    Input with anything else stops firing for everything."""
+    return value
+
+
 @app.callback(Output("show-entries", "data"),
               Input("toggle-entries", "n_clicks"), State("show-entries", "data"),
               prevent_initial_call=True)
@@ -1082,6 +1092,7 @@ def go_to_recap(n):
     Input("kind", "data"), Input("editing", "data"),
     Input("focus-edit", "data"), Input("focus-history", "data"),
     Input("f-setting", "data"), Input("f-author", "data"),
+    Input("recap-year", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
     Input("plan-edit", "data"),
     State("job", "data"),
@@ -1090,7 +1101,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, f_setting, f_author, adding,
+                focus_edit, focus_hist, f_setting, f_author, recap_year, adding,
                 added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
@@ -1108,7 +1119,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                                     sel_day, running, editing)
         if nav == "recap":
             return cv.recap_panel(who, "player", recap_range, recap, running,
-                                  show_entries, f_setting, f_author)
+                                  show_entries, f_setting, f_author, recap_year)
         return html.Div([
             *player_today(who),
             cv.focus_pair(who, "player", focus_msg, focus_edit, focus_hist),
@@ -1133,7 +1144,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             if not sel_player:
                 return cv.coach_lesson_picker(who, adding, added_msg)
             return cv.recap_panel(sel_player, "coach", recap_range, recap, running,
-                                  show_entries, f_setting, f_author)
+                                  show_entries, f_setting, f_author, recap_year)
         if nav == "players":
             if sel_player:
                 return html.Div([

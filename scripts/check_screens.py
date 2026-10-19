@@ -66,6 +66,14 @@ def main() -> int:
          "gap": "g"}, False))
     check("lesson picker, adding",
           lambda: cv.coach_lesson_picker(coach, True, "Added Sam."))
+    check("recap, everything on file",
+          lambda: cv.recap_panel(player, "player", "all", None, False, True))
+    check("recap, a year picked",
+          lambda: cv.recap_panel(player, "player", "all", None, False, True,
+                                 year=2026))
+    check("recap, a year with nothing in it",
+          lambda: cv.recap_panel(player, "player", "all", None, False, True,
+                                 year=1999))
     check("recap summary", lambda: cv.recap_summary(player, "player", "30", None, False))
     check("recap summary with a result",
           lambda: cv.recap_summary(player, "player", "30",
