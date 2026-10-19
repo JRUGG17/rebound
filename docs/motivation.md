@@ -305,17 +305,27 @@ This belongs in **Motivation**, not only in Impact. It is the commercial edge
 of the same problem: the attention was there, and what had gone was the
 program's ability to *show* it.
 
-### He was a professional player
+### He was that kid, and then he was a professional
 
-> I was also a professional player, and my notes were my notes as a player as
-> well. So I had the coaching notes, also my playing notes. And again, I found
-> it useful. I improved a lot more when I started reflecting. So I know the
-> value of it, but still — tough to do in a structured way unless you're really
-> judicious about it.
+The fuller version, and the arc matters more than the credential:
 
-Worth including precisely because of the last clause. A professional, highly
-motivated, found structured reflection hard. That is the strongest available
-argument that a fourteen-year-old will not do it unaided.
+> I played squash from the time I was 9 years old. Also wasn't a big fan of
+> notes, but realized as I started taking it more seriously — playing through
+> the higher tiers of junior squash and college squash — that reflection was
+> important. And I improved much faster when I added that element in. But I
+> played professionally too.
+
+Lead with **"I was that kid"**, not with "I played professionally". The point
+is not the credential, it is that he started at nine, disliked writing things
+down, and only arrived at reflection voluntarily after years of taking it
+seriously. That is exactly the population the app is for.
+
+It cuts both ways and the report should say so. It worked on him, which is why
+he believes in it. It also took him years and stayed hard, which is why the
+honest expectation is not that kids will adopt it because it is good for them —
+only that they might if it costs almost nothing. That is the justification for
+one text box and a microphone, and for putting the design effort into what
+happens *after* they write.
 
 ### The feature idea worth building first
 
