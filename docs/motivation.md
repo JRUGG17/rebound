@@ -1,7 +1,8 @@
 # Motivation, in Jamie's words
 
 Source material for the report's Motivation and Impact sections. Jamie
-helped start and coached in the program this models. Lightly cleaned from
+was a founding member of the program this models, and coached in it.
+Lightly cleaned from
 speech; the claims and the framing are his, not reconstructed.
 
 **This is evidence, not doctrine.** It is one practitioner's account, and the
@@ -250,8 +251,8 @@ most about this still could not do it**:
 > keep track of things over time. I was just doing it in the Notes app on my
 > phone.
 
-One of the people who started the place, highly motivated, keeping notes in
-Apple Notes — and still losing the thread. That rules out the lazy reading of the problem ("coaches
+A founding member of the academy, highly motivated, keeping notes in Apple
+Notes — and still losing the thread. That rules out the lazy reading of the problem ("coaches
 should just take better notes") and makes it structural, which is what
 justifies building anything at all.
 
@@ -363,7 +364,9 @@ His own correction, and take it literally:
 
 > Co-founder buys some equity I didn't have.
 
-Use **founding member**, **helped found**, or **helped start**. The distinction
+Use **founding member of the academy**, and lead with it rather than burying
+it — it is the credential that makes section 1 worth reading. "Helped found"
+and "helped start" also work. The distinction
 is real — co-founder implies an ownership stake — and overstating a role in a
 document with his name on it is a worse error than understating one. Nothing
 about the argument depends on the bigger word: what makes the source credible
