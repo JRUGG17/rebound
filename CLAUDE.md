@@ -5,8 +5,8 @@ Yale SOM "AI Foundations". **Due Monday 26 October 2026, 6:00 PM, on Canvas.**
 
 Submitted as: this repo's GitHub link, `report.html`, `slides.html`, optional demo video.
 
-Jamie coached in and co-designed the program this models. When the domain and this
-file disagree, he is right — ask him.
+I was a founding member of the program this models and coached there. Where
+the squash domain and this file disagree, the domain wins.
 
 ---
 
@@ -97,8 +97,8 @@ Nothing else blocks it. A demo video is optional and not made.
    whole section from the real ledger.
 
 2. **No second user, and never tested with a working coach.** Accepted and
-   stated plainly in the report's Limits section rather than glossed. Jamie is
-   credited as a practitioner source — founding member, five years inside —
+   stated plainly in the report's Limits section rather than glossed. The
+   source is a practitioner account — founding member, five years inside —
    which is domain evidence and explicitly not user research.
 
 3. ~~Season phases~~ **Done.** September to March, ending at Nationals, with
@@ -106,8 +106,7 @@ Nothing else blocks it. A demo video is optional and not made.
    a gap.
 
 4. **No git remote yet.** The one remaining blocker. Needs `gh repo create`
-   and a push. Jamie wants the repo **public**, so no collaborator is needed —
-   do not add one.
+   and a push. The repo goes **public**, so no collaborator is needed.
 
 ## For the report
 
@@ -124,7 +123,7 @@ Measured, not estimated — all from real runs:
   first"* — was filed to `rung=conditioned_game`, `cue=racket_before_feet`, and tagged to
   the same canonical cue as three coach notes written in different words.
 
-Quotes from Jamie, who coached in the program. These are the motivation section:
+Quotes for the motivation section — see `docs/motivation.md` for the full set:
 
 > Every time, I'd ask "what did we work on last time?" and the kid would look back at me
 > with a blank stare — "oh, I don't know." So you end up doing a lot of the same stuff,
@@ -156,7 +155,7 @@ Not "a training diary". The diary is how the data gets collected. The product is
 3. **Nobody sees the whole kid.** Several coaches, no shared record, occasionally
    contradictory advice.
 
-Jamie's own three years of notes are the proof that the problem is real: the same eight
+Three years of my own coaching notes are where the problem shows: the same eight
 cues recur across every document, for years, never resolved. That archive is the
 "before" — **it is evidence, not doctrine.**
 
