@@ -1054,24 +1054,28 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
     raw = []
     if show_entries:
         rows = sorted(all_rows, key=lambda e: e["occurred_on"], reverse=True)
-        raw = [html.Div([
-            html.Div("Every entry in this stretch, newest first",
-                     className="label"),
-            *[html.Div([
+
+        def one_entry(e):
+            side = "coach" if e["author_role"] == "coach" else "player"
+            return html.Div([
                 html.Div([
                     html.Span(e["occurred_on"], className="hint"),
-                    html.Span("coach" if e["author_role"] == "coach" else "you",
-                              className=f"who-chip "
-                              f"{'coach' if e['author_role'] == 'coach' else 'player'}"),
+                    html.Span("coach" if side == "coach" else "you",
+                              className=f"who-chip {side}"),
                     html.Span(e["setting"], className="tag"),
                     html.Span(e["rung"].replace("_", " "), className="tag")
                     if e["rung"] else html.Span(),
                 ], className="meta"),
                 html.Div(db.render_for(e, viewer_role) or db.agent_text(e),
                          className="body"),
-            ], className=f"entry from-"
-               f"{'coach' if e['author_role'] == 'coach' else 'player'}")
-              for e in rows],
+            ], className=f"entry from-{side}")
+
+        raw = [html.Div([
+            html.Div("Every entry in this stretch, by month",
+                     className="label"),
+            *(month_buckets(rows, lambda e: e["occurred_on"], one_entry,
+                            ("entry", "entries"))
+              or [html.Div("Nothing in this stretch.", className="empty")]),
         ], className="card")]
 
     return html.Div([
@@ -1235,6 +1239,41 @@ def coach_lesson_picker(coach_id: str, adding: bool = False,
     ], className="card")
 
 
+def month_buckets(rows, date_of, render, noun: tuple[str, str],
+                  open_month: str | None = None, limit: int | None = None):
+    """A dated list, folded into months, newest first.
+
+    Lessons were already shaped this way and everything else was a single
+    run — a stretch of a term is sixty-odd entries, and a page that opens
+    with all of them is something you scroll past rather than read. One
+    month is open, the rest are a click. Same control everywhere, so the
+    list behaves the same wherever you meet it.
+
+    `limit` caps how many months are built at all, for a view where the
+    older ones have a better home to live in.
+    """
+    buckets: dict[str, list] = {}
+    for row in rows:
+        buckets.setdefault(date_of(row)[:7], []).append(row)
+    months = sorted(buckets.items(), reverse=True)
+    if limit:
+        months = months[:limit]
+    current = open_month or (months[0][0] if months else None)
+
+    one, many = noun
+    out = []
+    for month, items in months:
+        stamp = _date.fromisoformat(month + "-01")
+        out.append(html.Details([
+            html.Summary([
+                html.Span(stamp.strftime("%B"), className="month-name"),
+                html.Span(_plural(len(items), one, many), className="hint"),
+            ]),
+            html.Div([render(i) for i in items], className="bucket-body"),
+        ], className="bucket month", open=(month == current)))
+    return out
+
+
 def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
                   open_month: str | None, year: int | None,
                   open_on: str | None, saving: bool, editing: int | None = None):
@@ -1254,34 +1293,19 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
     chosen_year = str(year) if year else (years[0] if years else None)
     in_year = [i for i in items if i["on"].startswith(chosen_year or "")]
 
-    buckets: dict[str, list] = {}
-    for lesson in in_year:
-        buckets.setdefault(lesson["on"][:7], []).append(lesson)
-    months = sorted(buckets.items(), reverse=True)
-    current = open_month or (months[0][0] if months else None)
+    def one_lesson(l):
+        return html.Button([
+            html.Span(_date.fromisoformat(l["on"]).strftime("%a %-d"),
+                      className="lesson-day"),
+            html.Span(l["week"]["theme_name"] if l["week"] else "",
+                      className="tag"),
+            html.Span(f"{len(l['coach'])} coach · {len(l['player'])} player",
+                      className="hint"),
+        ], id={"type": "open-lesson", "d": l["on"]},
+            className=f"lesson-row{' active' if l['on'] == open_on else ''}")
 
-    blocks = []
-    for month, lessons in months:
-        label = _date.fromisoformat(month + "-01").strftime("%B")
-        blocks.append(html.Details([
-            html.Summary([
-                html.Span(label, className="month-name"),
-                html.Span(_plural(len(lessons), "lesson", "lessons"),
-                          className="hint"),
-            ]),
-            html.Div([
-                html.Button([
-                    html.Span(_date.fromisoformat(l["on"]).strftime("%a %-d"),
-                              className="lesson-day"),
-                    html.Span(l["week"]["theme_name"] if l["week"] else "",
-                              className="tag"),
-                    html.Span(f"{len(l['coach'])} coach · {len(l['player'])} player",
-                              className="hint"),
-                ], id={"type": "open-lesson", "d": l["on"]},
-                    className=f"lesson-row{' active' if l['on'] == open_on else ''}")
-                for l in lessons
-            ], className="bucket-body"),
-        ], className="bucket month", open=(month == current)))
+    blocks = month_buckets(in_year, lambda l: l["on"], one_lesson,
+                           ("lesson", "lessons"), open_month)
 
     header = [
         html.Div([
