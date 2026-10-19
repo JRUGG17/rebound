@@ -393,3 +393,25 @@ coach you" is what that split looks like from the inside.
 
 Set this up in Motivation and the novelty argument in section 3 lands without
 further work.
+
+### Turnover is a second, slower failure
+
+> We added a ton more kids and a few more coaches over the years, coming in and
+> out.
+
+This does **not** contradict the "it's the same coaches, they just don't give
+lessons to them" correction. Keep the two separate, because they are different
+failures:
+
+1. **Within a term** the staff a child sees is stable. The problem is that most
+   of those coaches do not give that child lessons and cannot see the lesson
+   record. This is the siloing argument.
+2. **Across years** coaches come and go. When one leaves, what they knew about
+   thirty kids leaves with them, because it only ever existed in their head or
+   their own notebook.
+
+The second is the stronger argument for a *written* record specifically, and it
+was missing from the draft. Five years of turnover means a program that has
+taught several hundred children and retained almost nothing institutionally
+about any of them. A notebook does not just fail to scale — it walks out of the
+building.
