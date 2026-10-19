@@ -72,18 +72,19 @@ questions-for-coach round trip. The parent page stays as one read-only screen.
 | Phase | State |
 |---|---|
 | 1. Config, Portkey, metering | **done** |
-| 2. Schema, clock, seed, visibility | **done** — 40 free checks pass |
-| 3. Organizer + Dash shell | **done** — verified end to end in a browser |
-| 4. Comparison agent + coach screens | next |
-| 5. Debrief agent | not started |
-| 6. Safety defenses + test script | partly — visibility and injection already tested |
-| 7. Archive demo (Jamie's 3 years of notes) | not started |
-| 8. Cue proposals: admin UI to adopt them | backend done, no screen yet |
-| 9. README + fresh-clone dry run | not started |
-| Report (41 pts) + slides (8 pts) | not started |
+| 2. Schema, clock, seed, visibility | **done** — 42 free checks pass |
+| 3. Organizer + Dash shell | **done** |
+| 4. Comparison agent + coach screens | **done** |
+| 5. Recap agent (period, day, lesson thread) | **done** |
+| 6. Safety defenses + test scripts | **done** — injection and suppression both tested |
+| 7. Archive demo | **cut** — the three years of notes are the provenance of the seed, not a feature |
+| 8. Cue proposals: admin UI to adopt them | backend done, no screen. Written up as a next step |
+| 9. README + fresh-clone dry run | **done** — clone to serving in 12s, verified |
+| Report (41 pts) | **done** — `report.html`, ~13.7 pages |
+| Slides (8 pts) | **done** — `slides.html`, 10 slides with real screenshots |
 
-**The report and slides are 49 of 100 points.** Budget roughly: app to Oct 21, polish and
-archive demo to Oct 23, report Oct 24–25, slides and dry run Oct 26.
+**Remaining before submission: create the GitHub remote, push, make the repo public.**
+Nothing else blocks it. A demo video is optional and not made.
 
 ## Open blockers
 
@@ -95,13 +96,18 @@ archive demo to Oct 23, report Oct 24–25, slides and dry run Oct 26.
    remainder is billed at the input rate. `scripts/tokenomics.py` prints the
    whole section from the real ledger.
 
-2. **No second user.** Accepted — Jamie will be credited explicitly as a practitioner
-   source rather than it being dressed up as independent. Costs a few points on Tier 3;
-   the real archive carries most of the Impact row instead.
-3. **Season phases** are not written down, so the timing rule in playbook §7 infers
-   competitive season from tournament mentions.
-4. **No git remote yet.** Needs `gh repo create` and a push before submitting, plus
-   either public or `zlisto` added as a collaborator.
+2. **No second user, and never tested with a working coach.** Accepted and
+   stated plainly in the report's Limits section rather than glossed. Jamie is
+   credited as a practitioner source — founding member, five years inside —
+   which is domain evidence and explicitly not user research.
+
+3. ~~Season phases~~ **Done.** September to March, ending at Nationals, with
+   the full year table in playbook §7. An earlier draft wrongly listed this as
+   a gap.
+
+4. **No git remote yet.** The one remaining blocker. Needs `gh repo create`
+   and a push. Jamie wants the repo **public**, so no collaborator is needed —
+   do not add one.
 
 ## For the report
 
