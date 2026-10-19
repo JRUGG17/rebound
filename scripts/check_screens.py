@@ -104,6 +104,9 @@ def main() -> int:
     check("a player's recap", lambda: cv.recap_panel(player, "coach", "30", None, False))
     check("the courtside glance", lambda: cv.player_detail(player, None, False))
     check("focus pair, coach side", lambda: cv.focus_pair(player, "coach"))
+    check("focus pair, editing", lambda: cv.focus_pair(player, "coach", None, "coach"))
+    check("focus pair, history open",
+          lambda: cv.focus_pair(player, "coach", None, None, "coach"))
     check("focus pair, player side", lambda: cv.focus_pair(player, "player"))
     check("recap with entries shown",
           lambda: cv.recap_panel(player, "player", "30", None, False, True))

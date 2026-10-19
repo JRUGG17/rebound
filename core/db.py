@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS focuses (
     category     TEXT NOT NULL,
     cue_id       TEXT,
     kind         TEXT NOT NULL DEFAULT 'coach',   -- coach | player
+    week_id      INTEGER,                          -- the week it was set for
     set_on       TEXT NOT NULL,
     resolved_on  TEXT
 );
@@ -166,7 +167,7 @@ def init_db() -> None:
 # a column to a table that already exists, so widen it here instead of making
 # anyone delete their database.
 _ADDED_COLUMNS = {
-    "focuses": [("kind", "TEXT NOT NULL DEFAULT 'coach'")],
+    "focuses": [("kind", "TEXT NOT NULL DEFAULT 'coach'"), ("week_id", "INTEGER")],
     "entries": [
         ("player_text", "TEXT"),
         # A rewrite reaches a child only once the coach who wrote the note has
@@ -464,23 +465,82 @@ def current_focus(player_id: str, kind: str = "coach") -> sqlite3.Row | None:
 
 def set_focus(player_id: str, author_id: str, text: str, category: str,
               kind: str, on: str) -> None:
-    """One live focus of each kind. Setting a new one closes the old."""
+    """Set this week's focus. One live focus of each kind; the old one closes.
+
+    A focus belongs to a week. It is normal and expected for the same thing
+    to be set again next week — that is what working on something looks like
+    — and the week stamp is what makes "the fourth week running" a fact
+    rather than an impression.
+    """
+    week = ensure_week(on)
     with connect() as conn:
         conn.execute(
             "UPDATE focuses SET resolved_on = ? WHERE player_id = ? AND kind = ? "
             "AND resolved_on IS NULL", (on, player_id, kind))
         conn.execute(
-            """INSERT INTO focuses (player_id, coach_id, text, category, kind, set_on)
-               VALUES (?,?,?,?,?,?)""",
-            (player_id, author_id, text.strip(), category or "technical", kind, on))
+            """INSERT INTO focuses (player_id, coach_id, text, category, kind,
+                   week_id, set_on)
+               VALUES (?,?,?,?,?,?,?)""",
+            (player_id, author_id, text.strip(), category or "technical", kind,
+             week["id"] if week else None, on))
+
+
+def focus_history(player_id: str, kind: str | None = None) -> list[sqlite3.Row]:
+    """Every focus this player has had, newest first."""
+    sql = "SELECT * FROM focuses WHERE player_id = ?"
+    args: list = [player_id]
+    if kind:
+        sql += " AND kind = ?"
+        args.append(kind)
+    with connect() as conn:
+        return conn.execute(sql + " ORDER BY set_on DESC, id DESC", args).fetchall()
 
 
 def week_of(date_iso: str) -> sqlite3.Row | None:
+    """The curriculum week containing this date, if one has been set.
+
+    A week covers its own seven days and no more. Before this, the newest
+    week that had started was returned for any later date, so stepping the
+    clock forward kept reporting the same theme for ever. Setting the theme
+    is a job somebody does on the Sunday; until they have, there is no week.
+    """
+    from datetime import date, timedelta
+
     with connect() as conn:
-        return conn.execute(
+        row = conn.execute(
             "SELECT * FROM weeks WHERE starts_on <= ? ORDER BY starts_on DESC LIMIT 1",
             (date_iso,),
         ).fetchone()
+    if row is None:
+        return None
+    try:
+        starts = date.fromisoformat(row["starts_on"])
+        if date.fromisoformat(date_iso) >= starts + timedelta(days=7):
+            return None
+    except ValueError:
+        return None
+    return row
+
+
+def ensure_week(date_iso: str) -> sqlite3.Row:
+    """The week row for this date, created blank if nobody has set one."""
+    from datetime import date, timedelta
+
+    existing = week_of(date_iso)
+    if existing is not None:
+        return existing
+    day = date.fromisoformat(date_iso)
+    monday = day - timedelta(days=day.weekday())
+    with connect() as conn:
+        last = conn.execute("SELECT MAX(id) AS n, MAX(block_no) AS b FROM weeks"
+                            ).fetchone()
+        new_id = (last["n"] or 0) + 1
+        conn.execute(
+            """INSERT OR IGNORE INTO weeks (id, starts_on, theme_shot, theme_name,
+                   block_no, cycle_no)
+               VALUES (?,?,NULL,'Not set yet',?,1)""",
+            (new_id, monday.isoformat(), last["b"] or 1))
+    return week_of(date_iso)
 
 
 # ---------------------------------------------------------------- cue proposals

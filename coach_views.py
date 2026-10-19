@@ -1191,47 +1191,76 @@ def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool,
 
 
 
-def focus_pair(player_id: str, viewer_role: str, saved: str | None = None):
-    """Both focuses, side by side. The coach's, and the player's own.
+def focus_pair(player_id: str, viewer_role: str, saved: str | None = None,
+               editing: str | None = None, history: str | None = None):
+    """This week's two focuses. The coach's, and the player's own.
 
-    A player working on their boast while their coach works on their prep is
-    worth seeing, not worth reconciling. Each side can only set their own.
+    The box to change one only appears when you ask for it — an always-open
+    text field reads like something you have forgotten to fill in. Past
+    focuses live behind the heading rather than stacked underneath, because
+    the current one is the thing you came to read.
     """
+    week = db.week_of(clock.today_iso())
     coach_focus = db.current_focus(player_id, "coach")
     own_focus = db.current_focus(player_id, "player")
     first = db.person(player_id)["name"].split()[0]
 
-    def panel(focus, title, editable, prefix):
+    def panel(focus, title, can_edit, prefix):
         who = db.person(focus["coach_id"]) if focus else None
         body = [
-            html.Div(title, className="label"),
-            html.Div(focus["text"] if focus else "Nothing set",
+            html.Div([
+                html.Span(title, className="label"),
+                html.Button("history", id=f"{prefix}-history", className="link"),
+            ], className="focus-head"),
+            html.Div(focus["text"] if focus else "Nothing set for this week",
                      className="focus-text" if focus else "empty"),
         ]
-        if focus and who and who["id"] != player_id:
-            body.append(html.Div(f"{who['name']} · {focus['set_on']}",
-                                 className="byline"))
-        elif focus:
-            body.append(html.Div(focus["set_on"], className="byline"))
-        if editable:
+        if focus:
+            stamp = focus["set_on"]
+            if who and who["id"] != player_id:
+                stamp = f"{who['name']} · {stamp}"
+            body.append(html.Div(stamp, className="byline"))
+
+        if can_edit and editing == prefix:
             body += [
                 dcc.Textarea(id=f"{prefix}-focus-text",
-                             style={"minHeight": "54px", "marginTop": "10px"}),
+                             value=focus["text"] if focus else ""),
                 html.Div([
                     dcc.Dropdown(id=f"{prefix}-focus-category",
                                  options=[{"label": c.title(), "value": c}
                                           for c in CATEGORY_ORDER],
-                                 value="technical", clearable=False,
-                                 style={"width": "160px"}),
-                    html.Button("Set", id=f"{prefix}-set-focus", className="primary"),
+                                 value=focus["category"] if focus else "technical",
+                                 clearable=False, style={"width": "150px"}),
+                    html.Button("Set for this week", id=f"{prefix}-set-focus",
+                                className="primary"),
+                    html.Button("Cancel", id=f"{prefix}-cancel", className="ghost"),
                 ], className="composer-row"),
             ]
+        elif can_edit:
+            body.append(html.Div([
+                html.Button("Change focus", id=f"{prefix}-change",
+                            className="ghost"),
+                html.Span(saved or "", className="hint"),
+            ], className="composer-row"))
+
+        if history == prefix:
+            rows = db.focus_history(player_id, prefix if prefix == "coach" else "player")
+            past = [html.Div([
+                html.Div(f["set_on"]
+                         + (f" – {f['resolved_on']}" if f["resolved_on"]
+                            else " – now"), className="hint"),
+                html.Div(f["text"], className="body"),
+            ], className="entry") for f in rows[:12]]
+            body.append(html.Div(
+                [html.Div("Earlier focuses", className="label")]
+                + (past or [html.Div("Nothing earlier.", className="empty")]),
+                className="focus-history"))
         return html.Div(body, className="card focus-card")
 
+    label = (f"Coach focus · {week['theme_name']}"
+             if week and week["theme_shot"] else "Coach focus · this week")
     return html.Div([
-        panel(coach_focus, "Coach focus", viewer_role in ("coach", "admin"), "coach"),
+        panel(coach_focus, label, viewer_role in ("coach", "admin"), "coach"),
         panel(own_focus, f"{first}'s own focus" if viewer_role != "player"
               else "My own focus", viewer_role == "player", "own"),
     ], className="two-col focus-pair")
-
-

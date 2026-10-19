@@ -364,6 +364,8 @@ app.layout = html.Div([
     dcc.Store(id="show-entries", data=False),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
+    dcc.Store(id="focus-edit", data=None),
+    dcc.Store(id="focus-history", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -404,7 +406,9 @@ def move_clock(_b, _f, _r, _nav, _theme):
     today = clock.today()
     week = db.week_of(today.isoformat())
     label = today.strftime("%a %d %b %Y")
-    return f"{label} · {week['theme_name']}" if week else label
+    if week and week["theme_shot"]:
+        return f"{label} · {week['theme_name']}"
+    return f"{label} · no week set"
 
 
 # Five places to stand. Everything else is reached by drilling in from one
@@ -500,9 +504,7 @@ def pick_section(clicks, current):
 def set_theme(n, shot):
     if not n or not shot:
         return no_update
-    week = db.week_of(clock.today_iso())
-    if not week:
-        return "No week for this date."
+    week = db.ensure_week(clock.today_iso())
     names = {"reset": "Reset Week", "attacking": "Attacking Week",
              "positional": "Positional Driving Week"}
     name = names.get(shot, f"{shot.title()} Week")
@@ -679,6 +681,7 @@ def start_recap(n, who, sel_player, range_key):
 
 
 @app.callback(Output("focus-tick", "data"),
+              Output("focus-edit", "data", allow_duplicate=True),
               Input("coach-set-focus", "n_clicks"),
               State("coach-focus-text", "value"),
               State("coach-focus-category", "value"),
@@ -687,14 +690,15 @@ def start_recap(n, who, sel_player, range_key):
 def set_coach_focus(n, text, category, player_id, coach_id):
     person = db.person(coach_id)
     if not clicked(n) or not text or not text.strip() or not player_id:
-        return no_update
+        return no_update, no_update
     if person is None or person["role"] not in ("coach", "admin"):
-        return no_update
+        return no_update, no_update
     db.set_focus(player_id, coach_id, text, category, "coach", clock.today_iso())
-    return f"Set. {db.person(player_id)['name'].split()[0]} sees it."
+    return f"Set for this week. {db.person(player_id)['name'].split()[0]} sees it.", None
 
 
 @app.callback(Output("focus-tick", "data", allow_duplicate=True),
+              Output("focus-edit", "data", allow_duplicate=True),
               Input("own-set-focus", "n_clicks"),
               State("own-focus-text", "value"),
               State("own-focus-category", "value"), State("who", "value"),
@@ -702,11 +706,11 @@ def set_coach_focus(n, text, category, player_id, coach_id):
 def set_own_focus(n, text, category, who):
     person = db.person(who)
     if not clicked(n) or not text or not text.strip():
-        return no_update
+        return no_update, no_update
     if person is None or person["role"] != "player":
-        return no_update
+        return no_update, no_update
     db.set_focus(who, who, text, category, "player", clock.today_iso())
-    return "Set."
+    return "Set for this week.", None
 
 
 @app.callback(
@@ -849,6 +853,31 @@ def save_edit(clicks, texts, who):
     return None
 
 
+@app.callback(Output("focus-edit", "data"),
+              Input("coach-change", "n_clicks"), Input("own-change", "n_clicks"),
+              Input("coach-cancel", "n_clicks"), Input("own-cancel", "n_clicks"),
+              prevent_initial_call=True)
+def open_focus_editor(coach_c, own_c, coach_x, own_x):
+    which = ctx.triggered_id
+    if which == "coach-change" and clicked(coach_c):
+        return "coach"
+    if which == "own-change" and clicked(own_c):
+        return "own"
+    if which in ("coach-cancel", "own-cancel") and clicked(coach_x, own_x):
+        return None
+    return no_update
+
+
+@app.callback(Output("focus-history", "data"),
+              Input("coach-history", "n_clicks"), Input("own-history", "n_clicks"),
+              State("focus-history", "data"), prevent_initial_call=True)
+def toggle_focus_history(coach_h, own_h, current):
+    if not clicked(coach_h, own_h):
+        return no_update
+    which = "coach" if ctx.triggered_id == "coach-history" else "own"
+    return None if current == which else which
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -862,13 +891,14 @@ def save_edit(clicks, texts, who):
     Input("search", "data"), Input("year-sel", "data"),
     Input("open-month", "data"), Input("show-entries", "data"),
     Input("kind", "data"), Input("editing", "data"),
+    Input("focus-edit", "data"), Input("focus-history", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                job_id):
+                focus_edit, focus_hist, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -885,7 +915,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                                     sel_day, running, editing)
         return html.Div([
             *player_today(who),
-            cv.focus_pair(who, "player", focus_msg),
+            cv.focus_pair(who, "player", focus_msg, focus_edit, focus_hist),
             player_reflections(who, "shared", job_id, kind),
             cv.recap_panel(who, "player", recap_range, recap, running,
                            show_entries),
