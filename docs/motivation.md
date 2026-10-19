@@ -191,3 +191,58 @@ Sources:
 - [Self-regulation in sports learning and performance](https://research.birmingham.ac.uk/en/publications/self-regulation-in-sports-learning-and-performance)
 - ['Think Aloud' as a facilitator of self-regulation in golfers](https://researchonline.ljmu.ac.uk/17581/3/%E2%80%98Think%20Aloud%E2%80%99%20as%20a%20facilitator%20of%20self-regulation%20in%20golfers.pdf)
 - [Think-aloud with academy goalkeepers](https://researchonline.ljmu.ac.uk/id/eprint/23252/1/McGreary%20et%20al%202024%20TA%20GK%20Manuscript%20Accepted%20version.pdf)
+
+---
+
+## The club, with dates
+
+- **Planning from early 2021.** Doors open **January 2022** — mid-season, which
+  was not the plan. COVID supply-chain delays pushed it. A small start as a
+  result, then quick growth.
+- **Plainsboro, New Jersey:** four coaches now, up from the original two.
+- **Two further clubs**, in Pennsylvania and in **Hartford, Connecticut**, both
+  currently hiring. Neither has settled its methods, which is why the app
+  models Plainsboro only.
+- **Jamie is no longer with the club.** The report should say so and write in
+  the past tense. He is a practitioner source describing a program he
+  co-founded and coached in, not a current employee pitching a tool. That is
+  the more credible position, not the weaker one.
+
+Two coaches in 2022 who knew every player because they spoke every day, to
+four at one club and two more clubs hiring, in under four years. **That is the
+motivation in one sentence** — the record was a conversation, and the
+conversation did not scale.
+
+## Where the seed data comes from
+
+Jamie kept three years of coaching notes. They are **not** a feature of the
+app and there is no archive importer; they are the provenance of the sample
+data, and the report should say that plainly:
+
+> My three years of notes are what the sample players are based on. I just
+> needed something to populate it. As this is built out it'll be the actual
+> coaches and the actual players.
+
+So: the six seeded players are **invented people carrying real patterns**. No
+real child's record is in this repository. The cue vocabulary, the way the same
+problems recur across months, the gap between what a coach writes and what a
+player writes — those are drawn from the real notes. The names, and every
+individual entry, are fabricated for the demo.
+
+This needs saying in the report for two reasons. It is the honest answer to
+"where did your data come from", and it is the reason the findings the agents
+surface are plausible rather than arbitrary.
+
+### The first-person "before"
+
+The strongest version of the problem statement is that **the coach who cared
+most about this still could not do it**:
+
+> I didn't have anything super structured. For all my effort it became hard to
+> keep track of things over time. I was just doing it in the Notes app on my
+> phone.
+
+A co-founder, highly motivated, keeping notes in Apple Notes — and still
+losing the thread. That rules out the lazy reading of the problem ("coaches
+should just take better notes") and makes it structural, which is what
+justifies building anything at all.
