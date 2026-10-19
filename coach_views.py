@@ -915,21 +915,21 @@ def recap_summary(player_id: str, viewer_role: str, range_key: str,
 
     if running:
         body = [html.Span(className="spinner"),
-                html.Span("  Reading it back…", className="hint")]
+                html.Span("  Summarizing…", className="hint")]
     elif not stats["total"]:
         body = [html.Div(f"Nothing recorded for {label}.", className="empty")]
     elif result:
         body = [html.Div(result["headline"], className="recap-headline"),
                 html.Div(result["overview"], className="recap-overview")]
     else:
-        body = [html.Div("Ask for a read of the last 30 days, or open the full "
-                         "recap to filter and browse.", className="empty")]
+        body = [html.Div("Summarize the last 30 days, or open the full recap "
+                         "to filter and browse.", className="empty")]
 
     return html.Div([
         html.Div([
             html.H2(f"Last 30 days"),
             html.Div([
-                html.Button("Read it back", id="run-recap", className="ghost"),
+                html.Button("Summarize", id="run-recap", className="ghost"),
                 html.Button("Full recap →", id="open-recap", className="primary"),
             ], style={"display": "flex", "gap": "8px"}),
         ], className="card-head"),
@@ -1005,7 +1005,7 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
 
     if running:
         body = [html.Span(className="spinner"),
-                html.Span("  Reading it back…", className="hint")]
+                html.Span("  Summarizing…", className="hint")]
     elif not stats["total"]:
         body = [html.Div(f"Nothing recorded for {label}.", className="empty")]
     elif result:
@@ -1052,7 +1052,7 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
             body.append(html.Div([html.Strong("Gap. "), result["gap"]],
                                  className="timing-box"))
     else:
-        body = [html.Div("Pick a stretch of time and read it back. "
+        body = [html.Div("Pick a stretch of time and summarize it. "
                          "Costs one model call.", className="empty")]
 
     raw = []
@@ -1099,7 +1099,7 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
         html.Div([
             html.Div([
                 html.H2(f"Recap · {scope}"),
-                html.Button("Read it back", id="run-recap", className="primary"),
+                html.Button("Summarize", id="run-recap", className="primary"),
             ], style={"display": "flex", "justifyContent": "space-between",
                       "alignItems": "center"}),
             picker,
@@ -1298,6 +1298,30 @@ def month_buckets(rows, date_of, render, noun: tuple[str, str],
     return out
 
 
+ARC_RANGES = [("month", "Open month"), ("block", "This block"),
+              ("all", "Everything")]
+
+
+def arc_bounds(key: str, open_month: str | None) -> tuple[str | None, str | None, str]:
+    """What stretch of lessons to read.
+
+    Everything is the honest default for a thread — continuity is the whole
+    point of it — but a term is fifteen lessons and a career is hundreds,
+    and a coach asking about this month should not pay for the lot.
+    """
+    today = clock.today().isoformat()
+    if key == "month":
+        # Nothing expanded yet means the month the view opens on, not the
+        # whole record — the cheap button must never quietly do the
+        # expensive thing.
+        first = _date.fromisoformat((open_month or today[:7]) + "-01")
+        a, b = _month_bounds(first)
+        return a, min(b, today), first.strftime("%B")
+    if key == "block":
+        return clock.BLOCK_START.isoformat(), today, "this block"
+    return None, None, "everything on record"
+
+
 def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str):
     """The lesson thread read end to end.
 
@@ -1308,7 +1332,7 @@ def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str):
     """
     if running:
         return html.Div([html.Span(className="spinner"),
-                         html.Span("  Reading the thread…", className="hint")],
+                         html.Span("  Summarizing…", className="hint")],
                         className="card")
     if not arc:
         return html.Span()
@@ -1343,7 +1367,8 @@ def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str):
 def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
                   open_month: str | None, year: int | None,
                   open_on: str | None, saving: bool, editing: int | None = None,
-                  arc: dict | None = None, arc_running: bool = False):
+                  arc: dict | None = None, arc_running: bool = False,
+                  arc_range: str = "block"):
     """A player's lessons, by month, newest first.
 
     A year is about fifty lessons and a career is several hundred, so they
@@ -1376,7 +1401,10 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
 
     header = [
         html.Div([
-            html.Button("‹ Players", id="lessons-back", className="ghost"),
+            # A player has no roster to go back to; this was a coach's
+            # button shown to everybody.
+            html.Button("‹ Players", id="lessons-back", className="ghost")
+            if viewer_role == "coach" else html.Span(),
             html.Div([
                 html.Span(db.person(player_id)["name"], className="profile-name"),
                 html.Span(_plural(len(items), "lesson", "lessons"), className="hint"),
@@ -1387,12 +1415,19 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
                          clearable=False, style={"width": "110px"}),
         ], className="card-head"),
     ]
-    buttons = [html.Button("Read the thread", id="run-lesson-arc",
-                           className="ghost")]
+    buttons = [
+        html.Div([
+            html.Button(label_, id={"type": "arc-range", "k": key},
+                        className=f"tab-btn{' active' if key == arc_range else ''}")
+            for key, label_ in ARC_RANGES
+        ], className="tab-row"),
+        html.Button("Summarize", id="run-lesson-arc", className="ghost"),
+    ]
     if viewer_role == "coach":
         buttons.append(html.Button("Write up a lesson", id="goto-note",
                                    className="primary"))
-    header.append(html.Div(buttons, style={"display": "flex", "gap": "8px"}))
+    header.append(html.Div(buttons, style={"display": "flex", "gap": "8px",
+                                           "alignItems": "center"}))
 
     return html.Div([
         html.Div(header, className="card"),

@@ -43,12 +43,47 @@ body {
 }
 
 .brand {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   margin-right: auto;
+  text-decoration: none;
+  color: inherit;
 }
-.brand span { color: var(--orange); }
+.brand:hover .mark { transform: rotate(-8deg); }
+
+/* Tiger stripes with a ball sitting in them. */
+.mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(115deg,
+      var(--orange) 0 5px, var(--slate-dark) 5px 9px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s ease;
+  flex: none;
+}
+.mark .ball {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #12161a;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+}
+
+.mark-words {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+/* The topbar is slate, so the upper word is light on it. */
+.mark-top { font-size: 11px; color: #cfd4d9; }
+.mark-bot { font-size: 15px; color: var(--orange); }
 
 .topbar label {
   font-size: 11px;
@@ -813,7 +848,8 @@ body { background: var(--wash); }
   border-bottom: 3px solid var(--orange);
   height: 56px;
 }
-.brand { font-size: 20px; letter-spacing: -0.4px; }
+.brand .mark-top { font-size: 12px; }
+.brand .mark-bot { font-size: 16px; }
 
 .sidebar {
   background: var(--shell);

@@ -85,6 +85,9 @@ def main() -> int:
     check("recap, a year with nothing in it",
           lambda: cv.recap_panel(player, "player", "all", None, False, True,
                                  year=1999))
+    check("lesson thread, one month",
+          lambda: cv.lesson_months(player, None, "player", "2026-10", None, None,
+                                   False, None, ARC, False, "month"))
     check("lesson thread, running",
           lambda: cv.lesson_months(player, None, "player", None, None, None,
                                    False, None, None, True))

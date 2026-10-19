@@ -145,9 +145,11 @@ def save_dated(player_id: str, text: str, visibility: str, day: str,
     return _run_job(work)
 
 
-def run_lesson_arc(player_id: str, audience: str):
+def run_lesson_arc(player_id: str, audience: str,
+                   start: str | None = None, end: str | None = None):
     def work():
-        arc, _usage = aio.run(recap_agent.recap_lessons(player_id, audience=audience))
+        arc, _usage = aio.run(recap_agent.recap_lessons(
+            player_id, audience=audience, start=start, end=end))
         return {"arc": arc.model_dump() if arc else None}
     return _run_job(work)
 
@@ -363,6 +365,7 @@ app.layout = html.Div([
     dcc.Store(id="recap-year", data=None),
     dcc.Store(id="lesson-query", data=""),
     dcc.Store(id="arc-wait", data=False),
+    dcc.Store(id="arc-range", data="block"),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
@@ -375,7 +378,16 @@ app.layout = html.Div([
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
-        html.Div(["Re", html.Span("bound")], className="brand"),
+        # The club's mark, drawn in CSS rather than shipped as an image —
+        # one less binary in the repo and it scales with the type.
+        html.A([
+            html.Span([html.Span(className="ball")], className="mark"),
+            html.Span([html.Span("SQUASH", className="mark-top"),
+                       html.Span("TIGERS", className="mark-bot")],
+                      className="mark-words"),
+        ], href="https://www.squashtigers.com/", target="_blank",
+            rel="noopener noreferrer", className="brand",
+            title="Squash Tigers Academy"),
         html.Label("I am"),
         dcc.Dropdown(id="who", options=people_options(), value="maya",
                      clearable=False, style={"width": "250px"}),
@@ -678,9 +690,10 @@ def save_note(release_clicks, keep_clicks, draft, player_text, coach_id):
     Output("arc-wait", "data"),
     Input("run-lesson-arc", "n_clicks"),
     State("who", "value"), State("sel-player", "data"),
+    State("arc-range", "data"), State("open-month", "data"),
     prevent_initial_call=True,
 )
-def start_lesson_arc(n, who, sel_player):
+def start_lesson_arc(n, who, sel_player, arc_range, open_month):
     """Read the lesson thread end to end.
 
     Every other read is a period — the last 30 days, the block. This one is
@@ -695,7 +708,8 @@ def start_lesson_arc(n, who, sel_player):
     if not subject:
         return no_update, no_update, no_update
     audience = "player" if is_player else "coach"
-    return run_lesson_arc(subject, audience), False, True
+    start, end, _label = cv.arc_bounds(arc_range or "block", open_month)
+    return run_lesson_arc(subject, audience, start, end), False, True
 
 
 # The arc spinner is the generic running flag narrowed to this job. Deriving
@@ -704,6 +718,18 @@ def start_lesson_arc(n, who, sel_player):
               Input("lesson-arc", "data"), prevent_initial_call=True)
 def arc_landed(_arc):
     return False
+
+
+@app.callback(Output("arc-range", "data"), Output("lesson-arc", "data",
+                                                  allow_duplicate=True),
+              Input({"type": "arc-range", "k": ALL}, "n_clicks"),
+              State("arc-range", "data"), prevent_initial_call=True)
+def pick_arc_range(clicks, current):
+    if not any(c for c in clicks if c):
+        return current, no_update
+    # A thread belongs to the stretch it was read over, so changing the
+    # range clears it rather than leaving last month's text under a new tab.
+    return ctx.triggered_id["k"], None
 
 
 @app.callback(Output("recap-range", "data"), Output("recap", "data"),
@@ -1132,7 +1158,7 @@ def go_to_recap(n):
     Input("focus-edit", "data"), Input("focus-history", "data"),
     Input("f-setting", "data"), Input("f-author", "data"),
     Input("recap-year", "data"), Input("lesson-query", "data"),
-    Input("arc-wait", "data"),
+    Input("arc-wait", "data"), Input("arc-range", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
     Input("plan-edit", "data"),
     State("job", "data"),
@@ -1141,7 +1167,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, adding,
+                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, arc_range, adding,
                 added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
@@ -1157,7 +1183,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         if nav == "lessons":
             return cv.lesson_months(who, None, "player", open_month, year,
                                     sel_day, running, editing,
-                                    lesson_arc, bool(running and arc_wait))
+                                    lesson_arc, bool(running and arc_wait),
+                                    arc_range)
         if nav == "recap":
             return cv.recap_panel(who, "player", recap_range, recap, running,
                                   show_entries, f_setting, f_author, recap_year)
@@ -1181,7 +1208,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 return cv.coach_lesson_picker(who, lesson_query)
             return cv.lesson_months(sel_player, who, "coach", open_month,
                                     year, sel_day, running, editing,
-                                    lesson_arc, bool(running and arc_wait))
+                                    lesson_arc, bool(running and arc_wait),
+                                    arc_range)
         if nav == "recap":
             if not sel_player:
                 return cv.coach_lesson_picker(who, lesson_query)

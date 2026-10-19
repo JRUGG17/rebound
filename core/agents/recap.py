@@ -322,14 +322,21 @@ record, so "you" is the coach reading it and never the player:
 
 
 async def recap_lessons(player_id: str, *, audience: Audience = "player",
+                        start: str | None = None, end: str | None = None,
                         force: bool = False):
     from core import db
 
     viewer = "player" if audience == "player" else "coach"
     items = analysis.lessons(player_id, viewer=viewer)
+    if start:
+        items = [i for i in items if i["on"] >= start]
+    if end:
+        items = [i for i in items if i["on"] <= end]
     if not items:
         return None, None
 
+    # The cache key is the span of what was actually read, so each range
+    # gets its own slot without a flag saying which range it was.
     span = (items[-1]["on"], items[0]["on"])
     total = sum(len(i["coach"]) + len(i["player"]) for i in items)
     if not force:
