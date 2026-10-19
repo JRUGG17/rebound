@@ -87,15 +87,14 @@ archive demo to Oct 23, report Oct 24–25, slides and dry run Oct 26.
 
 ## Open blockers
 
-1. **Token prices are not set.** Not reachable from inside the app: Portkey
-   returns no cost in the response body or headers, and the course key is
-   gateway-only — `/analytics/*` and `/logs` answer 403, "You do not have enough
-   permissions". Asking the professor or a TA is the way to get it; a Portkey
-   dashboard seat would also do it.
-   Not blocking any more. `scripts/tokenomics.py` computes everything from the
-   real ledger and prints cost across a range of rates, so the report can be
-   written now and pinned to the real number later with
-   `REBOUND_PRICE_IN` / `_CACHED` / `_OUT`.
+1. ~~Token prices~~ **Done.** gpt-6-luna is $0.10 input, $0.01 cached, $0.125
+   cache write, $0.50 output per million — from the course tokenomics lecture
+   (lec11-vibe), citing developers.openai.com/api/docs/pricing. Set as the
+   defaults in `core/metering.py`. Note the accounting rule: `input_tokens`
+   already includes cache reads and cache writes, so both come off before the
+   remainder is billed at the input rate. `scripts/tokenomics.py` prints the
+   whole section from the real ledger.
+
 2. **No second user.** Accepted — Jamie will be credited explicitly as a practitioner
    source rather than it being dressed up as independent. Costs a few points on Tier 3;
    the real archive carries most of the Impact row instead.

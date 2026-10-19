@@ -27,26 +27,28 @@ LEDGER_PATH = Path(os.getenv("REBOUND_LEDGER", REPO_ROOT / "output" / "usage_led
 _LEDGER_LOCK = threading.Lock()
 
 # --------------------------------------------------------------------------
-# Prices, in US dollars per million tokens.
+# Prices for gpt-6-luna, US dollars per million tokens, from the course
+# lecture on tokenomics (lec11), which cites
+# https://developers.openai.com/api/docs/pricing
 #
-# TODO(jamie): confirm these against the Portkey dashboard before the report.
-# They are the single number the whole tokenomics section rests on, and a wrong
-# rate makes every figure in it wrong. Override without editing code by setting
-# REBOUND_PRICE_IN / REBOUND_PRICE_CACHED / REBOUND_PRICE_OUT.
+#     input $0.10 · cached $0.01 · cache write $0.125 · output $0.50
+#
+# Overridable without editing code, for when the rate changes or another
+# model is used.
 # --------------------------------------------------------------------------
-PRICE_PER_MTOK_INPUT = float(os.getenv("REBOUND_PRICE_IN", "0.0"))
-PRICE_PER_MTOK_CACHED_INPUT = float(os.getenv("REBOUND_PRICE_CACHED", "0.0"))
-PRICE_PER_MTOK_OUTPUT = float(os.getenv("REBOUND_PRICE_OUT", "0.0"))
+PRICE_PER_MTOK_INPUT = float(os.getenv("REBOUND_PRICE_IN", "0.10"))
+PRICE_PER_MTOK_CACHED_INPUT = float(os.getenv("REBOUND_PRICE_CACHED", "0.01"))
+PRICE_PER_MTOK_CACHE_WRITE = float(os.getenv("REBOUND_PRICE_CACHE_WRITE", "0.125"))
+PRICE_PER_MTOK_OUTPUT = float(os.getenv("REBOUND_PRICE_OUT", "0.50"))
 
-PRICES_CONFIGURED = any(
-    (PRICE_PER_MTOK_INPUT, PRICE_PER_MTOK_CACHED_INPUT, PRICE_PER_MTOK_OUTPUT)
-)
+PRICES_CONFIGURED = True
 
 # Candidate attribute / key names for each count, newest first. pydantic-ai has
 # moved these around; OpenAI reports cached reads under prompt_tokens_details.
 _INPUT_KEYS = ("input_tokens", "request_tokens", "prompt_tokens")
 _OUTPUT_KEYS = ("output_tokens", "response_tokens", "completion_tokens")
 _CACHED_KEYS = ("cache_read_tokens", "cached_tokens", "cache_read_input_tokens")
+_CACHE_WRITE_KEYS = ("cache_write_tokens", "cache_creation_input_tokens")
 _REASONING_KEYS = ("reasoning_tokens",)
 
 
@@ -80,6 +82,7 @@ class RunUsage:
     agent: str
     input_tokens: int = 0
     cached_input_tokens: int = 0
+    cache_write_tokens: int = 0
     output_tokens: int = 0
     reasoning_tokens: int = 0
     requests: int = 0
@@ -90,8 +93,15 @@ class RunUsage:
 
     @property
     def fresh_input_tokens(self) -> int:
-        """Input tokens actually billed at the full rate (total minus cache hits)."""
-        return max(0, self.input_tokens - self.cached_input_tokens)
+        """Input tokens billed at the full rate.
+
+        input_tokens is inclusive of both cache reads and cache writes, so
+        both come off before the rest is charged at the input rate. Writing
+        to the cache costs more than a plain input token, not less, which is
+        why it cannot simply be lumped in.
+        """
+        return max(0, self.input_tokens - self.cached_input_tokens
+                   - self.cache_write_tokens)
 
     @property
     def total_tokens(self) -> int:
@@ -107,6 +117,7 @@ class RunUsage:
         return (
             self.fresh_input_tokens * PRICE_PER_MTOK_INPUT
             + self.cached_input_tokens * PRICE_PER_MTOK_CACHED_INPUT
+            + self.cache_write_tokens * PRICE_PER_MTOK_CACHE_WRITE
             + self.output_tokens * PRICE_PER_MTOK_OUTPUT
         ) / 1_000_000
 
@@ -130,6 +141,7 @@ def read_usage(usage: Any, *, agent: str, seconds: float = 0.0) -> RunUsage:
         agent=agent,
         input_tokens=_first_int(usage, _INPUT_KEYS),
         cached_input_tokens=_first_int(usage, _CACHED_KEYS),
+        cache_write_tokens=_first_int(usage, _CACHE_WRITE_KEYS),
         output_tokens=_first_int(usage, _OUTPUT_KEYS),
         reasoning_tokens=_first_int(usage, _REASONING_KEYS),
         requests=_first_int(usage, ("requests",)),
@@ -165,11 +177,29 @@ def ledger_rows() -> list[dict]:
     return rows
 
 
+def row_cost(row: dict) -> float:
+    """Price a stored row at today's rates.
+
+    Cost is recomputed rather than read back from the row. The token counts
+    are the measurement and never change; the rate is configuration and can,
+    and a ledger that remembers what something cost under an old rate would
+    quietly make the totals wrong.
+    """
+    cached = row.get("cached_input_tokens", 0)
+    written = row.get("cache_write_tokens", 0)
+    fresh = max(0, row.get("input_tokens", 0) - cached - written)
+    return (fresh * PRICE_PER_MTOK_INPUT
+            + cached * PRICE_PER_MTOK_CACHED_INPUT
+            + written * PRICE_PER_MTOK_CACHE_WRITE
+            + row.get("output_tokens", 0) * PRICE_PER_MTOK_OUTPUT) / 1_000_000
+
+
 def totals() -> dict:
     """Roll the ledger up for the Usage page."""
     rows = ledger_rows()
     if not rows:
-        return {"runs": 0, "input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0,
+        return {"runs": 0, "input_tokens": 0, "cached_input_tokens": 0,
+                "cache_write_tokens": 0, "output_tokens": 0,
                 "total_tokens": 0, "cost_usd": 0.0, "cache_hit_rate": 0.0, "seconds": 0.0}
     total_input = sum(r.get("input_tokens", 0) for r in rows)
     total_cached = sum(r.get("cached_input_tokens", 0) for r in rows)
@@ -177,9 +207,10 @@ def totals() -> dict:
         "runs": len(rows),
         "input_tokens": total_input,
         "cached_input_tokens": total_cached,
+        "cache_write_tokens": sum(r.get("cache_write_tokens", 0) for r in rows),
         "output_tokens": sum(r.get("output_tokens", 0) for r in rows),
         "total_tokens": sum(r.get("total_tokens", 0) for r in rows),
-        "cost_usd": round(sum(r.get("cost_usd", 0.0) for r in rows), 6),
+        "cost_usd": round(sum(row_cost(r) for r in rows), 6),
         "cache_hit_rate": round(total_cached / total_input, 4) if total_input else 0.0,
         "seconds": round(sum(r.get("seconds", 0.0) for r in rows), 1),
     }

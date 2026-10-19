@@ -270,12 +270,18 @@ def usage_page():
         ("Served from cache", f"{totals['cache_hit_rate'] * 100:.0f}%",
          f"{totals['cached_input_tokens']:,} tokens"),
         ("Cost", f"${totals['cost_usd']:.4f}",
-         "prices not set" if not metering.PRICES_CONFIGURED else "measured"),
+         f"at ${metering.PRICE_PER_MTOK_INPUT:.2f}/"
+         f"${metering.PRICE_PER_MTOK_CACHED_INPUT:.2f}/"
+         f"${metering.PRICE_PER_MTOK_OUTPUT:.2f} per Mtok"),
     ]
-    banner = []
-    if not metering.PRICES_CONFIGURED:
-        banner = [html.Div("Token counts are real and measured. Cost shows $0 until the "
-                           "per-million token rates are set.", className="banner")]
+    cached_tok = totals["cached_input_tokens"]
+    saved = cached_tok * (metering.PRICE_PER_MTOK_INPUT
+                          - metering.PRICE_PER_MTOK_CACHED_INPUT) / 1_000_000
+    banner = [html.Div(
+        f"Caching has saved ${saved:.4f} so far — {cached_tok:,} input tokens served "
+        f"at ${metering.PRICE_PER_MTOK_CACHED_INPUT:.2f} per million instead of "
+        f"${metering.PRICE_PER_MTOK_INPUT:.2f}. Rates are the published gpt-6-luna "
+        f"prices from the course tokenomics lecture.", className="banner")]
     table = html.Table([
         html.Thead(html.Tr([html.Th("When"), html.Th("Agent"),
                             html.Th("In", className="num"),
