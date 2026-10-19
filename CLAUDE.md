@@ -87,10 +87,15 @@ archive demo to Oct 23, report Oct 24–25, slides and dry run Oct 26.
 
 ## Open blockers
 
-1. **Token prices are not set**, so the Usage page shows `$0.0000`. Needs the
-   per-million-token rates for `gpt-6-luna` from the Portkey dashboard. See the
-   `TODO(jamie)` in `core/metering.py`, or set `REBOUND_PRICE_IN` / `_CACHED` / `_OUT`.
-   This blocks an 8-point rubric row.
+1. **Token prices are not set.** Not reachable from inside the app: Portkey
+   returns no cost in the response body or headers, and the course key is
+   gateway-only — `/analytics/*` and `/logs` answer 403, "You do not have enough
+   permissions". Asking the professor or a TA is the way to get it; a Portkey
+   dashboard seat would also do it.
+   Not blocking any more. `scripts/tokenomics.py` computes everything from the
+   real ledger and prints cost across a range of rates, so the report can be
+   written now and pinned to the real number later with
+   `REBOUND_PRICE_IN` / `_CACHED` / `_OUT`.
 2. **No second user.** Accepted — Jamie will be credited explicitly as a practitioner
    source rather than it being dressed up as independent. Costs a few points on Tier 3;
    the real archive carries most of the Impact row instead.
