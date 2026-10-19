@@ -346,6 +346,7 @@ app.layout = html.Div([
     dcc.Store(id="day-summary", data=None),
     dcc.Store(id="lesson-arc", data=None),
     dcc.Store(id="focus-tick", data=None),
+    dcc.Store(id="search", data=""),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -372,8 +373,11 @@ app.layout = html.Div([
     Output("today-label", "children"),
     Input("back-week", "n_clicks"), Input("fwd-week", "n_clicks"),
     Input("reset-clock", "n_clicks"), Input("nav", "data"),
+    # Setting the shot of the week has to repaint the header too, or it keeps
+    # showing last week's theme until you happen to navigate.
+    Input("theme-tick", "data"),
 )
-def move_clock(_b, _f, _r, _nav):
+def move_clock(_b, _f, _r, _nav, _theme):
     if ctx.triggered_id == "back-week":
         clock.shift(-7)
     elif ctx.triggered_id == "fwd-week":
@@ -815,6 +819,12 @@ def write_up_lesson(n, player_id):
                     "on": clock.today_iso(), "text": "", "organized": None}
 
 
+@app.callback(Output("search", "data"), Input("player-search", "value"),
+              prevent_initial_call=True)
+def do_search(value):
+    return value or ""
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -825,12 +835,13 @@ def write_up_lesson(n, player_id):
     Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
     Input("sel-day", "data"), Input("day-summary", "data"),
     Input("lesson-arc", "data"), Input("focus-tick", "data"),
+    Input("search", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
-                job_id):
+                search, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -881,7 +892,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             if sel_player:
                 return cv.player_detail(sel_player, review, running,
                                         focus_msg)
-            return cv.roster()
+            return cv.roster(search)
         return cv.coach_today(who, theme_msg)
     return html.Div("Nothing here.", className="card")
 

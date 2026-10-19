@@ -12,6 +12,7 @@ from dash import dcc, html
 
 from core import analysis, clock, db
 from core import playbook as pb
+from data.week_cards import card_for
 
 CATEGORY_ORDER = ("technical", "tactical", "physical", "psychological")
 
@@ -23,119 +24,172 @@ RUNG_LABELS = {
 
 # ------------------------------------------------------------------ today
 
-def squad_card():
-    """The bleachers moment: what to lead the group feedback with."""
-    overview = analysis.squad_overview()
-    total = overview["total"]
-
-    if overview["shared"]:
-        top = overview["shared"][0]
-        lead = html.Div([
-            html.Div("Lead the group with", className="label"),
-            html.Div(top["canonical"], className="lead-cue"),
-            html.Div(f"{len(top['players'])} of {total} players have had this on court "
-                     f"this week.", className="hint"),
-        ], className="lead-box")
-        others = [
-            html.Div([
-                html.Span(f"{len(s['players'])}/{total}", className="count-pill"),
-                html.Span(s["canonical"], className="shared-cue"),
-                html.Span(", ".join(s["players"]), className="hint"),
-            ], className="shared-row")
-            for s in overview["shared"][1:]
-        ]
-    else:
-        lead = html.Div("No cue is shared across the squad this week — "
-                        "feedback is individual.", className="empty")
-        others = []
-
-    return html.Div([
-        html.H2("Squad card"),
-        lead,
-        *others,
-        html.Div("Worth naming someone if they did it well, or if what they were "
-                 "working on applies to the rest. Save the harder conversations for "
-                 "one-to-one.", className="hint", style={"marginTop": "14px"}),
-    ], className="card")
-
-
-def week_control(coach_id: str, saved_msg: str | None = None):
+def week_card(coach_id: str, saved_msg: str | None = None):
+    """What this week is, and the card to walk on court with."""
     week = db.week_of(clock.today_iso())
+    card = card_for(week["theme_shot"] if week else None,
+                    week["theme_name"] if week else "")
+
     options = [{"label": f"{s.title()} Week", "value": s} for s in db.SHOTS] + [
         {"label": "Reset Week", "value": "reset"},
         {"label": "Attacking Week", "value": "attacking"},
         {"label": "Positional Driving Week", "value": "positional"},
     ]
-    return html.Div([
-        html.H2("Shot of the week"),
+
+    head = html.Div([
+        html.Div([
+            html.Div("This week", className="label"),
+            html.Div(week["theme_name"] if week else "No week set",
+                     className="week-title"),
+            html.Div(f"Week {week['id']} of 12 · from "
+                     f"{_date.fromisoformat(week['starts_on']).strftime('%-d %b')}"
+                     if week else "", className="hint"),
+        ]),
         html.Div([
             dcc.Dropdown(id="theme-pick", options=options,
                          value=week["theme_shot"] if week else None,
-                         clearable=False, style={"width": "280px"}),
-            html.Button("Set", id="set-theme", className="primary"),
+                         clearable=False, style={"width": "220px"}),
+            html.Button("Change", id="set-theme", className="ghost"),
             html.Span(saved_msg or "", className="hint"),
-        ], className="composer-row"),
-        html.Div(f"Week {week['id']} of the block · currently {week['theme_name']}"
-                 if week else "No curriculum week for this date.",
-                 className="hint", style={"marginTop": "8px"}),
-    ], className="card")
+        ], className="composer-row", style={"margin": 0}),
+    ], className="week-head")
+
+    if not card:
+        return html.Div([head], className="card week-card")
+
+    columns = []
+    if card["work"]:
+        columns.append(html.Div([
+            html.Div("How the week builds", className="label"),
+            *[html.Div([
+                html.Div(stage, className="stage"),
+                html.Ul([html.Li(d) for d in drills]),
+            ]) for stage, drills in card["work"]],
+        ], className="week-col"))
+    if card["targets"]:
+        columns.append(html.Div([
+            html.Div("Shot targets", className="label"),
+            html.Ul([html.Li(x) for x in card["targets"]]),
+        ], className="week-col"))
+    if card["keys"]:
+        columns.append(html.Div([
+            html.Div("Technique keys", className="label"),
+            html.Ul([html.Li(x) for x in card["keys"]]),
+        ], className="week-col"))
+
+    sort = []
+    if card["sort"]:
+        sort = [html.Div([
+            html.Span("Sort", className="stage"),
+            html.Span(" → ".join(card["sort"]), className="hint"),
+        ], className="week-sort")]
+
+    return html.Div([head, *sort, html.Div(columns, className="week-cols")],
+                    className="card week-card")
 
 
-def approvals_card(coach_id: str):
+def squad_card():
+    """What most of the squad is working on — the two minutes on the bleachers."""
+    overview = analysis.squad_overview()
+    total = overview["total"]
+
+    if not overview["shared"]:
+        inner = [html.Div("No cue is shared across the squad this week — feedback is "
+                          "individual.", className="empty")]
+    else:
+        top = overview["shared"][0]
+        inner = [
+            html.Div([
+                html.Div(top["canonical"], className="lead-cue"),
+                html.Div(f"{len(top['players'])} of {total} players have had this on "
+                         f"court this week", className="hint"),
+            ], className="lead-box"),
+            *[html.Div([
+                html.Span(f"{len(s['players'])}/{total}", className="count-pill"),
+                html.Span(s["canonical"], className="shared-cue"),
+                html.Span(", ".join(s["players"]), className="hint"),
+            ], className="shared-row") for s in overview["shared"][1:]],
+            html.Div("Worth naming someone if they did it well, or if their work "
+                     "applies to the rest. Harder conversations one-to-one.",
+                     className="hint", style={"marginTop": "12px"}),
+        ]
+    return html.Div([html.H2("Lead the group with"), *inner], className="card")
+
+
+def attention_card(coach_id: str):
+    """The short list of things actually waiting on this coach."""
     pending = db.pending_approval(coach_id)
-    if not pending:
-        return html.Div([
-            html.H2("Waiting on you"),
-            html.Div("Nothing to release.", className="empty"),
-        ], className="card")
+    overview = analysis.squad_overview()
+    chronic = [p for p in overview["players"] if p["chronic"]]
+    stale = [p for p in overview["players"] if not p["entries_this_week"]]
 
     rows = []
-    for entry in pending[:5]:
-        player = db.person(entry["player_id"])
+    if pending:
         rows.append(html.Div([
-            html.Div(f"{player['name']} · {entry['occurred_on']}", className="meta"),
-            html.Div(entry["raw_text"], className="body"),
-            html.Div("No player version written yet — until there is one, this stays "
-                     "a coach record and the player sees nothing.", className="hint"),
-        ], className="entry"))
-
-    return html.Div([
-        html.H2(f"Waiting on you · {len(pending)}"),
-        html.Div("Notes you have written that have not been released to the player.",
-                 className="hint", style={"marginBottom": "10px"}),
-        *rows,
-    ], className="card")
+            html.Span(str(len(pending)), className="count-pill"),
+            html.Span("written, not sent", className="shared-cue"),
+            html.Span(", ".join(sorted({db.person(e["player_id"])["name"].split()[0]
+                                        for e in pending})), className="hint"),
+        ], className="shared-row"))
+    if chronic:
+        rows.append(html.Div([
+            html.Span(str(len(chronic)), className="count-pill"),
+            html.Span("stuck on the same cue", className="shared-cue"),
+            html.Span(", ".join(p["name"].split()[0] for p in chronic),
+                      className="hint"),
+        ], className="shared-row"))
+    if stale:
+        rows.append(html.Div([
+            html.Span(str(len(stale)), className="count-pill"),
+            html.Span("nothing logged this week", className="shared-cue"),
+            html.Span(", ".join(p["name"].split()[0] for p in stale),
+                      className="hint"),
+        ], className="shared-row"))
+    if not rows:
+        rows = [html.Div("Nothing waiting.", className="empty")]
+    return html.Div([html.H2("Needs you"), *rows], className="card")
 
 
 def coach_today(coach_id: str, theme_msg: str | None = None):
-    return html.Div([squad_card(), week_control(coach_id, theme_msg),
-                     approvals_card(coach_id)])
+    return html.Div([
+        week_card(coach_id, theme_msg),
+        html.Div([squad_card(), attention_card(coach_id)], className="two-col"),
+    ])
 
 
-# ------------------------------------------------------------------ players
-
-def roster():
+def roster(query: str | None = None):
+    """Players, searchable. A club has more than six."""
     overview = analysis.squad_overview()
+    needle = (query or "").strip().lower()
+    people = [p for p in overview["players"]
+              if not needle or needle in p["name"].lower()
+              or needle in (p["focus"] or "").lower()]
+
     rows = []
-    for player in overview["players"]:
+    for player in people:
         flags = []
         if player["chronic"]:
             run = player["chronic"][0]
-            flags.append(html.Span(
-                f"chronic · {run.canonical} ×{run.count} over {run.span_weeks}wk",
-                className="tag chronic"))
+            flags.append(html.Span(f"stuck · {run.canonical}", className="tag chronic"))
+        if not player["entries_this_week"]:
+            flags.append(html.Span("quiet this week", className="tag"))
         rows.append(html.Button([
             html.Div([
                 html.Span(player["name"], className="roster-name"),
                 html.Span(f"age {player['age']}", className="hint"),
             ]),
             html.Div(player["focus"] or "No focus set", className="roster-focus"),
-            html.Div(flags or [html.Span("—", className="hint")]),
+            html.Div(flags or [html.Span("on track", className="hint")]),
         ], id={"type": "open-player", "id": player["id"]}, className="roster-row"))
 
     return html.Div([
-        html.H2("Players"),
-        html.Div(rows, className="roster"),
+        html.Div([
+            html.H2("Players"),
+            dcc.Input(id="player-search", value=query or "", debounce=False,
+                      placeholder="Search by name or focus", className="search"),
+        ], className="card-head"),
+        html.Div(rows if rows else [html.Div("Nobody matches that.",
+                                             className="empty")], className="roster"),
     ], className="card")
 
 
@@ -218,8 +272,57 @@ def player_detail(player_id: str, review: dict | None, running: bool,
             html.Div(findings, style={"marginTop": "12px"}),
         ], className="card"),
 
+        by_coach(player_id),
         recent_notes(player_id),
     ])
+
+
+def by_coach(player_id: str):
+    """What each coach has said, grouped by who said it.
+
+    A player is coached by several people who rarely compare notes, so the
+    useful question is not "what is on file" but "what does each of them
+    think". Grouping by author is what makes a disagreement visible.
+    """
+    rows = db.entries_for_coach(player_id)
+    buckets: dict[str, list] = {}
+    for entry in rows:
+        if entry["author_role"] != "coach":
+            continue
+        buckets.setdefault(entry["author_id"], []).append(entry)
+    if not buckets:
+        return html.Span()
+
+    cards = []
+    for coach_id, entries in sorted(
+            buckets.items(), key=lambda kv: -len(kv[1])):
+        coach = db.person(coach_id)
+        latest = entries[-3:][::-1]
+        cards.append(html.Details([
+            html.Summary([
+                html.Div([
+                    html.Span(coach["name"], className="roster-name"),
+                    html.Span(f"{_plural(len(entries), 'note', 'notes')}",
+                              className="hint"),
+                ]),
+                html.Span(f"last {entries[-1]['occurred_on']}", className="hint"),
+            ]),
+            html.Div([html.Div([
+                html.Div(" · ".join(filter(None, [
+                    e["occurred_on"], e["setting"],
+                    e["rung"].replace("_", " ") if e["rung"] else None])),
+                    className="meta"),
+                html.Div(e["raw_text"], className="body"),
+            ], className="entry from-coach") for e in latest],
+                className="bucket-body"),
+        ], className="bucket", open=(coach_id == max(buckets, key=lambda k: len(buckets[k])))))
+
+    return html.Div([
+        html.H2("What each coach says"),
+        html.Div("Grouped by who wrote it, because that is where the disagreements "
+                 "show.", className="hint", style={"marginBottom": "10px"}),
+        *cards,
+    ], className="card")
 
 
 RECENT_FOR_COACH = 6
@@ -504,9 +607,6 @@ def note_composer(draft: dict | None, running: bool):
 
 import calendar as _cal
 from datetime import date as _date, timedelta
-
-
-CATEGORY_ORDER = ("technical", "tactical", "physical", "psychological")
 
 
 def _plural(n: int, one: str, many: str) -> str:

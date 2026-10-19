@@ -583,3 +583,109 @@ body.no-speech button.mic { opacity: 0.45; }
 .today-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
 .today-head .focus-text { margin-top: 2px; }
 .today-week { flex: 0 0 auto; padding-top: 4px; }
+
+
+/* ====================================================================
+   Pass two: fewer boxes, more hierarchy.
+   The page was a column of identical white cards, which reads as a list
+   of things rather than a screen with a point. Cards now differ by job:
+   the week card leads, paired cards sit side by side, and the chrome
+   got quieter so the content is the loudest thing.
+   ==================================================================== */
+
+:root { --wash: #f4f5f7; }
+
+body { font-size: 15px; }
+
+.card {
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 2px rgba(16, 20, 24, 0.04);
+}
+
+.card h2 { font-size: 11px; letter-spacing: 0.9px; margin-bottom: 10px; }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 12px;
+}
+.card-head h2 { margin: 0; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ---- the week card leads the dashboard ---- */
+
+.week-card {
+  background: linear-gradient(180deg, #ffffff, #fdfaf6);
+  border-color: #ecdfd0;
+}
+.week-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+.week-title {
+  font-size: 27px; font-weight: 700; letter-spacing: -0.5px;
+  line-height: 1.1; margin: 2px 0 3px;
+}
+.week-sort {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 12px 0 2px; border-bottom: 1px solid var(--line);
+}
+.week-cols {
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 24px; padding-top: 14px;
+}
+@media (max-width: 900px) { .week-cols { grid-template-columns: 1fr; gap: 16px; } }
+.week-col ul { margin: 4px 0 12px; padding-left: 17px; }
+.week-col li { line-height: 1.5; margin-bottom: 4px; font-size: 14px; }
+.stage {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.7px; color: var(--orange); display: block; margin-top: 8px;
+}
+.week-sort .stage { display: inline; margin: 0; }
+
+/* ---- quieter buttons ---- */
+
+button.ghost {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 7px;
+  padding: 9px 15px; font: inherit; font-size: 14px; font-weight: 600;
+  color: var(--slate); cursor: pointer;
+}
+button.ghost:hover { border-color: var(--orange); color: var(--amber); }
+
+input.search {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px;
+  font: inherit; font-size: 14px; width: 260px;
+}
+input.search:focus {
+  outline: 0; border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(240, 138, 36, 0.12);
+}
+
+/* ---- the dropdown was white on white ---- */
+
+.topbar .Select-menu-outer,
+.topbar .Select-menu,
+.VirtualizedSelectOption,
+.Select-option {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+}
+.Select-option.is-focused,
+.VirtualizedSelectFocusedOption {
+  background: var(--orange-soft) !important;
+  color: var(--amber) !important;
+}
+.Select-control, .Select-value-label, .Select-placeholder, .Select-input > input {
+  color: var(--ink) !important;
+}
+.topbar .Select-value-label { color: var(--ink) !important; }
+
+/* ---- lead box, calmer ---- */
+
+.lead-box { background: var(--orange-soft); border: 0; padding: 14px 16px; }
+.lead-cue { font-size: 21px; line-height: 1.2; }
+
+.roster-row { padding: 14px 6px; border-radius: 8px; }
+.roster-name { font-size: 15.5px; }

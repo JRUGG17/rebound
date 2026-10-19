@@ -22,6 +22,7 @@ from datetime import timedelta
 
 from core import db
 from core.clock import BLOCK_START
+from core.clock import today_iso as _today_iso
 
 # ---------------------------------------------------------------- people
 
@@ -76,6 +77,10 @@ CUES = [
     ("watch_them_hit", "Watch them hit", "tactical"),
     ("responsible_pressure", "Responsible under pressure", "psychological"),
 ]
+
+
+def clock_today() -> str:
+    return _today_iso()
 
 
 def week_start(week_no: int) -> str:
@@ -326,7 +331,12 @@ def build(*, reset: bool = True) -> dict:
             )
 
     _TERM = term_entries()
+    # The current week is only partly over. Nothing is dated later than today,
+    # whenever today happens to be.
+    _today = clock_today()
     for row in ENTRIES + _TERM:
+        if day_in_week(row[0], row[1]) > _today:
+            continue
         week_no, weekday, player, author, setting, rung, shot, category, cue, vis, text = row[:11]
         author_id = player if author == "self" else author
         # A coach note is released, or it is not. There is no second version:
