@@ -54,17 +54,11 @@ def main() -> int:
     print("\n[player]")
     check("today", lambda: application.player_today(player))
     check("reflections", lambda: application.player_reflections(player, "shared", None))
-    check("calendar", lambda: cv.calendar_view(player, "player", 0))
-    check("calendar, previous month", lambda: cv.calendar_view(player, "player", -1))
-    check("a day", lambda: cv.day_view(player, "player", today, None, False, False))
-    check("a day with a summary", lambda: cv.day_view(
-        player, "player", "2026-10-16",
-        {"what_happened": "x", "fits_in": "y"}, False, False))
     check("lessons by month",
           lambda: cv.lesson_months(player, None, "player", None, None, None, False))
     for key, _label in cv.RANGES:
-        check(f"recap, {key}", lambda k=key: cv.recap_view(player, "player", k, None, False))
-    check("recap with a result", lambda: cv.recap_view(
+        check(f"recap, {key}", lambda k=key: cv.recap_panel(player, "player", k, None, False))
+    check("recap with a result", lambda: cv.recap_panel(
         player, "player", "30",
         {"headline": "h", "overview": "o", "emphasis": "technical",
          "themes": [{"title": "t", "category": "technical", "cue_id": None,
@@ -84,7 +78,6 @@ def main() -> int:
         False))
     check("player detail with a focus message",
           lambda: cv.player_detail(player, None, False, "Set."))
-    check("my log", lambda: cv.coach_log_view(coach))
     check("add note, empty", lambda: cv.note_composer(None, False))
     check("add note, prefilled for a lesson", lambda: cv.note_composer(
         {"player_id": player, "setting": "lesson", "on": "2026-10-13",
@@ -108,8 +101,7 @@ def main() -> int:
                                    "2026-10-19", False))
     check("...for a year with nothing in it",
           lambda: cv.lesson_months(player, coach, "coach", None, 2019, None, False))
-    check("a player's calendar", lambda: cv.calendar_view(player, "coach", 0))
-    check("a player's recap", lambda: cv.recap_view(player, "coach", "30", None, False))
+    check("a player's recap", lambda: cv.recap_panel(player, "coach", "30", None, False))
     check("the courtside glance", lambda: cv.player_detail(player, None, False))
     check("week card", lambda: cv.week_card(coach))
     check("needs-you card", lambda: cv.attention_card(coach))
@@ -121,11 +113,9 @@ def main() -> int:
 
     print("\n[edge cases]")
     empty = "coach_rob"
-    check("my log for a coach with little on file", lambda: cv.coach_log_view(empty))
     check("a player with no entries in the window",
-          lambda: cv.recap_view(player, "player", "7", None, False))
-    check("a day with nothing on it",
-          lambda: cv.day_view(player, "player", "2026-08-02", None, False, False))
+          lambda: cv.recap_panel(player, "player", "7", None, False))
+
 
     print("\n" + "=" * 64)
     print("ALL PASS" if not check.failed else f"{check.failed} FAILED")

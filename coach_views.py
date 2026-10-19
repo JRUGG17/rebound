@@ -267,7 +267,7 @@ def player_detail(player_id: str, review: dict | None, running: bool,
                 html.Span(person["name"], className="profile-name"),
                 html.Span(f"age {person['age']}", className="hint"),
             ]),
-            html.Button("Their lessons", id="open-lessons", className="ghost"),
+            html.Button("Lessons →", id="player-lessons", className="ghost"),
         ], className="card-head"),
         html.Div([
             html.Div("Working on", className="label"),
@@ -765,7 +765,7 @@ def range_bounds(key: str) -> tuple[str, str, str]:
     return start.isoformat(), today.isoformat(), label
 
 
-def recap_view(player_id: str, viewer_role: str, range_key: str,
+def recap_panel(player_id: str, viewer_role: str, range_key: str,
                result: dict | None, running: bool):
     start, end, label = range_bounds(range_key)
     stats = analysis.period_stats(
@@ -949,157 +949,6 @@ PRIVATE_PROMPT = (
 )
 
 
-def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
-                 saving: bool, arc: dict | None = None, running: bool = False):
-    """Lesson by lesson: what the coach wrote, what the player wrote back."""
-    items = analysis.lessons(player_id, viewer="player" if viewer_role == "player"
-                             else "coach")
-    if not items:
-        return html.Div([html.H2("Lessons"),
-                         html.Div("No lessons on record yet.", className="empty")],
-                        className="card")
-
-    cards = []
-    months = analysis.by_month([{"on": i["on"], "lesson": i} for i in items],
-                               lambda i: i["on"])
-    newest_month = months[0][0] if months else None
-    for lesson in items:
-        day = lesson["on"]
-        pretty = _date.fromisoformat(day).strftime("%a %-d %b")
-        is_open = (open_on or items[0]["on"]) == day
-
-        coach_block = [html.Div([
-            html.Div([html.Span("coach", className="who-chip coach"),
-                      html.Span(db.person(e["author_id"])["name"], className="hint")],
-                     className="meta"),
-            html.Div(db.render_for(e, viewer_role) or "", className="body"),
-        ], className="entry from-coach") for e in lesson["coach"]
-            if db.render_for(e, viewer_role)]
-
-        player_block = [html.Div([
-            html.Div(html.Span("you" if viewer_role == "player" else "player",
-                               className="who-chip player"), className="meta"),
-            html.Div(db.render_for(e, viewer_role) or "", className="body"),
-        ], className="entry from-player") for e in lesson["player"]
-            if db.render_for(e, viewer_role)]
-
-        if not player_block:
-            player_block = [html.Div(
-                "You didn't write anything about this lesson."
-                if viewer_role == "player" else "Nothing from the player.",
-                className="empty")]
-
-        body = [
-            html.Div("What your coach wrote" if viewer_role == "player"
-                     else "Coach", className="label"),
-            *(coach_block or [html.Div("Nothing recorded.", className="empty")]),
-            html.Div("What you wrote" if viewer_role == "player" else "Player",
-                     className="label", style={"marginTop": "16px"}),
-            *player_block,
-        ]
-
-        if viewer_role == "player":
-            body += [
-                html.Hr(style={"border": 0, "borderTop": "1px solid var(--line)",
-                               "margin": "16px 0"}),
-                dcc.Textarea(id={"type": "lesson-text", "d": day},
-                             ),
-                html.Div([
-                    html.Button("🎤", id={"type": "lesson-mic", "d": day},
-                            className="mic", title="Speak instead"),
-                html.Button("Add to this lesson",
-                                id={"type": "lesson-save", "d": day},
-                                className="primary"),
-                    html.Span([html.Span(className="spinner"),
-                               html.Span("  Filing it…", className="hint")]
-                              if saving and is_open else ""),
-                ], className="composer-row"),
-            ]
-
-        cards.append(html.Details([
-            html.Summary([
-                html.Div([
-                    html.Span(pretty, className="lesson-date"),
-                    html.Span(lesson["week"]["theme_name"] if lesson["week"] else "",
-                              className="tag"),
-                ]),
-                html.Span(f"{len(lesson['coach'])} coach · "
-                          f"{len(lesson['player'])} yours"
-                          if viewer_role == "player" else
-                          f"{len(lesson['coach'])} coach · {len(lesson['player'])} player",
-                          className="hint"),
-            ]),
-            html.Div(body, className="bucket-body composer"),
-        ], className="bucket", open=is_open))
-
-    if running:
-        thread = [html.Span(className="spinner"),
-                  html.Span("  Reading the whole thread…", className="hint")]
-    elif arc:
-        thread = [html.Div(arc["overview"], className="recap-overview")]
-        for phase in arc["phases"]:
-            thread.append(html.Div([
-                html.Div(phase["span"], className="label"),
-                html.Div(phase["focus"], className="theme-title"),
-                html.Div(phase["what_happened"], className="theme-body"),
-            ], className="entry"))
-        if arc.get("carried_over"):
-            thread.append(html.Div([
-                html.Div("Still carrying over", className="label"),
-                *[html.Div(line, className="recur-line") for line in arc["carried_over"]],
-            ], className="recur-box"))
-        if arc.get("never_answered"):
-            thread.append(html.Div([
-                html.Strong("Raised and never picked up. "),
-                html.Div([html.Div(line) for line in arc["never_answered"]]),
-            ], className="timing-box"))
-    else:
-        thread = [html.Div("Read the lessons end to end and see how the focus has "
-                           "moved. Costs one model call.", className="empty")]
-
-    add_lesson = []
-    if viewer_role == "coach":
-        add_lesson = [html.Div([
-            html.Div([
-                html.H2(f"Lessons with {db.person(player_id)['name'].split()[0]}"),
-                html.Button("Write up a lesson", id="goto-note", className="primary"),
-            ], style={"display": "flex", "justifyContent": "space-between",
-                      "alignItems": "center"}),
-            html.Div("Opens the note form with this player and a date, so you can log "
-                     "one for the day it happened.", className="hint"),
-        ], className="card")]
-
-    return html.Div([
-        *add_lesson,
-        html.Div([
-            html.Div([
-                html.H2("The thread"),
-                html.Button("Read the lessons back", id="run-lesson-arc",
-                            className="primary"),
-            ], style={"display": "flex", "justifyContent": "space-between",
-                      "alignItems": "center"}),
-            html.Div(thread, style={"marginTop": "10px"}),
-        ], className="card"),
-        html.Div([
-            html.H2(f"Lessons · {len(items)}"),
-            html.Div("Your private lessons, newest first. The coach's note and yours, "
-                     "side by side." if viewer_role == "player"
-                     else "Private lessons, newest first.", className="hint",
-                     style={"marginBottom": "12px"}),
-            # Grouped by month: a term is a long list and a couple of years is
-            # an unusable one.
-            *[html.Div([
-                html.Div(month, className="side-heading",
-                         style={"paddingLeft": 0}),
-                *[c for c, lesson in zip(cards, items)
-                  if _date.fromisoformat(lesson["on"]).strftime("%B %Y") == month],
-            ]) for month, _rows in months],
-        ], className="card"),
-    ])
-
-
-# ------------------------------------------------------------------ coach's own
-
 def coach_lesson_picker(coach_id: str):
     """Whose lessons. Only the players this coach teaches, and nothing else."""
     mine = analysis.my_players(coach_id)
@@ -1178,7 +1027,7 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
 
     header = [
         html.Div([
-            html.Button("‹ All players", id="back-roster", className="ghost"),
+            html.Button("‹ Players", id="lessons-back", className="ghost"),
             html.Div([
                 html.Span(db.person(player_id)["name"], className="profile-name"),
                 html.Span(_plural(len(items), "lesson", "lessons"), className="hint"),
@@ -1262,63 +1111,6 @@ def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool):
                  className="card"),
     ], className="lesson-detail")
 
-
-
-def coach_log_view(coach_id: str, offset: int = 0):
-    """A coach's own teaching log, their lessons and notes, grouped by month."""
-    items = analysis.coach_log(coach_id)
-    if not items:
-        return html.Div([html.H2("My log"),
-                         html.Div("You have not written anything yet.",
-                                  className="empty")], className="card")
-
-    lessons = [i for i in items if i["entry"]["setting"] == "lesson"]
-    players = {i["player"]["id"] for i in items}
-    pending = len(db.pending_approval(coach_id))
-
-    cards = [html.Div([
-        html.Div([
-            html.Div([html.Div("Notes written", className="label"),
-                      html.Div(str(len(items)), className="value")], className="stat"),
-            html.Div([html.Div("Lessons", className="label"),
-                      html.Div(str(len(lessons)), className="value")], className="stat"),
-            html.Div([html.Div("Players", className="label"),
-                      html.Div(str(len(players)), className="value")], className="stat"),
-            html.Div([html.Div("Unreleased", className="label"),
-                      html.Div(str(pending), className="value"),
-                      html.Div("not shown to the player", className="sub")],
-                     className="stat"),
-        ], className="stat-row"),
-    ])]
-
-    for month, rows in analysis.by_month(items, lambda i: i["entry"]["occurred_on"]):
-        month_lessons = [r for r in rows if r["entry"]["setting"] == "lesson"]
-        cards.append(html.Details([
-            html.Summary([
-                html.Span(month, className="lesson-date"),
-                html.Span(f"{_plural(len(rows), 'note', 'notes')} · "
-                          f"{_plural(len(month_lessons), 'lesson', 'lessons')}",
-                          className="hint"),
-            ]),
-            html.Div([html.Div([
-                html.Div([
-                    html.Span(r["entry"]["occurred_on"], className="hint"),
-                    html.Span(r["player"]["name"], className="who-chip player"),
-                    html.Span(r["entry"]["setting"], className="tag"),
-                    html.Span("unreleased", className="tag")
-                    if not r["entry"]["player_text_approved_at"] else html.Span(),
-                ], className="meta"),
-                html.Div(r["entry"]["raw_text"], className="body"),
-            ], className="entry from-coach") for r in rows], className="bucket-body"),
-        ], className="bucket", open=(month == analysis.by_month(
-            items, lambda i: i["entry"]["occurred_on"])[0][0])))
-
-    return html.Div([
-        html.H2("My log"),
-        html.Div("Everything you have written, across all your players, newest "
-                 "first.", className="hint", style={"marginBottom": "12px"}),
-        *cards,
-    ], className="card")
 
 
 def focus_control(player_id: str, saved: str | None = None):

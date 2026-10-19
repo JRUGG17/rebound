@@ -347,7 +347,7 @@ app.layout = html.Div([
     dcc.Store(id="lesson-arc", data=None),
     dcc.Store(id="focus-tick", data=None),
     dcc.Store(id="search", data=""),
-    dcc.Store(id="lesson-year", data=None),
+    dcc.Store(id="year-sel", data=None),
     dcc.Store(id="open-month", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
@@ -392,16 +392,14 @@ def move_clock(_b, _f, _r, _nav, _theme):
     return f"{label} · {week['theme_name']}" if week else label
 
 
+# Five places to stand. Everything else is reached by drilling in from one
+# of them, because eleven parallel destinations is how this got lost.
 PLAYER_NAV = [
-    (None, [("today", "Today")]),
-    ("Journal", [("calendar", "Calendar"), ("lessons", "Lessons"),
-                 ("recap", "Recap")]),
+    (None, [("training", "My training"), ("lessons", "My lessons")]),
     (None, [("usage", "Usage")]),
 ]
 COACH_NAV = [
-    (None, [("today", "Today"), ("players", "Players"), ("note", "Add note")]),
-    ("Mine", [("mylog", "My log")]),
-    ("Journal", [("calendar", "Calendar"), ("recap", "Recap")]),
+    (None, [("today", "Today"), ("players", "Players"), ("lessons", "My lessons")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
 ]
 
@@ -448,17 +446,6 @@ def leave_open_day(clicks):
     if not any(c for c in clicks if c):
         return no_update
     return None
-
-
-@app.callback(Output("recap-range", "data", allow_duplicate=True),
-              Output("nav", "data", allow_duplicate=True),
-              Output("recap", "data", allow_duplicate=True),
-              Input({"type": "month-recap", "m": ALL}, "n_clicks"),
-              prevent_initial_call=True)
-def recap_a_month(clicks):
-    if not any(c for c in clicks if c):
-        return no_update, no_update, no_update
-    return f"month:{ctx.triggered_id['m']}", "recap", None
 
 
 @app.callback(Output("nav", "data", allow_duplicate=True),
@@ -644,18 +631,6 @@ def save_note(release_clicks, keep_clicks, draft, player_text, coach_id):
     return {"saved": note}
 
 
-@app.callback(Output("cal-offset", "data"),
-              Input("cal-prev", "n_clicks"), Input("cal-next", "n_clicks"),
-              State("cal-offset", "data"), prevent_initial_call=True)
-def move_calendar(prev_clicks, next_clicks, offset):
-    offset = offset or 0
-    if ctx.triggered_id == "cal-prev" and prev_clicks:
-        return offset - 1
-    if ctx.triggered_id == "cal-next" and next_clicks:
-        return offset + 1
-    return offset
-
-
 @app.callback(Output("recap-range", "data"), Output("recap", "data"),
               Input({"type": "recap-range", "k": ALL}, "n_clicks"),
               State("recap-range", "data"), prevent_initial_call=True)
@@ -684,104 +659,6 @@ def start_recap(n, who, sel_player, range_key):
         return no_update, no_update
     start, end, _label = cv.range_bounds(range_key or "block")
     return run_recap(subject, start, end, "player" if is_player else "coach"), False
-
-
-@app.callback(Output("sel-day", "data"), Output("day-summary", "data"),
-              Input({"type": "cal-day", "d": ALL}, "n_clicks"),
-              prevent_initial_call=True)
-def open_day(clicks):
-    if not any(c for c in clicks if c):
-        return no_update, no_update
-    return ctx.triggered_id["d"], None
-
-
-@app.callback(Output("sel-day", "data", allow_duplicate=True),
-              Output("day-summary", "data", allow_duplicate=True),
-              Input("day-back", "n_clicks"), prevent_initial_call=True)
-def close_day(n):
-    return (None, None) if n else (no_update, no_update)
-
-
-@app.callback(
-    Output("job", "data", allow_duplicate=True),
-    Output("poll", "disabled", allow_duplicate=True),
-    Input("run-day", "n_clicks"),
-    State("who", "value"), State("sel-player", "data"), State("sel-day", "data"),
-    prevent_initial_call=True,
-)
-def start_day_summary(n, who, sel_player, day):
-    person = db.person(who)
-    if not n or person is None or not day:
-        return no_update, no_update
-    is_player = person["role"] == "player"
-    subject = who if is_player else sel_player
-    if not subject:
-        return no_update, no_update
-    return run_day_summary(subject, day, "player" if is_player else "coach"), False
-
-
-@app.callback(
-    Output("job", "data", allow_duplicate=True),
-    Output("poll", "disabled", allow_duplicate=True),
-    Output("day-text", "value"),
-    Input("day-save", "n_clicks"), Input("day-save-private", "n_clicks"),
-    State("day-text", "value"), State("who", "value"), State("sel-day", "data"),
-    prevent_initial_call=True,
-)
-def save_on_day(shared_clicks, private_clicks, text, who, day):
-    if not clicked(shared_clicks, private_clicks):
-        return no_update, no_update, no_update
-    person = db.person(who)
-    if not text or not text.strip() or person is None or person["role"] != "player":
-        return no_update, no_update, no_update
-    if not day:
-        return no_update, no_update, no_update
-    visibility = "private" if ctx.triggered_id == "day-save-private" else "shared"
-    return save_dated(who, text.strip(), visibility, day), False, ""
-
-
-@app.callback(
-    Output("job", "data", allow_duplicate=True),
-    Output("poll", "disabled", allow_duplicate=True),
-    Output("sel-day", "data", allow_duplicate=True),
-    Input({"type": "lesson-save", "d": ALL}, "n_clicks"),
-    State({"type": "lesson-text", "d": ALL}, "value"),
-    State("who", "value"),
-    prevent_initial_call=True,
-)
-def save_lesson_note(clicks, texts, who):
-    person = db.person(who)
-    if not any(c for c in clicks if c) or person is None or person["role"] != "player":
-        return no_update, no_update, no_update
-    day = ctx.triggered_id["d"]
-    # The textareas come back in layout order, so find the one for this lesson
-    # rather than trusting an index that shifts as lessons are added.
-    wanted = [i["id"]["d"] for i in ctx.states_list[0]]
-    try:
-        text = texts[wanted.index(day)]
-    except (ValueError, IndexError):
-        return no_update, no_update, no_update
-    if not text or not text.strip():
-        return no_update, no_update, no_update
-    return save_dated(who, text.strip(), "shared", day, setting="lesson"), False, day
-
-
-@app.callback(
-    Output("job", "data", allow_duplicate=True),
-    Output("poll", "disabled", allow_duplicate=True),
-    Input("run-lesson-arc", "n_clicks"),
-    State("who", "value"), State("sel-player", "data"),
-    prevent_initial_call=True,
-)
-def start_lesson_arc(n, who, sel_player):
-    person = db.person(who)
-    if not n or person is None:
-        return no_update, no_update
-    is_player = person["role"] == "player"
-    subject = who if is_player else sel_player
-    if not subject:
-        return no_update, no_update
-    return run_lesson_arc(subject, "player" if is_player else "coach"), False
 
 
 @app.callback(Output("focus-tick", "data"),
@@ -832,7 +709,19 @@ def go_to_lessons(n):
     return "lessons" if clicked(n) else no_update
 
 
-@app.callback(Output("lesson-year", "data"), Input("lesson-year", "value"),
+@app.callback(Output("nav", "data", allow_duplicate=True),
+              Input("player-lessons", "n_clicks"), prevent_initial_call=True)
+def go_to_player_lessons(n):
+    return "lessons" if clicked(n) else no_update
+
+
+@app.callback(Output("sel-player", "data", allow_duplicate=True),
+              Input("lessons-back", "n_clicks"), prevent_initial_call=True)
+def leave_lessons(n):
+    return None if clicked(n) else no_update
+
+
+@app.callback(Output("year-sel", "data"), Input("lesson-year", "value"),
               prevent_initial_call=True)
 def pick_year(value):
     return value
@@ -857,7 +746,7 @@ def open_lesson(clicks):
     Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
     Input("sel-day", "data"), Input("day-summary", "data"),
     Input("lesson-arc", "data"), Input("focus-tick", "data"),
-    Input("search", "data"), Input("lesson-year", "data"),
+    Input("search", "data"), Input("year-sel", "data"),
     Input("open-month", "data"),
     State("job", "data"),
 )
@@ -874,49 +763,39 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         return usage_page()
 
     role = person["role"]
+
     if role == "player":
         if nav == "lessons":
             return cv.lesson_months(who, None, "player", open_month, year,
                                     sel_day, running)
-        if nav == "calendar":
-            if sel_day:
-                return cv.day_view(who, "player", sel_day, day_summary, running, running)
-            return cv.calendar_view(who, "player", cal_offset or 0)
-        if nav == "recap":
-            return cv.recap_view(who, "player", recap_range, recap, running)
-        return html.Div([*player_today(who),
-                         player_reflections(who, "shared", job_id)])
+        return html.Div([
+            *player_today(who),
+            player_reflections(who, "shared", job_id),
+            cv.recap_panel(who, "player", recap_range, recap, running),
+        ])
+
     if role == "parent":
         return cv.parent_page(who)
+
     if role in ("coach", "admin"):
-        if nav == "mylog":
-            return cv.coach_log_view(who, cal_offset or 0)
+        if nav == "resources":
+            return cv.resources(answer, running, pb_sec or 1)
+        if nav == "note":
+            return cv.note_composer(draft, running)
         if nav == "lessons":
             if not sel_player:
                 return cv.coach_lesson_picker(who)
             return cv.lesson_months(sel_player, who, "coach", open_month,
                                     year, sel_day, running)
-        if nav == "calendar":
-            if not sel_player:
-                return cv.coach_lesson_picker(who)
-            if sel_day:
-                return cv.day_view(sel_player, "coach", sel_day, day_summary,
-                                   running, running)
-            return cv.calendar_view(sel_player, "coach", cal_offset or 0)
-        if nav == "recap":
-            if not sel_player:
-                return cv.coach_lesson_picker(who)
-            return cv.recap_view(sel_player, "coach", recap_range, recap, running)
-        if nav == "note":
-            return cv.note_composer(draft, running)
-        if nav == "resources":
-            return cv.resources(answer, running, pb_sec or 1)
         if nav == "players":
             if sel_player:
-                return cv.player_detail(sel_player, review, running,
-                                        focus_msg)
+                return html.Div([
+                    cv.player_detail(sel_player, review, running, focus_msg),
+                    cv.recap_panel(sel_player, "coach", recap_range, recap, running),
+                ])
             return cv.roster(search)
         return cv.coach_today(who, theme_msg)
+
     return html.Div("Nothing here.", className="card")
 
 
