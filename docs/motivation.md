@@ -144,12 +144,18 @@ control story.
 
 ---
 
-## The theory note — Jamie's hedge was correct
+## The theory note — keep it to what is defensible out loud
 
 > You can bring in Ericsson's deliberate practice model. Actually, I don't know
 > if reflection's on that.
 
-It mostly is not, and that turns out to be the better argument.
+Correct, and the useful version of this is short.
+
+**Do not put scholarly hedging in the report that Jamie would have to defend in
+a viva.** A first draft carried the failed 2019 replication of the Ericsson
+violin study in a callout box. He read it and said, reasonably, that he did not
+know what it meant. A citation the author cannot speak to is a liability, not
+rigour. Cut.
 
 **Ericsson, Krampe & Tesch-Römer (1993)** define deliberate practice by
 well-defined tasks with specific goals, focused attention, immediate informative
@@ -200,13 +206,15 @@ Sources:
   was not the plan. COVID supply-chain delays pushed it. A small start as a
   result, then quick growth.
 - **Plainsboro, New Jersey:** four coaches now, up from the original two.
-- **Two further clubs**, in Pennsylvania and in **Hartford, Connecticut**, both
+- **Two further clubs**, in **Exton, Pennsylvania** and **Hartford, Connecticut**, both
   currently hiring. Neither has settled its methods, which is why the app
   models Plainsboro only.
-- **Jamie is no longer with the club.** The report should say so and write in
-  the past tense. He is a practitioner source describing a program he
-  co-founded and coached in, not a current employee pitching a tool. That is
-  the more credible position, not the weaker one.
+- **Jamie was there from the 2021 planning stage until mid-2026** — five
+  years, founding to present — and left about three months before this was
+  written. Close enough to current that the report should not write him as an
+  alumnus looking back; he is a practitioner describing a program he built and
+  worked in last season. An early draft put this in the distant past and he
+  corrected it.
 
 Two coaches in 2022 who knew every player because they spoke every day, to
 four at one club and two more clubs hiring, in under four years. **That is the
