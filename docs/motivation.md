@@ -210,11 +210,11 @@ Sources:
   currently hiring. Neither has settled its methods, which is why the app
   models Plainsboro only.
 - **Jamie was there from the 2021 planning stage until mid-2026** — five
-  years, founding to present — and left about three months before this was
-  written. Close enough to current that the report should not write him as an
-  alumnus looking back; he is a practitioner describing a program he built and
-  worked in last season. An early draft put this in the distant past and he
-  corrected it.
+  years, founding through last season — and left to come to business school.
+  Write him as a current practitioner, not an alumnus looking back. Two drafts
+  got this wrong: the first put it in the distant past, the second kept saying
+  "three months ago", which draws attention to a departure that needs no
+  explanation. The dates carry it.
 
 Two coaches in 2022 who knew every player because they spoke every day, to
 four at one club and two more clubs hiring, in under four years. **That is the
