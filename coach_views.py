@@ -199,22 +199,6 @@ def roster(query: str | None = None):
     ], className="card")
 
 
-def matrix_table(player_id: str):
-    grid = analysis.matrix(player_id)
-    if not grid:
-        return html.Div("No entries carry both a shot and a rung yet.", className="empty")
-
-    header = html.Tr([html.Th("")] + [html.Th(RUNG_LABELS[r]) for r in db.RUNGS])
-    rows = []
-    for shot, counts in grid.items():
-        cells = [html.Td(shot, className="shot-name")]
-        for rung in db.RUNGS:
-            n = counts.get(rung, 0)
-            cells.append(html.Td(str(n) if n else "", className=f"cell{' has' if n else ''}"))
-        rows.append(html.Tr(cells))
-    return html.Table([html.Thead(header), html.Tbody(rows)], className="matrix")
-
-
 def finding_card(finding):
     kind_label = finding["kind"].replace("_", " ")
     bits = [
@@ -302,12 +286,6 @@ def player_detail(player_id: str, review: dict | None, running: bool,
         *head,
         html.Div(tiles, className="two-col") if tiles else html.Span(),
 
-        html.Div([
-            html.Div([html.H2("Where the evidence sits"),
-                      html.Span("Low rungs rehearse, high rungs test.",
-                                className="hint")], className="card-head"),
-            matrix_table(player_id),
-        ], className="card"),
         html.Div([
             html.Div([html.H2("What no single coach can see"),
                       html.Button("Run comparison", id="run-comparison",
@@ -464,52 +442,114 @@ def resources(answer: dict | None, running: bool, section_no: int):
 # ------------------------------------------------------------------ parent
 
 def parent_page(parent_id: str):
+    """A guardian's read-only view, organised the way the rest of the app is.
+
+    Same shape as what a coach sees — the focuses, the lessons, the rest —
+    minus anything the child kept private. Grouped by month rather than
+    poured onto one page, because a term is a lot of notes and a parent is
+    looking for a thread, not a feed.
+    """
     parent = db.person(parent_id)
     child_id = parent["child_id"]
     child = db.person(child_id)
-    focus = db.current_focus(child_id)
-    entries = list(reversed(db.entries_for_parent(child_id)))
+    entries = [e for e in db.entries_for_parent(child_id)
+               if db.render_for(e, "parent") is not None]
 
-    cards = [html.Div([
-        html.H2(f"{child['name']} · age {child['age']}"),
-        html.Div(focus["text"] if focus else "No focus set", className="focus-text"),
-        html.Div("This is what the coaches have set as the thing to work on.",
-                 className="hint"),
-    ], className="card focus-card")]
+    lessons = [e for e in entries if e["setting"] == "lesson"]
+    rest = [e for e in entries if e["setting"] != "lesson"]
 
-    shown = []
-    for entry in entries:
-        text = db.render_for(entry, "parent")
-        if text is None:
-            continue
-        author = db.person(entry["author_id"])
-        shown.append(html.Div([
-            html.Div(f"{entry['occurred_on']} · {entry['setting']}", className="meta"),
-            html.Div(text, className="body"),
-            html.Div(f"— {author['name']}"
-                     if author["role"] == "coach" else f"— {child['name'].split()[0]}",
-                     className="byline"),
-        ], className="entry"))
+    def grouped(rows, empty_text):
+        if not rows:
+            return [html.Div(empty_text, className="empty")]
+        months = analysis.by_month(
+            [{"e": r, "on": r["occurred_on"]} for r in rows], lambda i: i["on"])
+        blocks = []
+        for month, items in months:
+            blocks.append(html.Details([
+                html.Summary([
+                    html.Span(month, className="month-name"),
+                    html.Span(_plural(len(items), "note", "notes"),
+                              className="hint"),
+                ]),
+                html.Div([html.Div([
+                    html.Div([
+                        html.Span(i["e"]["occurred_on"], className="hint"),
+                        html.Span("coach" if i["e"]["author_role"] == "coach"
+                                  else child["name"].split()[0],
+                                  className=f"who-chip "
+                                  f"{'coach' if i['e']['author_role'] == 'coach' else 'player'}"),
+                        html.Span(i["e"]["setting"], className="tag"),
+                    ], className="meta"),
+                    html.Div(db.render_for(i["e"], "parent"), className="body"),
+                    html.Div(f"— {db.person(i['e']['author_id'])['name']}",
+                             className="byline"),
+                ], className=f"entry from-"
+                   f"{'coach' if i['e']['author_role'] == 'coach' else 'player'}")
+                    for i in sorted(items, key=lambda x: x["on"], reverse=True)],
+                    className="bucket-body"),
+            ], className="bucket month", open=(month == months[0][0])))
+        return blocks
 
-    cards.append(html.Div([
-        html.H2("Training record"),
-        html.Div("Read-only. You see what your child sees from their coaches, in the "
-                 "same words. Children also have a private space for their own "
-                 "reflections, which nobody reads — if anything written there suggests "
-                 "they need support, you and a designated adult are told, and so are "
-                 "they.", className="hint", style={"marginBottom": "14px"}),
-        *(shown or [html.Div("Nothing yet.", className="empty")]),
-    ], className="card"))
-    return html.Div(cards)
+    coach_focus = db.current_focus(child_id, "coach")
+    own_focus = db.current_focus(child_id, "player")
+
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.Span(child["name"], className="profile-name"),
+                html.Span(f"age {child['age']}", className="hint"),
+            ]),
+            html.Span("Read only", className="tag"),
+        ], className="card card-head"),
+
+        html.Div([
+            html.Div([
+                html.Div("Coach focus", className="label"),
+                html.Div(coach_focus["text"] if coach_focus else "Nothing set",
+                         className="focus-text" if coach_focus else "empty"),
+                html.Div(f"{db.person(coach_focus['coach_id'])['name']} · "
+                         f"{coach_focus['set_on']}" if coach_focus else "",
+                         className="byline"),
+            ], className="card focus-card"),
+            html.Div([
+                html.Div(f"{child['name'].split()[0]}'s own focus", className="label"),
+                html.Div(own_focus["text"] if own_focus else "Nothing set",
+                         className="focus-text" if own_focus else "empty"),
+            ], className="card focus-card"),
+        ], className="two-col focus-pair"),
+
+        html.Div([html.H2(f"Lessons · {len(lessons)}"),
+                  *grouped(lessons, "No lessons yet.")], className="card"),
+        html.Div([html.H2(f"Everything else · {len(rest)}"),
+                  *grouped(rest, "Nothing yet.")], className="card"),
+
+        html.Div("Your child also has a private space for their own reflections, "
+                 "which nobody reads. If anything written there suggests they need "
+                 "support, you and a designated adult are told — and so are they.",
+                 className="banner"),
+    ])
 
 
-# ------------------------------------------------------------------ add note
+# ------------------------------------------------------------------ writing
 
-JOURNAL_PROMPT = (
-    "What's on your mind? Reflect on the session here — how it went, what you were "
-    "working on, how you felt about it. You don't have to share anything you don't "
-    "want to."
-)
+SESSION_KINDS = [("lesson", "Lesson"), ("squad", "Squad"), ("solo", "Solo"),
+                 ("tournament", "Match play"), ("reflection", "Other")]
+
+
+def session_picker(selected: str | None):
+    """What kind of session this was.
+
+    Typing into one undifferentiated box is how a diary becomes a pile. One
+    tap before writing is the difference between a record you can sort and a
+    wall of text — and it means the Organizer is told rather than guessing.
+    """
+    chosen = selected or "squad"
+    return html.Div([
+        html.Button(label, id={"type": "kind", "k": key},
+                    className=f"chip{' on' if key == chosen else ''}")
+        for key, label in SESSION_KINDS
+    ], className="chips")
+
 
 SETTINGS = [("lesson", "Private lesson"), ("squad", "Squad"),
             ("tournament", "Tournament"), ("solo", "Solo assignment")]
@@ -999,7 +1039,7 @@ def coach_lesson_picker(coach_id: str):
 
 def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
                   open_month: str | None, year: int | None,
-                  open_on: str | None, saving: bool):
+                  open_on: str | None, saving: bool, editing: int | None = None):
     """A player's lessons, by month, newest first.
 
     A year is about fifty lessons and a career is several hundred, so they
@@ -1066,13 +1106,18 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
         html.Div(header, className="card"),
         html.Div(blocks or [html.Div("No lessons this year.", className="empty")],
                  className="card"),
-        lesson_detail(player_id, open_on, viewer_role, saving) if open_on
+        lesson_detail(player_id, open_on, viewer_role, saving, editing) if open_on
         else html.Span(),
     ])
 
 
-def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool):
-    """One lesson: the coach's side and the player's side, both editable."""
+def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool,
+                  editing: int | None = None):
+    """One lesson: the coach's side and the player's side.
+
+    Editing happens in place — the entry becomes a box with its own text in
+    it, because the alternative is retyping something you can see.
+    """
     items = analysis.lessons(player_id, viewer="player" if viewer_role == "player"
                              else "coach")
     lesson = next((i for i in items if i["on"] == day), None)
@@ -1085,15 +1130,28 @@ def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool):
             text = db.render_for(entry, viewer_role)
             if text is None:
                 continue
-            blocks.append(html.Div([
-                html.Div([
-                    html.Span(who, className=f"who-chip {who}"),
-                    html.Span(db.person(entry["author_id"])["name"], className="hint"),
-                    html.Button("Edit", id={"type": "edit-entry", "i": entry["id"]},
-                                className="link") if editable else html.Span(),
-                ], className="meta"),
-                html.Div(text, className="body"),
-            ], className=f"entry from-{who}"))
+            head = [
+                html.Span(who, className=f"who-chip {who}"),
+                html.Span(db.person(entry["author_id"])["name"], className="hint"),
+            ]
+            if editable and entry["id"] != editing:
+                head.append(html.Button(
+                    "Edit", id={"type": "edit-entry", "i": entry["id"]},
+                    className="link"))
+            if entry["id"] == editing:
+                body = html.Div([
+                    dcc.Textarea(id={"type": "edit-text", "i": entry["id"]},
+                                 value=entry["raw_text"]),
+                    html.Div([
+                        html.Button("Save", id={"type": "edit-save", "i": entry["id"]},
+                                    className="primary"),
+                        html.Button("Cancel", id="edit-cancel", className="ghost"),
+                    ], className="composer-row"),
+                ], className="composer")
+            else:
+                body = html.Div(text, className="body")
+            blocks.append(html.Div([html.Div(head, className="meta"), body],
+                                   className=f"entry from-{who}"))
         return blocks
 
     coach_side = side(lesson["coach"], "coach", viewer_role == "coach")

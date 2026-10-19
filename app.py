@@ -72,14 +72,17 @@ def job(job_id: str | None) -> dict:
         return dict(_JOBS.get(job_id, {"state": "idle"}))
 
 
-def save_reflection(player_id: str, text: str, visibility: str):
+def save_reflection(player_id: str, text: str, visibility: str,
+                    kind: str = "squad"):
     def work():
         on = clock.today_iso()
         organized, _usage = aio.run(
             organizer.organize_player_entry(player_id, text, on))
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
-            setting=organized.setting, rung=organized.rung, shot=organized.shot,
+            # The player said what kind of session it was. The model only
+            # guesses when nobody told it.
+            setting=kind or organized.setting, rung=organized.rung, shot=organized.shot,
             category=organized.category, cue_id=organized.cue_id, proposed_cue=organized.proposed_cue,
             raw_text=text, summary=organized.summary, visibility=visibility,
             occurred_on=on,
@@ -215,7 +218,8 @@ def player_today(player_id: str):
 RECENT_ON_TODAY = 4
 
 
-def player_reflections(player_id: str, tab: str, job_id: str | None):
+def player_reflections(player_id: str, tab: str, job_id: str | None,
+                       kind: str | None = None):
     """One box, two buttons.
 
     This used to be two tabs, Shared and Just me. The tab is gone and the
@@ -248,6 +252,7 @@ def player_reflections(player_id: str, tab: str, job_id: str | None):
 
     return html.Div([
         html.Div([
+            cv.session_picker(kind),
             dcc.Textarea(id="composer"),
             html.Div([
                 html.Button("🎤", id="mic", className="mic", title="Speak instead"),
@@ -357,6 +362,8 @@ app.layout = html.Div([
     dcc.Store(id="year-sel", data=None),
     dcc.Store(id="open-month", data=None),
     dcc.Store(id="show-entries", data=False),
+    dcc.Store(id="kind", data="squad"),
+    dcc.Store(id="editing", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -510,17 +517,18 @@ def set_theme(n, shot):
 @app.callback(
     Output("job", "data"), Output("poll", "disabled"), Output("composer", "value"),
     Input("save", "n_clicks"), Input("save-private", "n_clicks"),
-    State("composer", "value"), State("who", "value"),
+    State("composer", "value"), State("who", "value"), State("kind", "data"),
     prevent_initial_call=True,
 )
-def start_save(save_clicks, private_clicks, text, who):
+def start_save(save_clicks, private_clicks, text, who, kind):
     if not clicked(save_clicks, private_clicks):
         return no_update, no_update, no_update
     person = db.person(who)
     if not text or not text.strip() or not person or person["role"] != "player":
         return no_update, no_update, no_update
     visibility = "private" if ctx.triggered_id == "save-private" else "shared"
-    return save_reflection(who, text.strip(), visibility), False, ""
+    return (save_reflection(who, text.strip(), visibility, kind or "squad"),
+            False, "")
 
 
 @app.callback(
@@ -586,6 +594,7 @@ def collect(_n, job_id, draft):
     Output("job", "data", allow_duplicate=True),
     Output("poll", "disabled", allow_duplicate=True),
     Output("draft", "data", allow_duplicate=True),
+    Output("note-text", "value"),
     Input("file-note", "n_clicks"),
     State("note-player", "value"), State("note-text", "value"),
     State("note-setting", "value"), State("note-date", "date"),
@@ -593,12 +602,12 @@ def collect(_n, job_id, draft):
 )
 def start_file_note(n, player_id, text, setting, on):
     if not n or not player_id or not text or not text.strip():
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
     draft = {"player_id": player_id, "text": text.strip(),
              "setting": setting or "lesson", "on": on or clock.today_iso(),
              "organized": None}
     return (file_coach_note(player_id, text.strip(), setting or "lesson",
-                            draft["on"]), False, draft)
+                            draft["on"]), False, draft, "")
 
 
 @app.callback(
@@ -703,6 +712,7 @@ def set_own_focus(n, text, category, who):
 @app.callback(
     Output("job", "data", allow_duplicate=True),
     Output("poll", "disabled", allow_duplicate=True),
+    Output({"type": "lesson-add", "d": ALL}, "value"),
     Input({"type": "lesson-save", "d": ALL}, "n_clicks"),
     State({"type": "lesson-add", "d": ALL}, "value"),
     State("who", "value"), State("sel-player", "data"),
@@ -711,26 +721,30 @@ def set_own_focus(n, text, category, who):
 def add_to_lesson(clicks, texts, who, sel_player):
     """Either side adding to a lesson. This was lost when dead callbacks were
     pruned, which is why a player could not add anything."""
+    blank = ["" for _ in texts]
+    keep = [no_update for _ in texts]
     if not any(c for c in clicks if c):
-        return no_update, no_update
+        return no_update, no_update, keep
     person = db.person(who)
     if person is None:
-        return no_update, no_update
+        return no_update, no_update, keep
     day = ctx.triggered_id["d"]
     wanted = [i["id"]["d"] for i in ctx.states_list[0]]
     try:
         text = texts[wanted.index(day)]
     except (ValueError, IndexError):
-        return no_update, no_update
+        return no_update, no_update, keep
     if not text or not text.strip():
-        return no_update, no_update
+        return no_update, no_update, keep
 
+    # Empty the box on the way out. Leaving the text sitting there after it
+    # has been filed is how you end up posting it twice.
     if person["role"] == "player":
-        return save_dated(who, text.strip(), "shared", day, setting="lesson"), False
-    subject = sel_player
-    if not subject:
-        return no_update, no_update
-    return file_lesson_note(subject, who, text.strip(), day), False
+        return (save_dated(who, text.strip(), "shared", day, setting="lesson"),
+                False, blank)
+    if not sel_player:
+        return no_update, no_update, keep
+    return file_lesson_note(sel_player, who, text.strip(), day), False, blank
 
 
 @app.callback(Output("nav", "data", allow_duplicate=True),
@@ -792,6 +806,49 @@ def toggle_entries(n, showing):
     return (not showing) if clicked(n) else no_update
 
 
+@app.callback(Output("kind", "data"),
+              Input({"type": "kind", "k": ALL}, "n_clicks"),
+              State("kind", "data"), prevent_initial_call=True)
+def pick_kind(clicks, current):
+    if not any(c for c in clicks if c):
+        return current
+    return ctx.triggered_id["k"]
+
+
+@app.callback(Output("editing", "data"),
+              Input({"type": "edit-entry", "i": ALL}, "n_clicks"),
+              Input("edit-cancel", "n_clicks"),
+              prevent_initial_call=True)
+def start_editing(clicks, cancel):
+    if ctx.triggered_id == "edit-cancel":
+        return None if clicked(cancel) else no_update
+    if not any(c for c in clicks if c):
+        return no_update
+    return ctx.triggered_id["i"]
+
+
+@app.callback(Output("editing", "data", allow_duplicate=True),
+              Input({"type": "edit-save", "i": ALL}, "n_clicks"),
+              State({"type": "edit-text", "i": ALL}, "value"),
+              State("who", "value"), prevent_initial_call=True)
+def save_edit(clicks, texts, who):
+    """Edit an entry in place. The author's words replace the author's words —
+    no second version, same as everywhere else."""
+    if not any(c for c in clicks if c):
+        return no_update
+    entry_id = ctx.triggered_id["i"]
+    wanted = [i["id"]["i"] for i in ctx.states_list[0]]
+    try:
+        text = texts[wanted.index(entry_id)]
+    except (ValueError, IndexError):
+        return None
+    if text and text.strip():
+        with db.connect() as conn:
+            conn.execute("UPDATE entries SET raw_text = ? WHERE id = ?",
+                         (text.strip(), entry_id))
+    return None
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -804,12 +861,14 @@ def toggle_entries(n, showing):
     Input("lesson-arc", "data"), Input("focus-tick", "data"),
     Input("search", "data"), Input("year-sel", "data"),
     Input("open-month", "data"), Input("show-entries", "data"),
+    Input("kind", "data"), Input("editing", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
-                search, year, open_month, show_entries, job_id):
+                search, year, open_month, show_entries, kind, editing,
+                job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -823,11 +882,11 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
     if role == "player":
         if nav == "lessons":
             return cv.lesson_months(who, None, "player", open_month, year,
-                                    sel_day, running)
+                                    sel_day, running, editing)
         return html.Div([
             *player_today(who),
             cv.focus_pair(who, "player", focus_msg),
-            player_reflections(who, "shared", job_id),
+            player_reflections(who, "shared", job_id, kind),
             cv.recap_panel(who, "player", recap_range, recap, running,
                            show_entries),
         ])
@@ -844,7 +903,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             if not sel_player:
                 return cv.coach_lesson_picker(who)
             return cv.lesson_months(sel_player, who, "coach", open_month,
-                                    year, sel_day, running)
+                                    year, sel_day, running, editing)
         if nav == "players":
             if sel_player:
                 return html.Div([

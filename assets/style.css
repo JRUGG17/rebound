@@ -757,3 +757,28 @@ button.stat-button:hover { border-color: var(--orange); background: var(--orange
 button.stat-button .sub { color: var(--orange); font-weight: 600; }
 
 .today-head { align-items: center; }
+
+/* ---------------------------------------------------------- boxes keep their shape */
+
+textarea, .composer textarea, .dash-textarea {
+  resize: none !important;
+  height: 92px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+.composer textarea { min-height: 92px; }
+.focus-pair textarea { height: 56px; min-height: 56px; }
+.lesson-detail textarea, .entry textarea { height: 76px; min-height: 76px; }
+
+/* ---------------------------------------------------------- session kind chips */
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+button.chip {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 20px;
+  padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+}
+button.chip:hover { border-color: var(--orange); color: var(--amber); }
+button.chip.on {
+  background: var(--orange); border-color: var(--orange); color: #fff;
+}
