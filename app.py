@@ -328,6 +328,15 @@ def usage_page():
 FONT_CSS = ("https://fonts.googleapis.com/css2?"
             "family=Exo+2:ital,wght@1,800&display=swap")
 
+# The layout below is built at import time and reads the database, so the
+# schema has to exist before that happens — and on a fresh clone it does not.
+# This lived under `if __name__ == "__main__"` until a clone into an empty
+# folder crashed on startup with "no such table: people". The machine it was
+# written on already had a database, which is exactly why nobody saw it.
+db.init_db()
+if not db.people("player"):
+    seed.build()
+
 app = Dash(__name__, title="Rebound — Squash Tigers",
            external_stylesheets=[FONT_CSS],
            suppress_callback_exceptions=True)
@@ -1252,9 +1261,6 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
 
 
 if __name__ == "__main__":
-    db.init_db()
-    if not db.people("player"):
-        seed.build()
     if not key_is_set():
         print("!! PORTKEY_API_KEY not found — agent calls will fail.")
     print(f"\n  Rebound on http://127.0.0.1:8050   model={MODEL_NAME}")
