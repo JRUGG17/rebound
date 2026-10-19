@@ -340,3 +340,19 @@ Important and correctly scoped: this is a **documentation** gap, not a model
 one. The drill taxonomy is underspecified in the playbook, the rung is what the
 transfer-gap finding depends on, and the fix is a coach writing it out properly
 with examples. No code.
+
+### Not rotation — siloed lesson records
+
+A draft said a player "sees a different coach most weeks". Wrong, and it
+mis-states the problem:
+
+> It's not that they're seeing a different coach. It's the same coaches, they
+> just don't give lessons to them.
+
+The staff is stable. The point is that **most of the coaches on the floor with
+a given child do not give that child lessons** — they coach them in clinics two
+evenings a week with no sight of what the lesson coach is working on. So this is
+not an inconsistency-from-churn problem, which would be a weaker argument. It is
+that the lesson record is siloed per coaching relationship while the clinic
+floor is shared, and the notebook model assumes the person writing and the
+person teaching are the same person.

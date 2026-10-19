@@ -396,7 +396,8 @@ def player_detail(player_id: str, review: dict | None, running: bool,
 def by_coach(player_id: str):
     """What each coach has said, grouped by who said it.
 
-    A player is coached by several people who rarely compare notes, so the
+    A player's lesson coach is one person, but three more are on court with
+    them every week in clinics, and those four rarely compare notes. So the
     useful question is not "what is on file" but "what does each of them
     think". Grouping by author is what makes a disagreement visible.
     """
