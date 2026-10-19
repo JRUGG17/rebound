@@ -1,0 +1,193 @@
+# Motivation, in Jamie's words
+
+Source material for the report's Motivation and Impact sections. Jamie
+co-founded and coached in the program this models. Lightly cleaned from
+speech; the claims and the framing are his, not reconstructed.
+
+**This is evidence, not doctrine.** It is one practitioner's account, and the
+report should credit it as exactly that.
+
+---
+
+## How the problem arrived: the club outgrew the conversation
+
+It started with two coaches — Jamie and one other — running lessons and
+clinics at one club.
+
+> We were just there every day. Started off kind of small. We were doing
+> lessons and clinics, but you kind of had a handle on everyone in the program
+> and what they were working on. We had a good chat between the two of us —
+> here's what this person's working on. So it was a lot more discussion.
+> Smaller groups, so more personal.
+
+The shared record existed. It was two people talking every day.
+
+> Thankfully we were able to grow the business very quickly, scaled up pretty
+> quick.
+
+Three clubs now. And the thing that broke first was the thing nobody had
+written down:
+
+> As we scaled, just trying to keep touches on the ball and make sure — because
+> it got more difficult to keep track of what people were working on. We're
+> running the clinics and stuff, but you don't have a great sense of what
+> everyone's working on individually.
+
+**This is the actual origin of the product.** Not "coaches should take better
+notes" — a conversation between two people that did not survive being a
+conversation between eight.
+
+## Why it is a squash problem specifically
+
+> A lot of squash is just individual lessons. You might have a coach keeping
+> track of things in a little notebook, and then the player will come in and
+> they'll look at the notebook from last time.
+
+The notebook works fine for one coach and one player. The program model breaks
+it:
+
+> The kind of program we're running is kind of unique in the squash world.
+> We're not just a lesson factory where people come in and do lessons and then
+> the occasional clinic. It's really clinic-based. So it's a very scalable
+> business model, which is why we're at three clubs now.
+
+> This is actually something that lets players and coaches both see what each
+> other's thoughts were on the session, but also that broader sense of it being
+> a bigger program where the coaches are interfacing with more than one kid at a
+> time, and kids they don't give lessons to.
+
+> That's why this kind of app doesn't really exist for squash — because there
+> aren't many programs that are as big.
+
+The last line is the novelty argument in one sentence: the tool is absent
+because the organisational shape that needs it is rare. **"Coaches you don't
+take lessons from still write about you"** is the specific thing no notebook
+does, and it is why the visibility rules in `core/db.py` are the design, not
+plumbing.
+
+## Reflection: why the diary half exists
+
+> Kids aren't reflecting and you're just doing the same thing over and over
+> again. So kids will plateau, they won't get better.
+
+> The ones who are actually able to reflect and keep building improve the
+> fastest. It's more fun. And better for the kids.
+
+From the earlier session, the two quotes that set this up:
+
+> Every time, I'd ask "what did we work on last time?" and the kid would look
+> back at me with a blank stare — "oh, I don't know." So you end up doing a lot
+> of the same stuff, because it's tough to build when they don't have a
+> recollection of what they worked on last week. You just have the same lesson
+> over and over again.
+
+> As much as I harped — hey, you need to be reflecting, you need to be writing
+> this down — kids don't want to do that. They just want to show up and hit a
+> ball. Which is fine. But that only gets you so far.
+
+That second quote is the design constraint, and it is why the app is not a
+journal with a streak counter. Reflection has to be cheap enough that a
+fourteen-year-old does it in the thirty seconds they actually have — hence the
+microphone, the one box, the private option.
+
+## Four constituencies, one record
+
+Jamie's own framing, which is a cleaner structure for the Impact section than
+the one I had:
+
+1. **The player.** They reflect, they see it written down, they are made to
+   think about the session.
+2. **The parent.** The growth complaint, in his words:
+   > One of the criticisms we got was, as you start to grow, the coaches don't
+   > have as much time for the kids, so they kind of lose the plot, lose the
+   > thread a little bit with what's going on with their kids.
+
+   > Everyone likes that feel of more personalized attention, especially
+   > parents.
+
+   This is why the read-only parent page is worth its screen: it is the answer
+   to the specific thing customers said when the business scaled.
+3. **The coaching organisation.** Coaches keep track of their lessons and can
+   see what a colleague is working on with the same kid.
+4. **Coach education and onboarding.** The one I had underweighted:
+   > As you scale, you hire new coaches. I was onboarding coaches. It's not the
+   > easiest thing to do when you have competing priorities. So just give them
+   > a resource to look at instead of human-to-human talking.
+
+   > One of those things of being a small business with a limited staff is it's
+   > just not easy to educate people as quickly as you'd like. So having written
+   > stuff is good.
+
+   **This retroactively justifies the playbook and the methodology agent.** The
+   cite-or-refuse resources screen is not a bolt-on feature; it is the
+   onboarding problem, and it is the reason the playbook had to be a real
+   document rather than a prompt.
+
+> It's not only good for the business from a client perspective and making
+> clients happy. It's good from a player perspective because they're
+> reflecting. It's good from a coaching organization perspective.
+
+## Next steps Jamie named
+
+- **Wearables integration.**
+- **Squash rating as an outcome measure** — tying the record to a number that
+  moves, which is the closest this gets to measurable efficacy.
+- **Building out the curriculum** — a fuller methodology, a drill bank. See the
+  note below on why this is a decision rather than a gap.
+- **Player logins**, with one admin who can see everything.
+- **Hosting it somewhere**, so several coaches on different devices share one
+  record.
+
+Logins and hosting are the same next step: the moment it is on a public URL,
+"I am: [dropdown]" stops being a demo convenience and becomes the whole access
+control story.
+
+---
+
+## The theory note — Jamie's hedge was correct
+
+> You can bring in Ericsson's deliberate practice model. Actually, I don't know
+> if reflection's on that.
+
+It mostly is not, and that turns out to be the better argument.
+
+**Ericsson, Krampe & Tesch-Römer (1993)** define deliberate practice by
+well-defined tasks with specific goals, focused attention, immediate informative
+feedback, and repetition with error correction. Self-monitoring appears in the
+framework and in later summaries, but *reflection after the session* is not one
+of its named components.
+
+**Zimmerman's self-regulated learning cycle** is the one that names it:
+forethought (goal setting, strategy choice) → performance (self-control,
+self-observation) → **self-reflection** (self-judgement and self-reaction).
+It has been applied directly to athletes, including think-aloud work with
+academy goalkeepers and golfers reporting improved reflective skill and
+self-monitoring.
+
+So the framing for the report is:
+
+> The club is already very good at deliberate practice. The drill ladder is
+> structured tasks with specific goals; the coach standing on the court is
+> immediate informative feedback; the conditioned game is repetition with error
+> correction. What the program does not supply is the third phase of the
+> self-regulation cycle. Nobody closes the loop, because closing it is
+> homework and kids do not do homework. Rebound is an attempt to make the
+> self-reflection phase cost thirty seconds.
+
+That is a more defensible claim than "deliberate practice requires reflection",
+and it maps onto what Jamie actually observed: the players who reflect improve
+fastest, in a program where everyone gets the same quality of deliberate
+practice.
+
+**Hedge honestly.** Macnamara & Maitra (2019) re-ran the 1993 violin study and
+did not replicate the core dose-response finding, and the sport self-regulation
+evidence is thin — a 50-participant free-throw study, a two-goalkeeper pilot.
+Cite these as a frame for the design, not as proof that the app works. The
+report should say that plainly; overclaiming here is the easiest way to lose
+credibility in the Impact section.
+
+Sources:
+- [Ericsson, Krampe & Tesch-Römer (1993), revisited](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6731745/)
+- [Self-regulation in sports learning and performance](https://research.birmingham.ac.uk/en/publications/self-regulation-in-sports-learning-and-performance)
+- ['Think Aloud' as a facilitator of self-regulation in golfers](https://researchonline.ljmu.ac.uk/17581/3/%E2%80%98Think%20Aloud%E2%80%99%20as%20a%20facilitator%20of%20self-regulation%20in%20golfers.pdf)
+- [Think-aloud with academy goalkeepers](https://researchonline.ljmu.ac.uk/id/eprint/23252/1/McGreary%20et%20al%202024%20TA%20GK%20Manuscript%20Accepted%20version.pdf)
