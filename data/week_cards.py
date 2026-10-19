@@ -16,7 +16,7 @@ CARDS: dict[str, dict] = {
         "title": "Drive Week",
         "sort": ["Above or behind", "Side vs. side", "Match play"],
         "work": [
-            ("Block", ["Straight drive, two-man", "Cross-court drive, two-man"]),
+            ("Block", ["Straight drive, two-person", "Cross-court drive, two-person"]),
             ("Routine", ["Straight / straight / cross", "Long ball / long ball / short ball"]),
             ("Pattern", ["Drive / drop, phasing", "All drives back to one wall"]),
         ],
@@ -81,7 +81,7 @@ CARDS: dict[str, dict] = {
         "title": "Lob Week",
         "sort": ["Above or behind", "Side vs. side", "Match play"],
         "work": [
-            ("Block", ["Cross-court lob and boast / nick, two-man", "As above, three-man"]),
+            ("Block", ["Cross-court lob and boast / nick, two-person", "As above, three-person"]),
             ("Routine", ["Drive / boast / cross-lob — diagonals then random",
                          "Counters as required"]),
         ],

@@ -517,6 +517,10 @@ def set_theme(n, shot):
     with db.connect() as conn:
         conn.execute("UPDATE weeks SET theme_shot = ?, theme_name = ? WHERE id = ?",
                      (None if shot in names else shot, name, week["id"]))
+        # A hand-edited card belongs to the shot it was written for. Pick a
+        # different shot and you want that shot's standard card back, not
+        # last week's edits with a new title on top.
+        conn.execute("DELETE FROM settings WHERE key = ?", (f"plan:{week['id']}",))
     return f"Set to {name}."
 
 
@@ -933,8 +937,9 @@ def open_add_player(n, showing):
 
 
 @app.callback(Output("added-msg", "data"),
-              Output("adding-player", "data", allow_duplicate=True),
               Output("roster-changed", "data", allow_duplicate=True),
+              Output("new-player-name", "value"),
+              Output("new-player-age", "value"),
               Input("add-player", "n_clicks"),
               State("new-player-name", "value"), State("new-player-age", "value"),
               State("who", "value"), State("roster-changed", "data"),
@@ -948,9 +953,9 @@ def add_player(n, name, age, who, tick):
     """
     person = db.person(who)
     if not clicked(n) or person is None or person["role"] not in ("coach", "admin"):
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
     if not name or not name.strip():
-        return "Needs a name.", no_update, no_update
+        return "Needs a name.", no_update, no_update, no_update
     slug = "".join(ch for ch in name.lower().split()[0] if ch.isalpha()) or "player"
     pid, n_try = slug, 1
     while db.person(pid):
@@ -964,7 +969,10 @@ def add_player(n, name, age, who, tick):
             "INSERT INTO people (id, name, role, age, joined_on) "
             "VALUES (?,?,'player',?,?)",
             (pid, name.strip(), int(age) if age else None, joined))
-    return f"Added {name.strip()}.", False, (tick or 0) + 1
+    # The form stays open with the fields cleared, so you can see it worked
+    # and add the next one. Closing it on success looked like nothing had
+    # happened, because the confirmation closed with it.
+    return f"Added {name.strip()}.", (tick or 0) + 1, "", None
 
 
 @app.callback(Output("plan-edit", "data"),
