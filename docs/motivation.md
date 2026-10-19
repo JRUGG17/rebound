@@ -264,8 +264,10 @@ Jamie read the first draft. What he changed:
 
 - **He coached from 2022, not 2021.** Planning started early 2021; the doors
   opened January 2022; he coached from then until mid-2026.
-- **Opened with fifteen kids.** Several hundred through the door over five
-  years, across three clubs. Use these numbers rather than "it grew".
+- **Opened with "a few kids".** He first said fifteen and then softened it;
+  use the vaguer phrasing, since the precise figure is not one he wants to
+  stand behind. "Several hundred through the door over five years, across three
+  clubs" is the number that does the work, and he is confident in it.
 - **The competitive season is written down** — September to March, ending at
   Nationals, and it is already in playbook §7 with the full year table. An
   earlier draft listed "season phases are inferred" as a limitation. That was
@@ -371,3 +373,23 @@ is real — co-founder implies an ownership stake — and overstating a role in 
 document with his name on it is a worse error than understating one. Nothing
 about the argument depends on the bigger word: what makes the source credible
 is five years on the floor, not a title.
+
+### Why the conversation was sufficient at the start
+
+The missing half of the "two coaches talking" story, and it is what makes the
+later problem legible:
+
+> It was easy to be responsible for your kids because you were doing the
+> lessons and running the squads. So you had a good handle on pretty much all
+> the kids in the program between the two coaches, for a while, until it
+> started to grow.
+
+At the start there was **no gap between who taught a child and who knew them**,
+because the same two people did both. The daily conversation was not
+coordination across a boundary — there was no boundary. That is exactly the
+thing that later splits: the lesson coach and the three coaches on the clinic
+floor become different people, and "coaches you don't take lessons from still
+coach you" is what that split looks like from the inside.
+
+Set this up in Motivation and the novelty argument in section 3 lands without
+further work.
