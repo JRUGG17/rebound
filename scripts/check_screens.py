@@ -86,14 +86,21 @@ def main() -> int:
           lambda: cv.recap_panel(player, "player", "all", None, False, True,
                                  year=1999))
     check("lesson thread, one month",
-          lambda: cv.lesson_months(player, None, "player", "2026-10", None, None,
-                                   False, None, ARC, False, "month"))
+          lambda: cv.lesson_months(player, None, "player", None, None, None,
+                                   False, None, ARC, False, "month:2026-10"))
+    check("lesson thread, everything",
+          lambda: cv.lesson_months(player, None, "player", None, None, None,
+                                   False, None, ARC, False, "all"))
     check("lesson thread, running",
           lambda: cv.lesson_months(player, None, "player", None, None, None,
                                    False, None, None, True))
     check("lesson thread, read back",
           lambda: cv.lesson_months(player, None, "player", None, None, None,
                                    False, None, ARC, False))
+    check("what the thread covered",
+          lambda: cv._arc_covered(player, "player", "month:2026-08"))
+    check("what the thread covered, empty month",
+          lambda: cv._arc_covered(player, "player", "month:2020-01"))
     check("lesson thread with nothing carried over",
           lambda: cv.lesson_arc_card({**ARC, "carried_over": [],
                                       "never_answered": []}, False, "coach"))

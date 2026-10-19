@@ -698,10 +698,10 @@ def save_note(release_clicks, keep_clicks, draft, player_text, coach_id):
     Output("arc-wait", "data"),
     Input("run-lesson-arc", "n_clicks"),
     State("who", "value"), State("sel-player", "data"),
-    State("arc-range", "data"), State("open-month", "data"),
+    State("arc-range", "data"),
     prevent_initial_call=True,
 )
-def start_lesson_arc(n, who, sel_player, arc_range, open_month):
+def start_lesson_arc(n, who, sel_player, arc_range):
     """Read the lesson thread end to end.
 
     Every other read is a period — the last 30 days, the block. This one is
@@ -716,7 +716,7 @@ def start_lesson_arc(n, who, sel_player, arc_range, open_month):
     if not subject:
         return no_update, no_update, no_update
     audience = "player" if is_player else "coach"
-    start, end, _label = cv.arc_bounds(arc_range or "block", open_month)
+    start, end, _label = cv.arc_bounds(arc_range or "block")
     return run_lesson_arc(subject, audience, start, end), False, True
 
 
@@ -730,14 +730,19 @@ def arc_landed(_arc):
 
 @app.callback(Output("arc-range", "data"), Output("lesson-arc", "data",
                                                   allow_duplicate=True),
-              Input({"type": "arc-range", "k": ALL}, "n_clicks"),
-              State("arc-range", "data"), prevent_initial_call=True)
-def pick_arc_range(clicks, current):
-    if not any(c for c in clicks if c):
-        return current, no_update
+              Input("arc-range-pick", "value"), prevent_initial_call=True)
+def pick_arc_range(value):
     # A thread belongs to the stretch it was read over, so changing the
-    # range clears it rather than leaving last month's text under a new tab.
-    return ctx.triggered_id["k"], None
+    # range clears it rather than leaving October's text under August.
+    return value or "block", None
+
+
+@app.callback(Output("nav", "data", allow_duplicate=True),
+              Input("leave-note", "n_clicks"), prevent_initial_call=True)
+def leave_note(n):
+    """Out of the composer without filing. The draft store keeps what was
+    typed, so coming back does not lose it."""
+    return "lessons" if clicked(n) else no_update
 
 
 @app.callback(Output("recap-range", "data"), Output("recap", "data"),

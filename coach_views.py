@@ -663,7 +663,11 @@ def note_composer(draft: dict | None, running: bool):
                for p in db.people("player")]
 
     form = html.Div([
-        html.H2("New note"),
+        html.Div([
+            # There was no way off this screen except filing something.
+            html.Button("‹ Back", id="leave-note", className="ghost"),
+            html.H2("New note"),
+        ], className="card-head"),
         html.Div([
             dcc.Dropdown(id="note-player", options=players,
                          value=draft.get("player_id"), placeholder="Which player",
@@ -1298,31 +1302,56 @@ def month_buckets(rows, date_of, render, noun: tuple[str, str],
     return out
 
 
-ARC_RANGES = [("month", "Open month"), ("block", "This block"),
-              ("all", "Everything")]
-
-
-def arc_bounds(key: str, open_month: str | None) -> tuple[str | None, str | None, str]:
-    """What stretch of lessons to read.
+def arc_bounds(key: str) -> tuple[str | None, str | None, str]:
+    """What stretch of lessons to summarize.
 
     Everything is the honest default for a thread — continuity is the whole
     point of it — but a term is fifteen lessons and a career is hundreds,
-    and a coach asking about this month should not pay for the lot.
+    and a coach asking about October should not pay for the lot.
+
+    This used to offer "Open month", which meant whichever month was
+    expanded. Nothing ever recorded which one that was, so it silently
+    meant the current month and the tab looked broken. Months are named
+    here instead.
     """
     today = clock.today().isoformat()
-    if key == "month":
-        # Nothing expanded yet means the month the view opens on, not the
-        # whole record — the cheap button must never quietly do the
-        # expensive thing.
-        first = _date.fromisoformat((open_month or today[:7]) + "-01")
+    if key and key.startswith("month:"):
+        first = _date.fromisoformat(key.split(":", 1)[1] + "-01")
         a, b = _month_bounds(first)
-        return a, min(b, today), first.strftime("%B")
-    if key == "block":
-        return clock.BLOCK_START.isoformat(), today, "this block"
-    return None, None, "everything on record"
+        return a, min(b, today), first.strftime("%B %Y")
+    if key == "all":
+        return None, None, "everything on record"
+    return clock.BLOCK_START.isoformat(), today, "this block"
 
 
-def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str):
+def arc_options(player_id: str, viewer_role: str):
+    """This block, everything, and every month that has a lesson in it."""
+    items = analysis.lessons(player_id,
+                             viewer="player" if viewer_role == "player" else "coach")
+    months = sorted({i["on"][:7] for i in items}, reverse=True)
+    return [{"label": "This block", "value": "block"},
+            {"label": "Everything on record", "value": "all"}] + [
+        {"label": _date.fromisoformat(m + "-01").strftime("%B %Y"),
+         "value": f"month:{m}"} for m in months]
+
+
+def _arc_covered(player_id: str, viewer_role: str, arc_range: str | None) -> str:
+    start, end, label = arc_bounds(arc_range or "block")
+    items = analysis.lessons(player_id,
+                             viewer="player" if viewer_role == "player" else "coach")
+    if start:
+        items = [i for i in items if i["on"] >= start]
+    if end:
+        items = [i for i in items if i["on"] <= end]
+    if not items:
+        return f"{label} — no lessons in it"
+    span = (f"{_date.fromisoformat(items[-1]['on']).strftime('%-d %b')} – "
+            f"{_date.fromisoformat(items[0]['on']).strftime('%-d %b')}")
+    return f"{label} · {_plural(len(items), 'lesson', 'lessons')} · {span}"
+
+
+def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str,
+                    covered: str | None = None):
     """The lesson thread read end to end.
 
     Lessons are where the technical focus gets set, so they are the one
@@ -1337,7 +1366,11 @@ def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str):
     if not arc:
         return html.Span()
 
-    out = [html.H2("The thread so far"),
+    # Without this the three ranges produce three paragraphs of prose and
+    # no way to tell which one you are looking at.
+    out = [html.Div([html.H2("The thread so far"),
+                     html.Span(covered or "", className="hint")],
+                    className="card-head"),
            html.Div(arc["overview"], className="recap-overview")]
 
     for phase in arc.get("phases", []):
@@ -1416,11 +1449,10 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
         ], className="card-head"),
     ]
     buttons = [
-        html.Div([
-            html.Button(label_, id={"type": "arc-range", "k": key},
-                        className=f"tab-btn{' active' if key == arc_range else ''}")
-            for key, label_ in ARC_RANGES
-        ], className="tab-row"),
+        dcc.Dropdown(id="arc-range-pick",
+                     options=arc_options(player_id, viewer_role),
+                     value=arc_range or "block", clearable=False,
+                     style={"width": "190px"}),
         html.Button("Summarize", id="run-lesson-arc", className="ghost"),
     ]
     if viewer_role == "coach":
@@ -1431,7 +1463,8 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
 
     return html.Div([
         html.Div(header, className="card"),
-        lesson_arc_card(arc, arc_running, viewer_role),
+        lesson_arc_card(arc, arc_running, viewer_role,
+                        _arc_covered(player_id, viewer_role, arc_range)),
         html.Div(blocks or [html.Div("No lessons this year.", className="empty")],
                  className="card"),
         lesson_detail(player_id, open_on, viewer_role, saving, editing) if open_on
