@@ -105,12 +105,17 @@ This is their record, so write to them. Honest, not a telling-off and not a
 pep talk. You do not coach and you do not suggest drills.
 
 ATTRIBUTE EVERYTHING. The digest marks each entry (coach) or (player). Those
-are different kinds of claim and must never be blended into one voice:
+are different kinds of claim and must never be blended into one voice. You
+are writing to a coach about somebody else's record, so "you" is the coach
+reading it and never the player:
 
-  a coach's note      -> "your coaches kept writing that...", "Nia noticed..."
-  the player's own    -> "you wrote that...", "you said it felt..."
+  a coach's note      -> "Nia wrote...", "two coaches noted..."
+  the player's own    -> "Maya wrote that...", "she said it felt..."
 
-Never state a player's own reflection back at them as though it were a
+Use the player's name from the digest. "You wrote" about a note the player
+wrote tells the coach they wrote something they did not.
+
+Never state a player's own reflection back as though it were a
 finding about them. "Hearing about your racket was getting frustrating" is
 the app telling a child how they feel. "You wrote twice that you were bored
 of hearing about your racket" is reporting what they said. The second is
@@ -132,12 +137,17 @@ that is the sentence a coach needs.
 You do not prescribe. The coach decides what to do about it.
 
 ATTRIBUTE EVERYTHING. The digest marks each entry (coach) or (player). Those
-are different kinds of claim and must never be blended into one voice:
+are different kinds of claim and must never be blended into one voice. You
+are writing to a coach about somebody else's record, so "you" is the coach
+reading it and never the player:
 
-  a coach's note      -> "your coaches kept writing that...", "Nia noticed..."
-  the player's own    -> "you wrote that...", "you said it felt..."
+  a coach's note      -> "Nia wrote...", "two coaches noted..."
+  the player's own    -> "Maya wrote that...", "she said it felt..."
 
-Never state a player's own reflection back at them as though it were a
+Use the player's name from the digest. "You wrote" about a note the player
+wrote tells the coach they wrote something they did not.
+
+Never state a player's own reflection back as though it were a
 finding about them. "Hearing about your racket was getting frustrating" is
 the app telling a child how they feel. "You wrote twice that you were bored
 of hearing about your racket" is reporting what they said. The second is
@@ -285,15 +295,29 @@ technical focus gets set — and describing how that thread has gone.
 A lesson is not a session. Group them into the two to four things the term
 was actually about, and say whether each moved.
 
-Attribute everything. The digest marks each entry (coach) or (player). "Your
-coach wrote" and "you wrote" are different claims and a lesson thread is
-exactly where the gap between them shows.
+Attribute everything. The digest marks each entry (coach) or (player). Those
+are different claims and a lesson thread is exactly where the gap between
+them shows, so never blend them into one voice.
+
+{voice}
 
 What earns its place here is continuity: something raised in August that is
 still being raised in October, or a worry the player voiced that no later
 lesson answers. Do not manufacture either. If the thread is healthy, say so.
 
 You do not coach and you do not prescribe drills.
+"""
+
+
+LESSON_VOICE_PLAYER = """This is the player's own record, so write to them:
+  a coach's note    -> "your coach wrote...", "Nia noticed..."
+  their own         -> "you wrote that...", "you said it felt..."
+"""
+
+LESSON_VOICE_COACH = """You are writing to a coach about somebody else's
+record, so "you" is the coach reading it and never the player:
+  a coach's note    -> "Nia wrote...", "two coaches noted..."
+  {name}'s own      -> "{name} wrote that...", "{name} said it felt..."
 """
 
 
@@ -327,7 +351,12 @@ async def recap_lessons(player_id: str, *, audience: Audience = "player",
         for entry in lesson["player"]:
             lines.append(f"  (player) {analysis._clip(db.agent_text(entry), 180)}")
 
-    agent = make_agent(LESSON_INSTRUCTIONS, LessonArc)
+    # The same thread, told to two different readers. A coach reading
+    # "your coach wrote" about a note they wrote themselves is the version
+    # of this that was shipped first.
+    voice = LESSON_VOICE_PLAYER if audience == "player" else (
+        LESSON_VOICE_COACH.format(name=player["name"].split()[0]))
+    agent = make_agent(LESSON_INSTRUCTIONS.format(voice=voice), LessonArc)
     output, usage = await run(agent, "\n".join(lines) + "\n\nRead this thread.",
                               name=f"lessons:{audience}")
     db.put_summary(player_id, "lessons", audience, span[0], span[1],

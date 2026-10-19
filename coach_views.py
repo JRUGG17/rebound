@@ -1298,9 +1298,52 @@ def month_buckets(rows, date_of, render, noun: tuple[str, str],
     return out
 
 
+def lesson_arc_card(arc: dict | None, running: bool, viewer_role: str):
+    """The lesson thread read end to end.
+
+    Lessons are where the technical focus gets set, so they are the one
+    stream worth reading as a sequence rather than a period. The two lists
+    at the bottom are the point: what keeps coming back, and what the player
+    asked that nobody picked up.
+    """
+    if running:
+        return html.Div([html.Span(className="spinner"),
+                         html.Span("  Reading the thread…", className="hint")],
+                        className="card")
+    if not arc:
+        return html.Span()
+
+    out = [html.H2("The thread so far"),
+           html.Div(arc["overview"], className="recap-overview")]
+
+    for phase in arc.get("phases", []):
+        out.append(html.Div([
+            html.Div([
+                html.Span(phase["span"], className="hint"),
+                html.Span(phase["focus"], className="theme-title"),
+            ], className="meta"),
+            html.Div(phase["what_happened"], className="theme-body"),
+        ], className="entry"))
+
+    for key, title, cls in (
+            ("carried_over", "Still coming back", "timing-box"),
+            ("never_answered",
+             "Asked and not picked up" if viewer_role == "coach"
+             else "You asked, nobody came back to it", "timing-box")):
+        items = arc.get(key) or []
+        if items:
+            out.append(html.Div([
+                html.Div(title, className="label"),
+                html.Ul([html.Li(i) for i in items]),
+            ], className=cls))
+
+    return html.Div(out, className="card")
+
+
 def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
                   open_month: str | None, year: int | None,
-                  open_on: str | None, saving: bool, editing: int | None = None):
+                  open_on: str | None, saving: bool, editing: int | None = None,
+                  arc: dict | None = None, arc_running: bool = False):
     """A player's lessons, by month, newest first.
 
     A year is about fifty lessons and a career is several hundred, so they
@@ -1344,12 +1387,16 @@ def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
                          clearable=False, style={"width": "110px"}),
         ], className="card-head"),
     ]
+    buttons = [html.Button("Read the thread", id="run-lesson-arc",
+                           className="ghost")]
     if viewer_role == "coach":
-        header.append(html.Button("Write up a lesson", id="goto-note",
-                                  className="primary"))
+        buttons.append(html.Button("Write up a lesson", id="goto-note",
+                                   className="primary"))
+    header.append(html.Div(buttons, style={"display": "flex", "gap": "8px"}))
 
     return html.Div([
         html.Div(header, className="card"),
+        lesson_arc_card(arc, arc_running, viewer_role),
         html.Div(blocks or [html.Div("No lessons this year.", className="empty")],
                  className="card"),
         lesson_detail(player_id, open_on, viewer_role, saving, editing) if open_on

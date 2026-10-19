@@ -362,6 +362,7 @@ app.layout = html.Div([
     dcc.Store(id="show-entries", data=False),
     dcc.Store(id="recap-year", data=None),
     dcc.Store(id="lesson-query", data=""),
+    dcc.Store(id="arc-wait", data=False),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
@@ -669,6 +670,40 @@ def save_note(release_clicks, keep_clicks, draft, player_text, coach_id):
     else:
         note = "Saved as a coach record. Nothing shown to the player."
     return {"saved": note}
+
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Output("arc-wait", "data"),
+    Input("run-lesson-arc", "n_clicks"),
+    State("who", "value"), State("sel-player", "data"),
+    prevent_initial_call=True,
+)
+def start_lesson_arc(n, who, sel_player):
+    """Read the lesson thread end to end.
+
+    Every other read is a period — the last 30 days, the block. This one is
+    the sequence, which is why it is on Lessons and not on Recap. Cached by
+    span and entry count, so a second look inside the same term is free.
+    """
+    person = db.person(who)
+    if not clicked(n) or person is None:
+        return no_update, no_update, no_update
+    is_player = person["role"] == "player"
+    subject = who if is_player else sel_player
+    if not subject:
+        return no_update, no_update, no_update
+    audience = "player" if is_player else "coach"
+    return run_lesson_arc(subject, audience), False, True
+
+
+# The arc spinner is the generic running flag narrowed to this job. Deriving
+# it rather than clearing a flag means an errored run stops spinning too.
+@app.callback(Output("arc-wait", "data", allow_duplicate=True),
+              Input("lesson-arc", "data"), prevent_initial_call=True)
+def arc_landed(_arc):
+    return False
 
 
 @app.callback(Output("recap-range", "data"), Output("recap", "data"),
@@ -1097,6 +1132,7 @@ def go_to_recap(n):
     Input("focus-edit", "data"), Input("focus-history", "data"),
     Input("f-setting", "data"), Input("f-author", "data"),
     Input("recap-year", "data"), Input("lesson-query", "data"),
+    Input("arc-wait", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
     Input("plan-edit", "data"),
     State("job", "data"),
@@ -1105,7 +1141,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, adding,
+                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, adding,
                 added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
@@ -1120,7 +1156,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
     if role == "player":
         if nav == "lessons":
             return cv.lesson_months(who, None, "player", open_month, year,
-                                    sel_day, running, editing)
+                                    sel_day, running, editing,
+                                    lesson_arc, bool(running and arc_wait))
         if nav == "recap":
             return cv.recap_panel(who, "player", recap_range, recap, running,
                                   show_entries, f_setting, f_author, recap_year)
@@ -1143,7 +1180,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             if not sel_player:
                 return cv.coach_lesson_picker(who, lesson_query)
             return cv.lesson_months(sel_player, who, "coach", open_month,
-                                    year, sel_day, running, editing)
+                                    year, sel_day, running, editing,
+                                    lesson_arc, bool(running and arc_wait))
         if nav == "recap":
             if not sel_player:
                 return cv.coach_lesson_picker(who, lesson_query)

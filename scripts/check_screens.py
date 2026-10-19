@@ -42,6 +42,15 @@ def check(label: str, fn) -> None:
 check.failed = 0
 
 
+ARC = {
+    "overview": "Three terms on the backhand drive.",
+    "phases": [{"span": "Aug 3 – Sep 1", "focus": "length off the back wall",
+                "what_happened": "Your coaches wrote that it shortened."}],
+    "carried_over": ["racket before feet, nine lessons apart"],
+    "never_answered": ["whether to change grip on the volley"],
+}
+
+
 def main() -> int:
     print("=" * 64)
     print("Rebound — every screen renders")
@@ -76,6 +85,15 @@ def main() -> int:
     check("recap, a year with nothing in it",
           lambda: cv.recap_panel(player, "player", "all", None, False, True,
                                  year=1999))
+    check("lesson thread, running",
+          lambda: cv.lesson_months(player, None, "player", None, None, None,
+                                   False, None, None, True))
+    check("lesson thread, read back",
+          lambda: cv.lesson_months(player, None, "player", None, None, None,
+                                   False, None, ARC, False))
+    check("lesson thread with nothing carried over",
+          lambda: cv.lesson_arc_card({**ARC, "carried_over": [],
+                                      "never_answered": []}, False, "coach"))
     check("recap summary", lambda: cv.recap_summary(player, "player", "30", None, False))
     check("recap summary with a result",
           lambda: cv.recap_summary(player, "player", "30",
