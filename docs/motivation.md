@@ -254,3 +254,89 @@ A co-founder, highly motivated, keeping notes in Apple Notes — and still
 losing the thread. That rules out the lazy reading of the problem ("coaches
 should just take better notes") and makes it structural, which is what
 justifies building anything at all.
+
+---
+
+## Corrections and additions, second pass
+
+Jamie read the first draft. What he changed:
+
+- **He coached from 2022, not 2021.** Planning started early 2021; the doors
+  opened January 2022; he coached from then until mid-2026.
+- **Opened with fifteen kids.** Several hundred through the door over five
+  years, across three clubs. Use these numbers rather than "it grew".
+- **The competitive season is written down** — September to March, ending at
+  Nationals, and it is already in playbook §7 with the full year table. An
+  earlier draft listed "season phases are inferred" as a limitation. That was
+  stale and wrong, carried over from an old blockers list. Removed.
+- **"The notebook is genuinely better than software" overstated it.** His
+  reading: it is simply what people do, and nothing has made them stop. Softened.
+- **The food/weight exclusion does not need to be in the report.** It is a
+  sensible product policy; it is not interesting enough to spend a bullet on
+  in a Novelty section. Cut.
+- **A clinic is up to thirty kids, not eight.**
+
+### What the clinic floor actually looks like
+
+This was missing and it is load-bearing:
+
+> The coaches are standing outside the court. There's up to like 30 kids in a
+> clinic. So they're just walking up and down the courts outside. Occasionally
+> they'll step in and talk to someone. But that's why it's helpful to know
+> what's going on with the players — so they can see who registered before and
+> take a look at those players, just so they have a general sense.
+
+The intervention is thirty seconds through glass, maybe twenty times an
+evening. What makes it land is knowing what that child is working on *before*
+you open your mouth. That is the product stated operationally, and it is a
+better framing than anything abstract about records.
+
+### The parent pressure has a number attached
+
+> One summer we had 50 kids at a time on 7 courts with 3 coaches in the
+> building. And I had to figure out how to run that. And parents would be like,
+> I feel like my kid's not getting enough individualized attention. We got too
+> popular for our own good.
+
+This belongs in **Motivation**, not only in Impact. It is the commercial edge
+of the same problem: the attention was there, and what had gone was the
+program's ability to *show* it.
+
+### He was a professional player
+
+> I was also a professional player, and my notes were my notes as a player as
+> well. So I had the coaching notes, also my playing notes. And again, I found
+> it useful. I improved a lot more when I started reflecting. So I know the
+> value of it, but still — tough to do in a structured way unless you're really
+> judicious about it.
+
+Worth including precisely because of the last clause. A professional, highly
+motivated, found structured reflection hard. That is the strongest available
+argument that a fourteen-year-old will not do it unaided.
+
+### The feature idea worth building first
+
+> We have a registry system. Maybe we can interlink those — you have 15 kids at
+> a clinic, and you can hit summarize on those 15 that have registered, get a
+> readout and see if there's a lot of commonalities. Maybe you want to alter
+> the session based on what kids are working on.
+
+**Summarize the room, not the player.** Everything built so far summarizes one
+player; the coach outside the glass has a different question. Six kids stuck on
+the same rung is not fifteen pieces of feedback, it is a different session plan.
+This is the bleachers observation turned into a feature, and it is the first
+thing to build after a pilot because it changes what a coach *does*, not just
+what they know.
+
+### A real accuracy limit
+
+> The AI isn't perfect at figuring out whether things are routines or
+> conditioned games. Long-long-short is a routine, for instance — three shots
+> in sequence. Someone building out that playbook a bit more systematically
+> over time might help it be a bit more accurate. But that's not a core
+> feature.
+
+Important and correctly scoped: this is a **documentation** gap, not a model
+one. The drill taxonomy is underspecified in the playbook, the rung is what the
+transfer-gap finding depends on, and the fix is a coach writing it out properly
+with examples. No code.

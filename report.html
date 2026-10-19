@@ -96,11 +96,11 @@ enforced in SQL rather than asked for in a prompt.</p>
 
 <h2 id="motivation">1. Motivation: the club outgrew the conversation</h2>
 
-<p>I co-founded Squash Tigers Academy and coached there from the planning
-stage in early 2021 until the middle of 2026 — five years, and I left three
-months ago. We opened the doors in January 2022, mid-season and later than
-intended, because of COVID supply-chain delays. It was a small start. It did
-not stay small.</p>
+<p>I co-founded Squash Tigers Academy. Planning started in early 2021; we
+opened the doors in January 2022, mid-season and later than intended, because
+of COVID supply-chain delays, and I coached there from then until the middle of
+2026. I left three months ago. We opened with fifteen kids. Over five years
+several hundred have come through the door, and there are now three clubs.</p>
 
 <p>At the beginning there were two of us, and the program had a perfectly good
 shared record of what every player was working on:</p>
@@ -135,6 +135,35 @@ thread. That rules out the lazy reading and makes the problem structural: an
 individual's notes do not compose into a program's memory, however
 conscientious the individual is.</p>
 
+<h3>What the floor actually looks like</h3>
+
+<p>It is worth being concrete about the setting, because it explains what kind
+of tool this has to be. A coach running a clinic is not sitting with a player.
+They are walking up and down <em>outside</em> the courts, with up to thirty kids
+playing on the other side of the glass, stepping in occasionally to say
+something to one of them. The intervention is thirty seconds long and there may
+be twenty of them in an evening.</p>
+
+<p>What makes those thirty seconds land is knowing what that specific child is
+working on before you open your mouth. A coach who can look at who has
+registered for tonight, and arrive with a general sense of where each of them
+is, gives better feedback than one reconstructing it from memory between
+rallies. That is the whole product, stated operationally.</p>
+
+<h3>The pressure from outside: parents</h3>
+
+<p>The problem was not only internal. One summer we had fifty kids at a time on
+seven courts with three coaches in the building, and I had to work out how to
+run it:</p>
+
+<blockquote><p>Parents would be like, I feel like my kid's not getting enough
+individualized attention. We got too popular for our own good.</p></blockquote>
+
+<p>That complaint is the commercial edge of exactly the same problem. The
+attention was there; what had gone was the program's ability to <em>show</em>
+it — to tell a parent, specifically, what their child had been working on for
+the last month and who said so.</p>
+
 <h3>The second half: the players do not reflect</h3>
 
 <p>The coaching-side problem has a mirror on the player side, and I ran into it
@@ -159,6 +188,12 @@ important design input in this project:</p>
 <blockquote><p>As much as I harped — hey, you need to be reflecting, you need to
 be writing this down — kids don't want to do that. They just want to show up and
 hit a ball. Which is fine. But that only gets you so far.</p></blockquote>
+
+<p>I also know this from the other side of it. I played professionally, and my
+notes were not only coaching notes — they were my own playing notes, and I
+improved considerably faster once I started keeping them. It is still hard to
+do in a structured way unless you are unusually judicious about it, which is
+the honest reason to think a fourteen-year-old will not manage it unaided.</p>
 
 <p>Anything that costs a fourteen-year-old more than about thirty seconds will
 not be used. That rules out forms, structured fields, mood sliders, streak
@@ -232,10 +267,12 @@ part, does not, and the reason is structural rather than accidental.</p>
 coach keeping track of things in a little notebook, and then the player will
 come in and they'll look at the notebook from last time.</p></blockquote>
 
-<p>For one coach and one player, the notebook is a complete solution. It has no
-synchronisation problem, no access control, no schema. It is genuinely better
-than software. Most squash programs never outgrow it because most squash
-programs are a lesson business: a coach, a court, an hour.</p>
+<p>For one coach and one player, the notebook is enough. It has no
+synchronisation problem, no access control and no schema, and the friction of
+software buys you nothing at that size. It is less that it is better and more
+that it is what people do, and nothing has ever made them stop. Most squash
+programs never need to: most are a lesson business — a coach, a court, an
+hour.</p>
 
 <p>Squash Tigers is not shaped that way:</p>
 
@@ -244,9 +281,9 @@ world. We're not just a lesson factory where people come in and do lessons and
 then the occasional clinic. It's really clinic-based. So it's a very scalable
 business model, which is why we're at three clubs now.</p></blockquote>
 
-<p>Clinic-based means a coach is in front of eight players at once, and a player
-is in front of a different coach most weeks. That breaks the notebook in a
-specific way:</p>
+<p>Clinic-based means a coach is in front of eight players at once, and often
+far more — a clinic can run to thirty — while a player is in front of a
+different coach most weeks. That breaks the notebook in a specific way:</p>
 
 <blockquote><p>This is actually something that lets players and coaches both see
 what each other's thoughts were on the session, but also that broader sense of
@@ -282,9 +319,6 @@ actually wanted.</li>
 URLs, and recommending what a child should watch is coaching advice, which these
 agents do not give. A curated, coach-approved lookup is the version that
 ships.</li>
-<li><strong>Anything touching food, weight or diet.</strong> Excluded by design
-from a product used by eight-to-eighteen-year-olds. Sleep and hydration only.
-Declining this is a position, not a gap.</li>
 </ul>
 
 <h2 id="boundary">4. The design decision everything else follows from</h2>
@@ -592,8 +626,9 @@ architecture.</p>
 they are made to think about the session. Thirty seconds, and the next lesson
 starts from somewhere instead of from a blank stare.</p>
 
-<p><strong>2. The parent.</strong> This answers a complaint the business
-actually received:</p>
+<p><strong>2. The parent.</strong> This answers the complaint in section 1 —
+fifty kids, seven courts, three coaches, and parents who felt their child had
+become one of a crowd:</p>
 
 <blockquote><p>One of the criticisms we got was, as you start to grow, the
 coaches don't have as much time for the kids, so they kind of lose the plot,
@@ -676,9 +711,17 @@ Rebound improves anyone's squash. Establishing that needs a real deployment, a
 season, and an outcome measure — which is why the squash rating idea in the next
 section is more than a feature request.</p>
 
-<p><strong>Season phases are inferred.</strong> The club never wrote down when
-competitive season starts, so the timing caution in the playbook infers it from
-tournament mentions. A coach would simply know.</p>
+<p><strong>The drill taxonomy is not yet precise enough to classify
+reliably.</strong> The agents are good at picking out <em>what</em> a note is
+about and noticeably less good at placing it on the drill ladder — in
+particular, telling a routine from a conditioned game. A routine is a fixed
+sequence: long–long–short is three shots in order, every time. A conditioned
+game is a game with a constraint. The distinction is obvious on court and
+underspecified in the playbook, and that is a documentation problem rather than
+a model one: the fix is a coach writing the taxonomy out properly with examples,
+which would raise accuracy without touching a line of code. Since the rung is
+what the transfer-gap finding rests on, this matters more than it sounds — but
+it is maintenance of a document, not a feature.</p>
 
 <p><strong>The cue vocabulary started from one coach's language.</strong> Seeding
 it from my notes made for a fast start and does not make it authoritative. The
@@ -700,12 +743,27 @@ read twice? I would expect at least one feature in this report to turn out to
 be something nobody opens. Finding out costs two weeks and no engineering, and
 every item below should be reprioritised afterwards.</p>
 
+<p><strong>Summarize the room, not the player — wire it to the clinic
+register.</strong> The club already has a registration system: fifteen kids
+sign up for Thursday at six. Everything in this application summarizes
+<em>one</em> player, and the coach walking up and down outside the glass has a
+different question — what are these fifteen, collectively, working on tonight?
+Pull the register, run the summary across the squad, and report the
+commonalities. If six of them are stuck on the same rung, that is not fifteen
+pieces of feedback, it is a different session plan. This is the bleachers
+observation in section 9 turned into a feature, and it is the one I would build
+first after a pilot, because it changes what a coach does rather than what they
+know.</p>
+
 <p><strong>Deployment and real authentication, as one piece of work.</strong>
 These are not separable. The moment this is on a URL that several coaches reach
 from different devices, <code>I am: [dropdown]</code> stops being a convenience
 and becomes the entire access control story. The visibility rules are already
 enforced in SQL, which is the right foundation — what is missing is knowing who
-is asking. Doing deployment without auth would be the worst version of this.</p>
+is asking. Doing deployment without auth would be the worst version of this.
+This is also the step that makes the thing real rather than a demo: coaches
+adding players as they join, seeing what colleagues wrote, and the record
+simply persisting between them.</p>
 
 <p><strong>Coach-authored curriculum, with a gate.</strong> The obvious feature
 request — let coaches extend the playbook from inside the app — and the one I
