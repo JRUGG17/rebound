@@ -172,6 +172,10 @@ def main() -> int:
 
     print("\n[parent]")
     check("parent page", lambda: cv.parent_page(parent))
+    check("parent page, a year picked",
+          lambda: cv.parent_page(parent, 2026))
+    check("parent page, a year with nothing in it",
+          lambda: cv.parent_page(parent, 1999))
 
     print("\n[edge cases]")
     empty = "coach_rob"

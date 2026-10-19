@@ -538,7 +538,7 @@ def resources(answer: dict | None, running: bool, section_no: int):
 
 # ------------------------------------------------------------------ parent
 
-def parent_page(parent_id: str):
+def parent_page(parent_id: str, year: int | None = None):
     """A guardian's read-only view, organised the way the rest of the app is.
 
     Same shape as what a coach sees — the focuses, the lessons, the rest —
@@ -551,6 +551,13 @@ def parent_page(parent_id: str):
     child = db.person(child_id)
     entries = [e for e in db.entries_for_parent(child_id)
                if db.render_for(e, "parent") is not None]
+
+    # Same control as Lessons: twelve months fit on a screen, anything
+    # older is a year away rather than a scroll.
+    years = sorted({e["occurred_on"][:4] for e in entries}, reverse=True)
+    chosen = str(year) if year and str(year) in years else (
+        years[0] if years else None)
+    entries = [e for e in entries if e["occurred_on"].startswith(chosen or "")]
 
     lessons = [e for e in entries if e["setting"] == "lesson"]
     rest = [e for e in entries if e["setting"] != "lesson"]
@@ -596,7 +603,13 @@ def parent_page(parent_id: str):
                 html.Span(child["name"], className="profile-name"),
                 html.Span(f"age {child['age']}", className="hint"),
             ]),
-            html.Span("Read only", className="tag"),
+            html.Div([
+                html.Span("Read only", className="tag"),
+                dcc.Dropdown(id="parent-year",
+                             options=[{"label": y, "value": int(y)} for y in years],
+                             value=int(chosen) if chosen else None,
+                             clearable=False, style={"width": "110px"}),
+            ], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
         ], className="card card-head"),
 
         html.Div([

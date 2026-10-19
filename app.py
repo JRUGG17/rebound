@@ -883,6 +883,14 @@ def leave_lessons(n):
     return None if clicked(n) else no_update
 
 
+@app.callback(Output("year-sel", "data", allow_duplicate=True),
+              Input("parent-year", "value"), prevent_initial_call=True)
+def pick_parent_year(value):
+    """Its own callback with one Input — the dropdown only exists on the
+    parent page, and bundling a sometimes-absent Input kills the rest."""
+    return value
+
+
 @app.callback(Output("year-sel", "data"), Input("lesson-year", "value"),
               prevent_initial_call=True)
 def pick_year(value):
@@ -1209,7 +1217,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         ])
 
     if role == "parent":
-        return cv.parent_page(who)
+        return cv.parent_page(who, year)
 
     if role in ("coach", "admin"):
         if nav == "resources":
