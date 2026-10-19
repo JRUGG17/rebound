@@ -163,7 +163,8 @@ def coach_today(coach_id: str, theme_msg: str | None = None):
     ])
 
 
-def roster(query: str | None = None):
+def roster(query: str | None = None, adding: bool = False,
+           added: str | None = None):
     """Players, searchable. A club has more than six."""
     overview = analysis.squad_overview()
     needle = (query or "").strip().lower()
@@ -191,9 +192,24 @@ def roster(query: str | None = None):
     return html.Div([
         html.Div([
             html.H2("Players"),
-            dcc.Input(id="player-search", value=query or "", debounce=False,
-                      placeholder="Search by name or focus", className="search"),
+            html.Div([
+                dcc.Input(id="player-search", value=query or "", debounce=False,
+                          placeholder="Search by name or focus", className="search"),
+                html.Button("+ Add player", id="add-player-open", className="ghost"),
+            ], style={"display": "flex", "gap": "8px"}),
         ], className="card-head"),
+        html.Div([
+            html.Div("New player", className="label"),
+            html.Div([
+                dcc.Input(id="new-player-name", placeholder="Full name",
+                          className="search"),
+                dcc.Input(id="new-player-age", type="number", min=5, max=21,
+                          placeholder="Age", className="search",
+                          style={"width": "90px"}),
+                html.Button("Add", id="add-player", className="primary"),
+                html.Span(added or "", className="hint"),
+            ], className="composer-row"),
+        ], className="card") if adding else html.Span(),
         html.Div(rows if rows else [html.Div("Nobody matches that.",
                                              className="empty")], className="roster"),
     ], className="card")
@@ -798,20 +814,50 @@ def range_bounds(key: str) -> tuple[str, str, str]:
     return start.isoformat(), today.isoformat(), label
 
 
+FILTERS = [("", "Everything"), ("lesson", "Lessons"), ("squad", "Squad"),
+           ("solo", "Solo"), ("tournament", "Match play"),
+           ("reflection", "Reflections")]
+
+
 def recap_panel(player_id: str, viewer_role: str, range_key: str,
-                result: dict | None, running: bool, show_entries: bool = False):
+                result: dict | None, running: bool, show_entries: bool = False,
+                setting: str | None = None, author: str | None = None):
     start, end, label = range_bounds(range_key)
     stats = analysis.period_stats(
-        player_id, start, end, viewer="player" if viewer_role == "player" else "coach")
-    all_rows = (db.entries_for_player(player_id) if viewer_role == "player"
-                else db.entries_for_coach(player_id))
-    all_rows = [e for e in all_rows if start <= e["occurred_on"] <= end]
+        player_id, start, end,
+        viewer="player" if viewer_role == "player" else "coach",
+        setting=setting or None, author=author or None)
+    all_rows = stats["rows"]
+
+    authors = sorted({e["author_id"] for e in
+                      (db.entries_for_player(player_id) if viewer_role == "player"
+                       else db.entries_for_coach(player_id))})
+    author_options = [{"label": "Anyone", "value": ""}] + [
+        {"label": db.person(a)["name"], "value": a} for a in authors if db.person(a)]
+
+    filters = html.Div([
+        html.Div([
+            html.Button(label, id={"type": "filter-setting", "s": key},
+                        className=f"chip{' on' if (setting or '') == key else ''}")
+            for key, label in FILTERS
+        ], className="chips"),
+        dcc.Dropdown(id="filter-author", options=author_options,
+                     value=author or "", clearable=False,
+                     style={"width": "190px"}),
+    ], className="filter-row")
 
     picker = html.Div([
         html.Button(label_, id={"type": "recap-range", "k": key},
                     className=f"tab-btn{' active' if key == range_key else ''}")
         for key, label_ in RANGES
     ], className="tab-row")
+
+    narrowed = []
+    if setting:
+        narrowed.append(dict(FILTERS).get(setting, setting).lower())
+    if author and db.person(author):
+        narrowed.append(f"by {db.person(author)['name']}")
+    scope = f"{label}, {' · '.join(narrowed)}" if narrowed else label
 
     tiles = html.Div([
         html.Button([html.Div("Entries", className="label"),
@@ -904,11 +950,12 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
     return html.Div([
         html.Div([
             html.Div([
-                html.H2(f"Recap · {label}"),
+                html.H2(f"Recap · {scope}"),
                 html.Button("Read it back", id="run-recap", className="primary"),
             ], style={"display": "flex", "justifyContent": "space-between",
                       "alignItems": "center"}),
             picker,
+            filters,
             tiles,
             html.Div(body, style={"marginTop": "6px"}),
         ], className="card"),

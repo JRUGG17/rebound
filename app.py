@@ -108,10 +108,12 @@ def run_comparison(player_id: str):
     return _run_job(work)
 
 
-def run_recap(player_id: str, start: str, end: str, audience: str):
+def run_recap(player_id: str, start: str, end: str, audience: str,
+              setting: str | None = None, author: str | None = None):
     def work():
         output, _usage = aio.run(
-            recap_agent.recap_period(player_id, start, end, audience=audience))
+            recap_agent.recap_period(player_id, start, end, audience=audience,
+                                     setting=setting, author=author))
         return {"recap": output.model_dump() if output else None}
     return _run_job(work)
 
@@ -366,6 +368,10 @@ app.layout = html.Div([
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
     dcc.Store(id="focus-history", data=None),
+    dcc.Store(id="f-setting", data=""),
+    dcc.Store(id="f-author", data=""),
+    dcc.Store(id="adding-player", data=False),
+    dcc.Store(id="added-msg", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -666,18 +672,20 @@ def pick_range(clicks, current):
     Output("poll", "disabled", allow_duplicate=True),
     Input("run-recap", "n_clicks"),
     State("who", "value"), State("sel-player", "data"), State("recap-range", "data"),
+    State("f-setting", "data"), State("f-author", "data"),
     prevent_initial_call=True,
 )
-def start_recap(n, who, sel_player, range_key):
+def start_recap(n, who, sel_player, range_key, f_setting, f_author):
     person = db.person(who)
-    if not n or person is None:
+    if not clicked(n) or person is None:
         return no_update, no_update
     is_player = person["role"] == "player"
     subject = who if is_player else sel_player
     if not subject:
         return no_update, no_update
-    start, end, _label = cv.range_bounds(range_key or "block")
-    return run_recap(subject, start, end, "player" if is_player else "coach"), False
+    start, end, _label = cv.range_bounds(range_key or "30")
+    return (run_recap(subject, start, end, "player" if is_player else "coach",
+                      f_setting or None, f_author or None), False)
 
 
 @app.callback(Output("focus-tick", "data"),
@@ -878,6 +886,60 @@ def toggle_focus_history(coach_h, own_h, current):
     return None if current == which else which
 
 
+@app.callback(Output("f-setting", "data"), Output("recap", "data", allow_duplicate=True),
+              Input({"type": "filter-setting", "s": ALL}, "n_clicks"),
+              State("f-setting", "data"), prevent_initial_call=True)
+def pick_setting_filter(clicks, current):
+    if not any(c for c in clicks if c):
+        return current, no_update
+    # A recap describes a particular set of entries. Change the set and the
+    # old recap is about something else, so it goes.
+    return ctx.triggered_id["s"], None
+
+
+@app.callback(Output("f-author", "data"), Output("recap", "data", allow_duplicate=True),
+              Input("filter-author", "value"), prevent_initial_call=True)
+def pick_author_filter(value):
+    return value or "", None
+
+
+@app.callback(Output("adding-player", "data"),
+              Input("add-player-open", "n_clicks"), State("adding-player", "data"),
+              prevent_initial_call=True)
+def open_add_player(n, showing):
+    return (not showing) if clicked(n) else no_update
+
+
+@app.callback(Output("added-msg", "data"), Output("adding-player", "data",
+                                                  allow_duplicate=True),
+              Input("add-player", "n_clicks"),
+              State("new-player-name", "value"), State("new-player-age", "value"),
+              State("who", "value"), prevent_initial_call=True)
+def add_player(n, name, age, who):
+    """A coach putting a new player into the system.
+
+    Minimal on purpose — a name and an age. Everything else about a player
+    accumulates from being coached, and asking for it up front is a form
+    nobody fills in.
+    """
+    person = db.person(who)
+    if not clicked(n) or person is None or person["role"] not in ("coach", "admin"):
+        return no_update, no_update
+    if not name or not name.strip():
+        return "Needs a name.", no_update
+    slug = "".join(ch for ch in name.lower().split()[0] if ch.isalpha()) or "player"
+    pid, n_try = slug, 1
+    while db.person(pid):
+        n_try += 1
+        pid = f"{slug}{n_try}"
+    with db.connect() as conn:
+        conn.execute(
+            "INSERT INTO people (id, name, role, age, joined_on) "
+            "VALUES (?,?,'player',?,?)",
+            (pid, name.strip(), int(age) if age else None, clock.today_iso()))
+    return f"Added {name.strip()}.", False
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -892,13 +954,16 @@ def toggle_focus_history(coach_h, own_h, current):
     Input("open-month", "data"), Input("show-entries", "data"),
     Input("kind", "data"), Input("editing", "data"),
     Input("focus-edit", "data"), Input("focus-history", "data"),
+    Input("f-setting", "data"), Input("f-author", "data"),
+    Input("adding-player", "data"), Input("added-msg", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, job_id):
+                focus_edit, focus_hist, f_setting, f_author, adding,
+                added_msg, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -918,7 +983,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             cv.focus_pair(who, "player", focus_msg, focus_edit, focus_hist),
             player_reflections(who, "shared", job_id, kind),
             cv.recap_panel(who, "player", recap_range, recap, running,
-                           show_entries),
+                           show_entries, f_setting, f_author),
         ])
 
     if role == "parent":
@@ -939,9 +1004,9 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 return html.Div([
                     cv.player_detail(sel_player, review, running, focus_msg),
                     cv.recap_panel(sel_player, "coach", recap_range, recap, running,
-                                   show_entries),
+                                   show_entries, f_setting, f_author),
                 ])
-            return cv.roster(search)
+            return cv.roster(search, adding, added_msg)
         return cv.coach_today(who, theme_msg)
 
     return html.Div("Nothing here.", className="card")

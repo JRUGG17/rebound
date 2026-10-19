@@ -70,6 +70,7 @@ def main() -> int:
     check("today", lambda: cv.coach_today(coach))
     check("today with a saved theme", lambda: cv.coach_today(coach, "Set to Drop Week."))
     check("roster", cv.roster)
+    check("roster with the add form open", lambda: cv.roster(None, True))
     check("player detail", lambda: cv.player_detail(player, None, False))
     check("player detail with findings", lambda: cv.player_detail(
         player, {"summary": "s", "findings": [
@@ -110,6 +111,13 @@ def main() -> int:
     check("focus pair, player side", lambda: cv.focus_pair(player, "player"))
     check("recap with entries shown",
           lambda: cv.recap_panel(player, "player", "30", None, False, True))
+    check("recap filtered to lessons",
+          lambda: cv.recap_panel(player, "player", "30", None, False, True, "lesson"))
+    check("recap filtered to one coach",
+          lambda: cv.recap_panel(player, "coach", "30", None, False, True,
+                                 None, "coach_stuart"))
+    check("recap filtered to nothing at all",
+          lambda: cv.recap_panel(player, "player", "7", None, False, True, "solo"))
     check("week card", lambda: cv.week_card(coach))
     check("needs-you card", lambda: cv.attention_card(coach))
     check("roster search finds nothing",

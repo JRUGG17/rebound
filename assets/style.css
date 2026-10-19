@@ -782,3 +782,11 @@ button.chip:hover { border-color: var(--orange); color: var(--amber); }
 button.chip.on {
   background: var(--orange); border-color: var(--orange); color: #fff;
 }
+
+.filter-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; margin: 4px 0 14px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--line);
+}
+.focus-head { display: flex; align-items: baseline; justify-content: space-between; }
+.focus-history { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }

@@ -321,7 +321,8 @@ def digest(player_id: str) -> str:
 CATEGORIES = ("technical", "tactical", "physical", "psychological")
 
 
-def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player") -> dict:
+def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player",
+                 setting: str | None = None, author: str | None = None) -> dict:
     """Everything countable about one stretch of time.
 
     The recap agent gets these numbers rather than deriving them. "Eleven
@@ -332,6 +333,13 @@ def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player"
     rows = (db.entries_for_player(player_id) if viewer == "player"
             else db.entries_for_coach(player_id))
     rows = [e for e in rows if start <= e["occurred_on"] <= end]
+    # Narrowing the record is not the same question as summarising all of it.
+    # "What happens in my lessons" and "what happens in squad" have different
+    # answers, and filtering before the agent reads is how you ask one.
+    if setting:
+        rows = [e for e in rows if e["setting"] == setting]
+    if author:
+        rows = [e for e in rows if e["author_id"] == author]
 
     by_category: dict[str, list] = {c: [] for c in CATEGORIES}
     by_setting: dict[str, int] = defaultdict(int)
@@ -373,6 +381,9 @@ def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player"
         "player_id": player_id,
         "start": start,
         "end": end,
+        "setting": setting,
+        "author": author,
+        "rows": rows,
         "total": len(rows),
         "sessions": len(days),
         "by_category": by_category,
@@ -389,9 +400,16 @@ def period_stats(player_id: str, start: str, end: str, *, viewer: str = "player"
 def period_digest(stats: dict) -> str:
     """The compact brief the recap agent reads."""
     player = db.person(stats["player_id"])
+    narrowed = []
+    if stats.get("setting"):
+        narrowed.append(f"only {stats['setting']} entries")
+    if stats.get("author"):
+        who = db.person(stats["author"])
+        narrowed.append(f"only what {who['name']} wrote" if who else "")
     lines = [
         f"PLAYER: {player['name']}, age {player['age']}",
-        f"PERIOD: {stats['start']} to {stats['end']}",
+        f"PERIOD: {stats['start']} to {stats['end']}"
+        + (f"  [FILTERED: {', '.join(x for x in narrowed if x)}]" if narrowed else ""),
         f"COUNTED: {stats['total']} entries across {stats['sessions']} days "
         f"({', '.join(f'{k} {v}' for k, v in stats['by_setting'].items()) or 'none'})",
         f"BY CATEGORY: " + ", ".join(f"{c} {n}" for c, n in stats["counts"].items()),

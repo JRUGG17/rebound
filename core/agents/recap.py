@@ -149,7 +149,8 @@ sentence of its own — say both and whose each is.
 
 
 async def recap_period(player_id: str, start: str, end: str,
-                       *, audience: Audience = "player", force: bool = False):
+                       *, audience: Audience = "player", force: bool = False,
+                       setting: str | None = None, author: str | None = None):
     """A recap of one stretch of time. Written once, then kept.
 
     Re-reading an unchanged September costs exactly what reading it the first
@@ -160,12 +161,17 @@ async def recap_period(player_id: str, start: str, end: str,
     from core import db
 
     stats = analysis.period_stats(
-        player_id, start, end, viewer="player" if audience == "player" else "coach")
+        player_id, start, end, viewer="player" if audience == "player" else "coach",
+        setting=setting, author=author)
     if not stats["total"]:
         return None, None
 
+    # A filtered recap is a different summary of a different set, so it gets
+    # its own cache slot rather than overwriting the unfiltered one.
+    kind = "recap" + (f":{setting or 'all'}:{author or 'all'}"
+                      if (setting or author) else "")
     if not force:
-        hit = db.get_summary(player_id, "recap", audience, start, end, stats["total"])
+        hit = db.get_summary(player_id, kind, audience, start, end, stats["total"])
         if hit:
             return Recap.model_validate(hit["payload"]), hit
 
@@ -178,7 +184,7 @@ async def recap_period(player_id: str, start: str, end: str,
         "Write the recap."
     )
     output, usage = await run(agent, prompt, name=f"recap:{audience}")
-    db.put_summary(player_id, "recap", audience, start, end,
+    db.put_summary(player_id, kind, audience, start, end,
                    output.model_dump(), stats["total"], usage)
     return output, usage
 
