@@ -322,7 +322,14 @@ def usage_page():
 
 # ---------------------------------------------------------------- app
 
+# Exo 2 is the club's own typeface for the wordmark. Loaded from Google
+# because the alternative is a font file in the repo; offline it falls back
+# to the system sans and the mark still reads.
+FONT_CSS = ("https://fonts.googleapis.com/css2?"
+            "family=Exo+2:ital,wght@1,800&display=swap")
+
 app = Dash(__name__, title="Rebound — Squash Tigers",
+           external_stylesheets=[FONT_CSS],
            suppress_callback_exceptions=True)
 server = app.server
 
@@ -378,13 +385,13 @@ app.layout = html.Div([
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
-        # The club's mark, drawn in CSS rather than shipped as an image —
-        # one less binary in the repo and it scales with the type.
+        # The club's own mark and wordmark, taken from squashtigers.com:
+        # the ST monogram they use as their favicon, and Squash|Tigers set
+        # in Exo 2 italic the way their navbar sets it.
         html.A([
-            html.Span([html.Span(className="ball")], className="mark"),
-            html.Span([html.Span("SQUASH", className="mark-top"),
-                       html.Span("TIGERS", className="mark-bot")],
-                      className="mark-words"),
+            html.Img(src=app.get_asset_url("squash-tigers.svg"),
+                     className="mark", alt="Squash Tigers"),
+            html.Span(["Squash", html.Span("Tigers")], className="mark-words"),
         ], href="https://www.squashtigers.com/", target="_blank",
             rel="noopener noreferrer", className="brand",
             title="Squash Tigers Academy"),

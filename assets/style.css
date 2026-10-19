@@ -48,42 +48,30 @@ body {
   gap: 9px;
   margin-right: auto;
   text-decoration: none;
-  color: inherit;
 }
 .brand:hover .mark { transform: rotate(-8deg); }
 
-/* Tiger stripes with a ball sitting in them. */
 .mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  background:
-    repeating-linear-gradient(115deg,
-      var(--orange) 0 5px, var(--slate-dark) 5px 9px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.18s ease;
+  width: 28px;
+  height: 28px;
+  display: block;
   flex: none;
-}
-.mark .ball {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #12161a;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+  transition: transform 0.18s ease;
 }
 
+/* The club's own setting: Exo 2, italic, heavy, tracked out and
+   upper-cased, Squash in white and Tigers in their orange. */
 .mark-words {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.02;
+  font-family: "Exo 2", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: 0.6px;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
 }
-/* The topbar is slate, so the upper word is light on it. */
-.mark-top { font-size: 11px; color: #cfd4d9; }
-.mark-bot { font-size: 15px; color: var(--orange); }
+.mark-words span { color: #ff6520; }
 
 .topbar label {
   font-size: 11px;
@@ -848,8 +836,7 @@ body { background: var(--wash); }
   border-bottom: 3px solid var(--orange);
   height: 56px;
 }
-.brand .mark-top { font-size: 12px; }
-.brand .mark-bot { font-size: 16px; }
+.brand .mark-words { font-size: 18px; }
 
 .sidebar {
   background: var(--shell);
