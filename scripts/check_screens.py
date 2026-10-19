@@ -64,8 +64,10 @@ def main() -> int:
          "themes": [{"title": "t", "category": "technical", "cue_id": None,
                      "direction": "flat", "what_it_is": "w", "evidence": "e"}],
          "gap": "g"}, False))
-    check("lesson picker, adding",
-          lambda: cv.coach_lesson_picker(coach, True, "Added Sam."))
+    check("lesson picker, searching the roster",
+          lambda: cv.coach_lesson_picker(coach, "ma"))
+    check("lesson picker, search matches nobody",
+          lambda: cv.coach_lesson_picker(coach, "zzzz"))
     check("recap, everything on file",
           lambda: cv.recap_panel(player, "player", "all", None, False, True))
     check("recap, a year picked",

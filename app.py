@@ -361,6 +361,7 @@ app.layout = html.Div([
     dcc.Store(id="open-month", data=None),
     dcc.Store(id="show-entries", data=False),
     dcc.Store(id="recap-year", data=None),
+    dcc.Store(id="lesson-query", data=""),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
@@ -425,6 +426,9 @@ PLAYER_NAV = [
             ("recap", "Recap")]),
     (None, [("usage", "Usage")]),
 ]
+PARENT_NAV = [
+    (None, [("training", "Training record")]),
+]
 COACH_NAV = [
     (None, [("today", "Today"), ("players", "Players"), ("lessons", "My lessons")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
@@ -437,7 +441,12 @@ def render_sidebar(who, nav, sel_player):
     person = db.person(who)
     if person is None:
         return None
-    groups = COACH_NAV if person["role"] in ("coach", "admin") else PLAYER_NAV
+    if person["role"] in ("coach", "admin"):
+        groups = COACH_NAV
+    elif person["role"] == "parent":
+        groups = PARENT_NAV
+    else:
+        groups = PLAYER_NAV
 
     out = []
     for heading, items in groups:
@@ -996,36 +1005,31 @@ def add_player(n, name, age, who, tick):
     return f"Added {name.strip()}.", (tick or 0) + 1, "", None
 
 
-@app.callback(Output("adding-player", "data", allow_duplicate=True),
-              Input("new-lesson-open", "n_clicks"),
-              State("adding-player", "data"), prevent_initial_call=True)
-def open_new_lesson(n, showing):
-    return (not showing) if clicked(n) else no_update
+@app.callback(Output("lesson-query", "data"),
+              Input("lesson-search", "value"), prevent_initial_call=True)
+def type_lesson_search(value):
+    return value or ""
 
 
-@app.callback(Output("added-msg", "data", allow_duplicate=True),
-              Output("roster-changed", "data", allow_duplicate=True),
-              Output("sel-player", "data", allow_duplicate=True),
+@app.callback(Output("sel-player", "data", allow_duplicate=True),
               Output("nav", "data", allow_duplicate=True),
-              Input("start-new-lesson", "n_clicks"),
-              State("lesson-new-name", "value"), State("lesson-new-age", "value"),
-              State("who", "value"), State("roster-changed", "data"),
-              prevent_initial_call=True)
-def start_lesson_with_new_player(n, name, age, who, tick):
-    """A coach picking up somebody who is not in the system yet.
+              Output("draft", "data", allow_duplicate=True),
+              Input({"type": "start-lesson", "id": ALL}, "n_clicks"),
+              State("who", "value"), prevent_initial_call=True)
+def start_lesson_with(clicks, who):
+    """Pick a player off the roster and go straight to writing it up.
 
-    The lesson is the thing they came to write; the roster entry is
-    bookkeeping. So this does both and lands them on the player's page with
-    the composer open, rather than making them go to Players, add, come back
-    and find the name.
+    Same destination as Write up a lesson on their page — this just saves
+    the trip through Players to get there.
     """
     person = db.person(who)
-    if not clicked(n) or person is None or person["role"] not in ("coach", "admin"):
-        return no_update, no_update, no_update, no_update
-    if not name or not name.strip():
-        return "Needs a name.", no_update, no_update, no_update
-    pid = new_player(name, age)
-    return f"Added {name.strip()}.", (tick or 0) + 1, pid, "players"
+    if person is None or person["role"] not in ("coach", "admin"):
+        return no_update, no_update, no_update
+    if not ctx.triggered_id or not any(c for c in clicks if c):
+        return no_update, no_update, no_update
+    pid = ctx.triggered_id["id"]
+    return pid, "note", {"player_id": pid, "setting": "lesson",
+                         "on": clock.today_iso(), "text": "", "organized": None}
 
 
 @app.callback(Output("plan-edit", "data"),
@@ -1092,7 +1096,7 @@ def go_to_recap(n):
     Input("kind", "data"), Input("editing", "data"),
     Input("focus-edit", "data"), Input("focus-history", "data"),
     Input("f-setting", "data"), Input("f-author", "data"),
-    Input("recap-year", "data"),
+    Input("recap-year", "data"), Input("lesson-query", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
     Input("plan-edit", "data"),
     State("job", "data"),
@@ -1101,7 +1105,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, f_setting, f_author, recap_year, adding,
+                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, adding,
                 added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
@@ -1137,12 +1141,12 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             return cv.note_composer(draft, running)
         if nav == "lessons":
             if not sel_player:
-                return cv.coach_lesson_picker(who, adding, added_msg)
+                return cv.coach_lesson_picker(who, lesson_query)
             return cv.lesson_months(sel_player, who, "coach", open_month,
                                     year, sel_day, running, editing)
         if nav == "recap":
             if not sel_player:
-                return cv.coach_lesson_picker(who, adding, added_msg)
+                return cv.coach_lesson_picker(who, lesson_query)
             return cv.recap_panel(sel_player, "coach", recap_range, recap, running,
                                   show_entries, f_setting, f_author, recap_year)
         if nav == "players":

@@ -1204,37 +1204,44 @@ PRIVATE_PROMPT = (
 )
 
 
-def coach_lesson_picker(coach_id: str, adding: bool = False,
-                        added: str | None = None):
+def coach_lesson_picker(coach_id: str, query: str | None = None):
     """Whose lessons. Only the players this coach teaches, and nothing else."""
     mine = analysis.my_players(coach_id)
-    new_form = html.Div([
-        html.Div("Lesson with somebody new", className="label"),
+
+    # Start a lesson with anyone on the roster, not only the players this
+    # coach has taught before — covering a colleague's session is the normal
+    # case, not the exception. Putting somebody new on the roster is a
+    # different job and lives on the Players page.
+    needle = (query or "").strip().lower()
+    taught = {p["id"] for p in mine}
+    matches = [p for p in db.people("player") if needle in p["name"].lower()][:8] \
+        if needle else []
+    found = html.Div([
         html.Div([
-            dcc.Input(id="lesson-new-name", placeholder="Full name",
-                      className="search"),
-            dcc.Input(id="lesson-new-age", type="number", min=5, max=21,
-                      placeholder="Age", className="search",
-                      style={"width": "90px"}),
-            html.Button("Add and start", id="start-new-lesson",
-                        className="primary"),
-            html.Span(added or "", className="hint"),
-        ], className="composer-row"),
-        html.Div("Puts them on the roster and opens their page so you can "
-                 "write the lesson up now.", className="hint"),
-    ], className="card") if adding else html.Span()
+            html.Button([
+                html.Span(p["name"], className="roster-name"),
+                html.Span(f"age {p['age']}" if p["age"] else "", className="hint"),
+                html.Span("" if p["id"] in taught else "not yours",
+                          className="tag"),
+            ], id={"type": "start-lesson", "id": p["id"]}, className="roster-row")
+            for p in matches
+        ], className="roster") if matches else
+        html.Div(f"Nobody on the roster matches “{query}”. New players are added "
+                 "on the Players page.", className="empty"),
+    ], className="card") if needle else html.Span()
 
     head = html.Div([
         html.H2("My lessons"),
-        html.Button("+ New player", id="new-lesson-open", className="ghost"),
+        dcc.Input(id="lesson-search", value=query or "", debounce=False,
+                  placeholder="Start a lesson — type a name", className="search"),
     ], className="card-head")
 
     if not mine:
         return html.Div([
             head,
-            new_form,
-            html.Div("You have not written up a lesson yet. Start one from a "
-                     "player's page, or add somebody above.", className="empty"),
+            found,
+            html.Div("You have not written up a lesson yet. Type a name above "
+                     "to start one.", className="empty"),
         ], className="card")
 
     rows = [html.Button([
@@ -1251,7 +1258,7 @@ def coach_lesson_picker(coach_id: str, adding: bool = False,
 
     return html.Div([
         head,
-        new_form,
+        found,
         html.Div(rows, className="roster"),
     ], className="card")
 
