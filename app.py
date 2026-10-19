@@ -376,6 +376,9 @@ app.layout = html.Div([
         html.Label("I am"),
         dcc.Dropdown(id="who", options=people_options(), value="maya",
                      clearable=False, style={"width": "250px"}),
+        # roster-changed is bumped whenever somebody is added or removed, so
+        # the switcher can rebuild. Without it a new player had no way in.
+        dcc.Store(id="roster-changed", data=0),
         html.Div([
             html.Button("‹", id="back-week", className="step", title="Back a week"),
             html.Div(id="today-label", className="today"),
@@ -929,12 +932,14 @@ def open_add_player(n, showing):
     return (not showing) if clicked(n) else no_update
 
 
-@app.callback(Output("added-msg", "data"), Output("adding-player", "data",
-                                                  allow_duplicate=True),
+@app.callback(Output("added-msg", "data"),
+              Output("adding-player", "data", allow_duplicate=True),
+              Output("roster-changed", "data", allow_duplicate=True),
               Input("add-player", "n_clicks"),
               State("new-player-name", "value"), State("new-player-age", "value"),
-              State("who", "value"), prevent_initial_call=True)
-def add_player(n, name, age, who):
+              State("who", "value"), State("roster-changed", "data"),
+              prevent_initial_call=True)
+def add_player(n, name, age, who, tick):
     """A coach putting a new player into the system.
 
     Minimal on purpose — a name and an age. Everything else about a player
@@ -943,9 +948,9 @@ def add_player(n, name, age, who):
     """
     person = db.person(who)
     if not clicked(n) or person is None or person["role"] not in ("coach", "admin"):
-        return no_update, no_update
+        return no_update, no_update, no_update
     if not name or not name.strip():
-        return "Needs a name.", no_update
+        return "Needs a name.", no_update, no_update
     slug = "".join(ch for ch in name.lower().split()[0] if ch.isalpha()) or "player"
     pid, n_try = slug, 1
     while db.person(pid):
@@ -959,7 +964,7 @@ def add_player(n, name, age, who):
             "INSERT INTO people (id, name, role, age, joined_on) "
             "VALUES (?,?,'player',?,?)",
             (pid, name.strip(), int(age) if age else None, joined))
-    return f"Added {name.strip()}.", False
+    return f"Added {name.strip()}.", False, (tick or 0) + 1
 
 
 @app.callback(Output("plan-edit", "data"),
@@ -986,16 +991,23 @@ def save_plan(n, work, targets, keys):
 
 
 @app.callback(Output("sel-player", "data", allow_duplicate=True),
+              Output("roster-changed", "data", allow_duplicate=True),
               Input("remove-player", "n_clicks"), State("sel-player", "data"),
-              State("who", "value"), prevent_initial_call=True)
-def drop_player(n, player_id, who):
+              State("who", "value"), State("roster-changed", "data"),
+              prevent_initial_call=True)
+def drop_player(n, player_id, who, tick):
     person = db.person(who)
     if not clicked(n) or not player_id or person is None:
-        return no_update
+        return no_update, no_update
     if person["role"] != "admin":
-        return no_update
+        return no_update, no_update
     db.remove_player(player_id)
-    return None
+    return None, (tick or 0) + 1
+
+
+@app.callback(Output("who", "options"), Input("roster-changed", "data"))
+def refresh_people(_tick):
+    return people_options()
 
 
 @app.callback(

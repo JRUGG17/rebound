@@ -350,7 +350,7 @@ def player_detail(player_id: str, review: dict | None, running: bool,
                 if can_remove else html.Span(),
             ], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
         ], className="card-head"),
-        focus_pair(player_id, "coach", focus_msg),
+        focus_pair(player_id, "coach", focus_msg, focus_edit, focus_hist),
     ]
 
     if g["stuck"]:
