@@ -103,6 +103,10 @@ def main() -> int:
           lambda: cv.lesson_months(player, coach, "coach", None, 2019, None, False))
     check("a player's recap", lambda: cv.recap_panel(player, "coach", "30", None, False))
     check("the courtside glance", lambda: cv.player_detail(player, None, False))
+    check("focus pair, coach side", lambda: cv.focus_pair(player, "coach"))
+    check("focus pair, player side", lambda: cv.focus_pair(player, "player"))
+    check("recap with entries shown",
+          lambda: cv.recap_panel(player, "player", "30", None, False, True))
     check("week card", lambda: cv.week_card(coach))
     check("needs-you card", lambda: cv.attention_card(coach))
     check("roster search finds nothing",

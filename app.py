@@ -147,6 +147,24 @@ def run_lesson_arc(player_id: str, audience: str):
     return _run_job(work)
 
 
+def file_lesson_note(player_id: str, coach_id: str, text: str, day: str):
+    """A coach adding to a lesson. Filed and released in one step — they are
+    writing it to the player, and there is no rewrite to review."""
+    def work():
+        organized, _usage = aio.run(
+            organizer.organize_coach_note(player_id, text, day))
+        db.add_entry(
+            player_id=player_id, author_id=coach_id, author_role="coach",
+            setting="lesson", rung=organized.rung, shot=organized.shot,
+            category=organized.category, cue_id=organized.cue_id,
+            proposed_cue=organized.proposed_cue, raw_text=text,
+            summary=organized.summary, approved_by=coach_id,
+            visibility="shared", occurred_on=day,
+        )
+        return {"lesson_added": True}
+    return _run_job(work)
+
+
 def ask_playbook(question: str):
     def work():
         answer, _usage = aio.run(methodology.ask(question))
@@ -180,29 +198,18 @@ def entry_card(entry, viewer_role: str):
 
 
 def player_today(player_id: str):
-    """Short on purpose.
-
-    This grew into the whole record with a focus card on top. A landing page
-    that takes scrolling is a landing page nobody reads, and everything on it
-    already has a home: the journal has the history, lessons have the
-    lessons. Today answers one question — what am I working on, and what is
-    this week — and then gets out of the way.
-    """
-    focus = db.current_focus(player_id)
+    """Just who you are and what week it is. The focuses sit under it."""
+    player = db.person(player_id)
     week = db.week_of(clock.today_iso())
 
-    header = [
+    return [html.Div([
         html.Div([
-            html.Div("Working on", className="label"),
-            html.Div(focus["text"] if focus else "Nothing set yet",
-                     className="focus-text"),
-            html.Div(f"Set by {db.person(focus['coach_id'])['name']}"
-                     if focus else "", className="byline"),
+            html.Span(player["name"], className="profile-name"),
+            html.Span(f"age {player['age']}", className="hint"),
         ]),
         html.Div(html.Span(week["theme_name"], className="theme-pill")
                  if week else "", className="today-week"),
-    ]
-    return [html.Div(header, className="card focus-card today-head")]
+    ], className="card today-head")]
 
 
 RECENT_ON_TODAY = 4
@@ -349,6 +356,7 @@ app.layout = html.Div([
     dcc.Store(id="search", data=""),
     dcc.Store(id="year-sel", data=None),
     dcc.Store(id="open-month", data=None),
+    dcc.Store(id="show-entries", data=False),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -662,28 +670,67 @@ def start_recap(n, who, sel_player, range_key):
 
 
 @app.callback(Output("focus-tick", "data"),
-              Input("set-focus", "n_clicks"),
-              State("focus-text", "value"), State("focus-category", "value"),
+              Input("coach-set-focus", "n_clicks"),
+              State("coach-focus-text", "value"),
+              State("coach-focus-category", "value"),
               State("sel-player", "data"), State("who", "value"),
               prevent_initial_call=True)
-def set_focus(n, text, category, player_id, coach_id):
-    if not n or not text or not text.strip() or not player_id:
-        return no_update
+def set_coach_focus(n, text, category, player_id, coach_id):
     person = db.person(coach_id)
+    if not clicked(n) or not text or not text.strip() or not player_id:
+        return no_update
     if person is None or person["role"] not in ("coach", "admin"):
         return no_update
-    today = clock.today_iso()
-    with db.connect() as conn:
-        # One live focus at a time. Setting a new one closes the old rather
-        # than leaving two, so "what are they working on" has one answer.
-        conn.execute(
-            "UPDATE focuses SET resolved_on = ? WHERE player_id = ? "
-            "AND resolved_on IS NULL", (today, player_id))
-        conn.execute(
-            """INSERT INTO focuses (player_id, coach_id, text, category, set_on)
-               VALUES (?,?,?,?,?)""",
-            (player_id, coach_id, text.strip(), category or "technical", today))
-    return f"Set. {db.person(player_id)['name'].split()[0]} sees it on their Today."
+    db.set_focus(player_id, coach_id, text, category, "coach", clock.today_iso())
+    return f"Set. {db.person(player_id)['name'].split()[0]} sees it."
+
+
+@app.callback(Output("focus-tick", "data", allow_duplicate=True),
+              Input("own-set-focus", "n_clicks"),
+              State("own-focus-text", "value"),
+              State("own-focus-category", "value"), State("who", "value"),
+              prevent_initial_call=True)
+def set_own_focus(n, text, category, who):
+    person = db.person(who)
+    if not clicked(n) or not text or not text.strip():
+        return no_update
+    if person is None or person["role"] != "player":
+        return no_update
+    db.set_focus(who, who, text, category, "player", clock.today_iso())
+    return "Set."
+
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Input({"type": "lesson-save", "d": ALL}, "n_clicks"),
+    State({"type": "lesson-add", "d": ALL}, "value"),
+    State("who", "value"), State("sel-player", "data"),
+    prevent_initial_call=True,
+)
+def add_to_lesson(clicks, texts, who, sel_player):
+    """Either side adding to a lesson. This was lost when dead callbacks were
+    pruned, which is why a player could not add anything."""
+    if not any(c for c in clicks if c):
+        return no_update, no_update
+    person = db.person(who)
+    if person is None:
+        return no_update, no_update
+    day = ctx.triggered_id["d"]
+    wanted = [i["id"]["d"] for i in ctx.states_list[0]]
+    try:
+        text = texts[wanted.index(day)]
+    except (ValueError, IndexError):
+        return no_update, no_update
+    if not text or not text.strip():
+        return no_update, no_update
+
+    if person["role"] == "player":
+        return save_dated(who, text.strip(), "shared", day, setting="lesson"), False
+    subject = sel_player
+    if not subject:
+        return no_update, no_update
+    return file_lesson_note(subject, who, text.strip(), day), False
 
 
 @app.callback(Output("nav", "data", allow_duplicate=True),
@@ -736,6 +783,15 @@ def open_lesson(clicks):
     return ctx.triggered_id["d"]
 
 
+@app.callback(Output("show-entries", "data"),
+              Input("toggle-entries", "n_clicks"), State("show-entries", "data"),
+              prevent_initial_call=True)
+def toggle_entries(n, showing):
+    # Reading the entries yourself should not need an agent. The tile is the
+    # switch: counts by default, the actual notes if you want them.
+    return (not showing) if clicked(n) else no_update
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -747,13 +803,13 @@ def open_lesson(clicks):
     Input("sel-day", "data"), Input("day-summary", "data"),
     Input("lesson-arc", "data"), Input("focus-tick", "data"),
     Input("search", "data"), Input("year-sel", "data"),
-    Input("open-month", "data"),
+    Input("open-month", "data"), Input("show-entries", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
-                search, year, open_month, job_id):
+                search, year, open_month, show_entries, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -770,8 +826,10 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                                     sel_day, running)
         return html.Div([
             *player_today(who),
+            cv.focus_pair(who, "player", focus_msg),
             player_reflections(who, "shared", job_id),
-            cv.recap_panel(who, "player", recap_range, recap, running),
+            cv.recap_panel(who, "player", recap_range, recap, running,
+                           show_entries),
         ])
 
     if role == "parent":
@@ -791,7 +849,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             if sel_player:
                 return html.Div([
                     cv.player_detail(sel_player, review, running, focus_msg),
-                    cv.recap_panel(sel_player, "coach", recap_range, recap, running),
+                    cv.recap_panel(sel_player, "coach", recap_range, recap, running,
+                                   show_entries),
                 ])
             return cv.roster(search)
         return cv.coach_today(who, theme_msg)

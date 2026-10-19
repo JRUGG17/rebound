@@ -364,10 +364,23 @@ def build(*, reset: bool = True) -> dict:
     with db.connect() as conn:
         for player, coach, text, category, cue, week_no in FOCUSES:
             conn.execute(
-                """INSERT INTO focuses (player_id, coach_id, text, category, cue_id, set_on)
-                   VALUES (?,?,?,?,?,?)""",
+                """INSERT INTO focuses (player_id, coach_id, text, category, cue_id,
+                       kind, set_on)
+                   VALUES (?,?,?,?,?,'coach',?)""",
                 (player, coach, text, category, cue, day_in_week(week_no, 1)),
             )
+
+    with db.connect() as conn:
+        for player, text, category, when in [
+            ("maya", "Stop panicking in the front when I have a choice",
+             "psychological", 6),
+            ("jonah", "Use the boast in matches, not just in drills", "tactical", 8),
+            ("tomas", "Get lower", "physical", 9),
+        ]:
+            conn.execute(
+                """INSERT INTO focuses (player_id, coach_id, text, category, kind, set_on)
+                   VALUES (?,?,?,?,'player',?)""",
+                (player, player, text, category, day_in_week(when, 3)))
 
     with db.connect() as conn:
         counts = {

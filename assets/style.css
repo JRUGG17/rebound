@@ -739,3 +739,21 @@ button.link {
   font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline;
 }
 button.link:hover { color: var(--orange); }
+
+/* ---------------------------------------------------------- two focuses */
+
+.focus-pair .focus-card { border-left: 4px solid var(--orange); }
+.focus-pair .focus-card:nth-child(2) {
+  border-left-color: #1f5fa8;
+  background: linear-gradient(90deg, #eef5fd, var(--paper) 55%);
+}
+.focus-pair .focus-text { font-size: 17px; margin-top: 3px; }
+
+button.stat-button {
+  text-align: left; cursor: pointer; font: inherit;
+  border: 1px solid var(--line); background: var(--paper);
+}
+button.stat-button:hover { border-color: var(--orange); background: var(--orange-soft); }
+button.stat-button .sub { color: var(--orange); font-weight: 600; }
+
+.today-head { align-items: center; }

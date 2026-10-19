@@ -269,14 +269,7 @@ def player_detail(player_id: str, review: dict | None, running: bool,
             ]),
             html.Button("Lessons →", id="player-lessons", className="ghost"),
         ], className="card-head"),
-        html.Div([
-            html.Div("Working on", className="label"),
-            html.Div(g["focus"]["text"] if g["focus"] else "No focus set",
-                     className="focus-text"),
-            *([html.Div([html.Span("also ", className="hint"),
-                         html.Span(" · ".join(f["text"] for f in g["minor"]),
-                                   className="hint")])] if g["minor"] else []),
-        ], className="card focus-card"),
+        focus_pair(player_id, "coach", focus_msg),
     ]
 
     if g["stuck"]:
@@ -308,7 +301,7 @@ def player_detail(player_id: str, review: dict | None, running: bool,
     return html.Div([
         *head,
         html.Div(tiles, className="two-col") if tiles else html.Span(),
-        focus_control(player_id, focus_msg),
+
         html.Div([
             html.Div([html.H2("Where the evidence sits"),
                       html.Span("Low rungs rehearse, high rungs test.",
@@ -766,7 +759,7 @@ def range_bounds(key: str) -> tuple[str, str, str]:
 
 
 def recap_panel(player_id: str, viewer_role: str, range_key: str,
-               result: dict | None, running: bool):
+                result: dict | None, running: bool, show_entries: bool = False):
     start, end, label = range_bounds(range_key)
     stats = analysis.period_stats(
         player_id, start, end, viewer="player" if viewer_role == "player" else "coach")
@@ -781,8 +774,11 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
     ], className="tab-row")
 
     tiles = html.Div([
-        html.Div([html.Div("Entries", className="label"),
-                  html.Div(str(stats["total"]), className="value")], className="stat"),
+        html.Button([html.Div("Entries", className="label"),
+                     html.Div(str(stats["total"]), className="value"),
+                     html.Div("hide" if show_entries else "see them",
+                              className="sub")],
+                    id="toggle-entries", className="stat stat-button"),
         html.Div([html.Div("Days trained", className="label"),
                   html.Div(str(stats["sessions"]), className="value")], className="stat"),
         *[html.Div([html.Div(c, className="label"),
@@ -842,6 +838,29 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
         body = [html.Div("Pick a stretch of time and read it back. "
                          "Costs one model call.", className="empty")]
 
+    raw = []
+    if show_entries:
+        rows = sorted(all_rows, key=lambda e: e["occurred_on"], reverse=True)
+        raw = [html.Div([
+            html.Div("Every entry in this stretch, newest first",
+                     className="label"),
+            *[html.Div([
+                html.Div([
+                    html.Span(e["occurred_on"], className="hint"),
+                    html.Span("coach" if e["author_role"] == "coach" else "you",
+                              className=f"who-chip "
+                              f"{'coach' if e['author_role'] == 'coach' else 'player'}"),
+                    html.Span(e["setting"], className="tag"),
+                    html.Span(e["rung"].replace("_", " "), className="tag")
+                    if e["rung"] else html.Span(),
+                ], className="meta"),
+                html.Div(db.render_for(e, viewer_role) or db.agent_text(e),
+                         className="body"),
+            ], className=f"entry from-"
+               f"{'coach' if e['author_role'] == 'coach' else 'player'}")
+              for e in rows],
+        ], className="card")]
+
     return html.Div([
         html.Div([
             html.Div([
@@ -853,6 +872,7 @@ def recap_panel(player_id: str, viewer_role: str, range_key: str,
             tiles,
             html.Div(body, style={"marginTop": "6px"}),
         ], className="card"),
+        *raw,
     ])
 
 
@@ -1113,42 +1133,47 @@ def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool):
 
 
 
-def focus_control(player_id: str, saved: str | None = None):
-    """Setting a player's focus — the thing a lesson is actually for."""
-    current = db.current_focus(player_id)
-    history = []
-    with db.connect() as conn:
-        rows = conn.execute(
-            """SELECT * FROM focuses WHERE player_id = ?
-               ORDER BY set_on DESC LIMIT 6""", (player_id,)).fetchall()
-    for row in rows:
-        coach = db.person(row["coach_id"])
-        history.append(html.Div([
-            html.Div([html.Span(row["set_on"], className="hint"),
-                      html.Span(coach["name"] if coach else "", className="hint"),
-                      html.Span("current" if row["resolved_on"] is None
-                                else "ended", className="tag")], className="meta"),
-            html.Div(row["text"], className="body"),
-        ], className="entry"))
+def focus_pair(player_id: str, viewer_role: str, saved: str | None = None):
+    """Both focuses, side by side. The coach's, and the player's own.
+
+    A player working on their boast while their coach works on their prep is
+    worth seeing, not worth reconciling. Each side can only set their own.
+    """
+    coach_focus = db.current_focus(player_id, "coach")
+    own_focus = db.current_focus(player_id, "player")
+    first = db.person(player_id)["name"].split()[0]
+
+    def panel(focus, title, editable, prefix):
+        who = db.person(focus["coach_id"]) if focus else None
+        body = [
+            html.Div(title, className="label"),
+            html.Div(focus["text"] if focus else "Nothing set",
+                     className="focus-text" if focus else "empty"),
+        ]
+        if focus and who and who["id"] != player_id:
+            body.append(html.Div(f"{who['name']} · {focus['set_on']}",
+                                 className="byline"))
+        elif focus:
+            body.append(html.Div(focus["set_on"], className="byline"))
+        if editable:
+            body += [
+                dcc.Textarea(id=f"{prefix}-focus-text",
+                             style={"minHeight": "54px", "marginTop": "10px"}),
+                html.Div([
+                    dcc.Dropdown(id=f"{prefix}-focus-category",
+                                 options=[{"label": c.title(), "value": c}
+                                          for c in CATEGORY_ORDER],
+                                 value="technical", clearable=False,
+                                 style={"width": "160px"}),
+                    html.Button("Set", id=f"{prefix}-set-focus", className="primary"),
+                ], className="composer-row"),
+            ]
+        return html.Div(body, className="card focus-card")
 
     return html.Div([
-        html.H2("Focus"),
-        html.Div(current["text"] if current else "No focus set",
-                 className="focus-text"),
-        html.Div("What this player is working on between lessons. Setting a new one "
-                 "closes the old.", className="hint", style={"margin": "8px 0 12px"}),
-        dcc.Textarea(id="focus-text", style={"minHeight": "60px"}),
-        html.Div([
-            dcc.Dropdown(id="focus-category",
-                         options=[{"label": c.title(), "value": c}
-                                  for c in CATEGORY_ORDER],
-                         value="technical", clearable=False,
-                         style={"width": "190px"}),
-            html.Button("Set as the focus", id="set-focus", className="primary"),
-            html.Span(saved or "", className="hint"),
-        ], className="composer-row"),
-        html.Details([
-            html.Summary(html.Span("Earlier focuses", className="hint")),
-            html.Div(history, className="bucket-body"),
-        ], className="bucket", style={"marginTop": "14px"}) if history else html.Span(),
-    ], className="card focus-card composer")
+        panel(coach_focus, "Coach focus", viewer_role in ("coach", "admin"), "coach"),
+        panel(own_focus, f"{first}'s own focus" if viewer_role != "player"
+              else "My own focus", viewer_role == "player", "own"),
+    ], className="two-col focus-pair")
+
+

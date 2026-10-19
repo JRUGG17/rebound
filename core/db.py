@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS focuses (
     text         TEXT NOT NULL,
     category     TEXT NOT NULL,
     cue_id       TEXT,
+    kind         TEXT NOT NULL DEFAULT 'coach',   -- coach | player
     set_on       TEXT NOT NULL,
     resolved_on  TEXT
 );
@@ -165,6 +166,7 @@ def init_db() -> None:
 # a column to a table that already exists, so widen it here instead of making
 # anyone delete their database.
 _ADDED_COLUMNS = {
+    "focuses": [("kind", "TEXT NOT NULL DEFAULT 'coach'")],
     "entries": [
         ("player_text", "TEXT"),
         # A rewrite reaches a child only once the coach who wrote the note has
@@ -443,13 +445,34 @@ def visible_to(viewer_id: str, player_id: str, *, since: str | None = None) -> l
 
 # ---------------------------------------------------------------- focus & weeks
 
-def current_focus(player_id: str) -> sqlite3.Row | None:
+def current_focus(player_id: str, kind: str = "coach") -> sqlite3.Row | None:
+    """The live focus of one kind.
+
+    A player has two: the one their coach set, and the one they set for
+    themselves. They are often the same thing and are allowed to differ —
+    a kid wanting to work on their boast while a coach works on their prep
+    is a useful disagreement, not a conflict to resolve.
+    """
     with connect() as conn:
         return conn.execute(
-            """SELECT * FROM focuses WHERE player_id = ? AND resolved_on IS NULL
+            """SELECT * FROM focuses
+               WHERE player_id = ? AND kind = ? AND resolved_on IS NULL
                ORDER BY set_on DESC LIMIT 1""",
-            (player_id,),
+            (player_id, kind),
         ).fetchone()
+
+
+def set_focus(player_id: str, author_id: str, text: str, category: str,
+              kind: str, on: str) -> None:
+    """One live focus of each kind. Setting a new one closes the old."""
+    with connect() as conn:
+        conn.execute(
+            "UPDATE focuses SET resolved_on = ? WHERE player_id = ? AND kind = ? "
+            "AND resolved_on IS NULL", (on, player_id, kind))
+        conn.execute(
+            """INSERT INTO focuses (player_id, coach_id, text, category, kind, set_on)
+               VALUES (?,?,?,?,?,?)""",
+            (player_id, author_id, text.strip(), category or "technical", kind, on))
 
 
 def week_of(date_iso: str) -> sqlite3.Row | None:
