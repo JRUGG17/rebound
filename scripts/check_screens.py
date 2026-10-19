@@ -60,11 +60,8 @@ def main() -> int:
     check("a day with a summary", lambda: cv.day_view(
         player, "player", "2026-10-16",
         {"what_happened": "x", "fits_in": "y"}, False, False))
-    check("lessons", lambda: cv.lessons_view(player, "player", None, False))
-    check("lessons with a thread", lambda: cv.lessons_view(
-        player, "player", None, False,
-        {"overview": "x", "phases": [{"span": "a", "focus": "b", "what_happened": "c"}],
-         "carried_over": ["z"], "never_answered": ["q"]}, False))
+    check("lessons by month",
+          lambda: cv.lesson_months(player, None, "player", None, None, None, False))
     for key, _label in cv.RANGES:
         check(f"recap, {key}", lambda k=key: cv.recap_view(player, "player", k, None, False))
     check("recap with a result", lambda: cv.recap_view(
@@ -101,10 +98,23 @@ def main() -> int:
     check("coach resources with an answer", lambda: cv.resources(
         {"answer": "a", "citations": ["§3"], "in_playbook": True,
          "note_for_admin": "n"}, False, 3))
-    check("lesson picker", cv.coach_lesson_picker)
-    check("a player's lessons", lambda: cv.lessons_view(player, "coach", None, False))
+    check("my lessons picker", lambda: cv.coach_lesson_picker(coach))
+    check("picker for a coach who teaches nobody",
+          lambda: cv.coach_lesson_picker("coach_rob"))
+    check("a player's lessons by month",
+          lambda: cv.lesson_months(player, coach, "coach", None, None, None, False))
+    check("...with a lesson open",
+          lambda: cv.lesson_months(player, coach, "coach", None, None,
+                                   "2026-10-19", False))
+    check("...for a year with nothing in it",
+          lambda: cv.lesson_months(player, coach, "coach", None, 2019, None, False))
     check("a player's calendar", lambda: cv.calendar_view(player, "coach", 0))
     check("a player's recap", lambda: cv.recap_view(player, "coach", "30", None, False))
+    check("the courtside glance", lambda: cv.player_detail(player, None, False))
+    check("week card", lambda: cv.week_card(coach))
+    check("needs-you card", lambda: cv.attention_card(coach))
+    check("roster search finds nothing",
+          lambda: cv.roster("zzzznothing"))
 
     print("\n[parent]")
     check("parent page", lambda: cv.parent_page(parent))

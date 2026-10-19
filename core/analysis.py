@@ -499,3 +499,76 @@ def by_month(items: list[dict], key) -> list[tuple[str, list]]:
         buckets.setdefault(day[:7], []).append(item)
     return [(_d.fromisoformat(month + "-01").strftime("%B %Y"), rows)
             for month, rows in sorted(buckets.items(), reverse=True)]
+
+
+def my_players(coach_id: str) -> list[dict]:
+    """The players this coach actually gives lessons to.
+
+    A coach's own page should show their own teaching, not the club's. Who
+    they teach is not a roster someone maintains — it is whoever they have
+    written lesson notes about.
+    """
+    with db.connect() as conn:
+        rows = conn.execute(
+            """SELECT player_id, COUNT(*) AS lessons,
+                      MAX(occurred_on) AS last_on, MIN(occurred_on) AS first_on
+               FROM entries
+               WHERE author_id = ? AND author_role = 'coach' AND setting = 'lesson'
+               GROUP BY player_id""",
+            (coach_id,),
+        ).fetchall()
+    out = []
+    for row in rows:
+        person = db.person(row["player_id"])
+        if not person:
+            continue
+        focus = db.current_focus(row["player_id"])
+        out.append({"id": person["id"], "name": person["name"], "age": person["age"],
+                    "lessons": row["lessons"], "last_on": row["last_on"],
+                    "first_on": row["first_on"],
+                    "focus": focus["text"] if focus else None})
+    return sorted(out, key=lambda p: p["last_on"], reverse=True)
+
+
+def glance(player_id: str) -> dict:
+    """What a coach needs in the four seconds before a squad starts.
+
+    Not a record — a heads-up. What this player is on, what they have most
+    recently been told, what keeps coming back from the coaches, and what
+    keeps coming back from the player themselves. All counted, no model call,
+    because this page gets opened between courts.
+    """
+    person = db.person(player_id)
+    entries = db.entries_for_coach(player_id)
+    coach_rows = [e for e in entries if e["author_role"] == "coach"]
+    own_rows = [e for e in entries if e["author_role"] == "player"]
+
+    with db.connect() as conn:
+        focuses = conn.execute(
+            """SELECT * FROM focuses WHERE player_id = ?
+               ORDER BY resolved_on IS NULL DESC, set_on DESC LIMIT 4""",
+            (player_id,)).fetchall()
+        names = {r["id"]: r["canonical"]
+                 for r in conn.execute("SELECT id, canonical FROM cues")}
+
+    def top_cues(rows, limit=3):
+        hits: dict[str, int] = defaultdict(int)
+        for entry in rows:
+            if entry["cue_id"]:
+                hits[entry["cue_id"]] += 1
+        ranked = sorted(hits.items(), key=lambda kv: -kv[1])[:limit]
+        return [{"cue": names.get(c, c), "count": n} for c, n in ranked if n > 1]
+
+    runs = {r.cue_id: r for r in cue_runs(player_id)}
+    stuck = [r for r in runs.values() if r.is_chronic]
+
+    return {
+        "person": person,
+        "focus": next((f for f in focuses if f["resolved_on"] is None), None),
+        "minor": [f for f in focuses if f["resolved_on"] is not None][:2],
+        "latest": coach_rows[-1] if coach_rows else None,
+        "from_coaches": top_cues(coach_rows),
+        "from_player": top_cues(own_rows),
+        "stuck": stuck[:1],
+        "last_seen": entries[-1]["occurred_on"] if entries else None,
+    }

@@ -689,3 +689,53 @@ input.search:focus {
 
 .roster-row { padding: 14px 6px; border-radius: 8px; }
 .roster-name { font-size: 15.5px; }
+
+/* ---------------------------------------------------------- week card, slide order */
+
+.week-cols { grid-template-columns: 1.15fr 1fr; gap: 34px; }
+.week-col ol { margin: 3px 0 10px; padding-left: 20px; }
+.week-col li { line-height: 1.45; margin-bottom: 3px; font-size: 13.5px; }
+.week-col.themes { border-left: 1px solid var(--line); padding-left: 28px; }
+.theme-label {
+  font-size: 13px; font-weight: 700; color: var(--amber);
+  margin-top: 10px; margin-bottom: 2px;
+}
+.week-col.themes ol li { color: var(--amber); }
+
+.row-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+
+/* ---------------------------------------------------------- lessons by month */
+
+details.bucket.month > summary { padding: 13px 4px; }
+.month-name { font-size: 16px; font-weight: 650; }
+
+button.lesson-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  background: transparent; border: 0; border-top: 1px solid var(--line);
+  padding: 11px 6px; font: inherit; text-align: left; cursor: pointer;
+  border-radius: 6px;
+}
+button.lesson-row:hover { background: var(--wash); }
+button.lesson-row.active { background: var(--orange-soft); }
+.lesson-day { font-weight: 650; min-width: 64px; font-size: 14.5px; }
+
+.lesson-detail { margin-top: 4px; }
+.lesson-detail .card { background: var(--paper); }
+
+/* ---------------------------------------------------------- the glance */
+
+.profile-name { font-size: 19px; font-weight: 680; margin-right: 10px; }
+.glance-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0; border-top: 1px solid var(--line);
+}
+.glance-row:first-of-type { border-top: 0; }
+.glance-cue { font-size: 15px; font-weight: 600; }
+
+button.link {
+  background: transparent; border: 0; padding: 0 0 0 8px; font: inherit;
+  font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline;
+}
+button.link:hover { color: var(--orange); }

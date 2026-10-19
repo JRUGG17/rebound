@@ -347,6 +347,8 @@ app.layout = html.Div([
     dcc.Store(id="lesson-arc", data=None),
     dcc.Store(id="focus-tick", data=None),
     dcc.Store(id="search", data=""),
+    dcc.Store(id="lesson-year", data=None),
+    dcc.Store(id="open-month", data=None),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -399,8 +401,7 @@ PLAYER_NAV = [
 COACH_NAV = [
     (None, [("today", "Today"), ("players", "Players"), ("note", "Add note")]),
     ("Mine", [("mylog", "My log")]),
-    ("Journal", [("calendar", "Calendar"), ("lessons", "Lessons"),
-                 ("recap", "Recap")]),
+    ("Journal", [("calendar", "Calendar"), ("recap", "Recap")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
 ]
 
@@ -825,6 +826,27 @@ def do_search(value):
     return value or ""
 
 
+@app.callback(Output("nav", "data", allow_duplicate=True),
+              Input("open-lessons", "n_clicks"), prevent_initial_call=True)
+def go_to_lessons(n):
+    return "lessons" if clicked(n) else no_update
+
+
+@app.callback(Output("lesson-year", "data"), Input("lesson-year", "value"),
+              prevent_initial_call=True)
+def pick_year(value):
+    return value
+
+
+@app.callback(Output("sel-day", "data", allow_duplicate=True),
+              Input({"type": "open-lesson", "d": ALL}, "n_clicks"),
+              prevent_initial_call=True)
+def open_lesson(clicks):
+    if not any(c for c in clicks if c):
+        return no_update
+    return ctx.triggered_id["d"]
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -835,13 +857,14 @@ def do_search(value):
     Input("recap", "data"), Input("recap-range", "data"), Input("cal-offset", "data"),
     Input("sel-day", "data"), Input("day-summary", "data"),
     Input("lesson-arc", "data"), Input("focus-tick", "data"),
-    Input("search", "data"),
+    Input("search", "data"), Input("lesson-year", "data"),
+    Input("open-month", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
-                search, job_id):
+                search, year, open_month, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -853,8 +876,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
     role = person["role"]
     if role == "player":
         if nav == "lessons":
-            return cv.lessons_view(who, "player", sel_day, running,
-                                   lesson_arc, running)
+            return cv.lesson_months(who, None, "player", open_month, year,
+                                    sel_day, running)
         if nav == "calendar":
             if sel_day:
                 return cv.day_view(who, "player", sel_day, day_summary, running, running)
@@ -870,19 +893,19 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
             return cv.coach_log_view(who, cal_offset or 0)
         if nav == "lessons":
             if not sel_player:
-                return cv.coach_lesson_picker()
-            return cv.lessons_view(sel_player, "coach", sel_day, running,
-                                   lesson_arc, running)
+                return cv.coach_lesson_picker(who)
+            return cv.lesson_months(sel_player, who, "coach", open_month,
+                                    year, sel_day, running)
         if nav == "calendar":
             if not sel_player:
-                return cv.coach_lesson_picker()
+                return cv.coach_lesson_picker(who)
             if sel_day:
                 return cv.day_view(sel_player, "coach", sel_day, day_summary,
                                    running, running)
             return cv.calendar_view(sel_player, "coach", cal_offset or 0)
         if nav == "recap":
             if not sel_player:
-                return cv.coach_lesson_picker()
+                return cv.coach_lesson_picker(who)
             return cv.recap_view(sel_player, "coach", recap_range, recap, running)
         if nav == "note":
             return cv.note_composer(draft, running)

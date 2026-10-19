@@ -57,34 +57,29 @@ def week_card(coach_id: str, saved_msg: str | None = None):
     if not card:
         return html.Div([head], className="card week-card")
 
-    columns = []
-    if card["work"]:
-        columns.append(html.Div([
-            html.Div("How the week builds", className="label"),
-            *[html.Div([
-                html.Div(stage, className="stage"),
-                html.Ul([html.Li(d) for d in drills]),
-            ]) for stage, drills in card["work"]],
-        ], className="week-col"))
-    if card["targets"]:
-        columns.append(html.Div([
-            html.Div("Shot targets", className="label"),
-            html.Ul([html.Li(x) for x in card["targets"]]),
-        ], className="week-col"))
-    if card["keys"]:
-        columns.append(html.Div([
-            html.Div("Technique keys", className="label"),
-            html.Ul([html.Li(x) for x in card["keys"]]),
-        ], className="week-col"))
-
-    sort = []
+    # Laid out like the curriculum slide: the session down the left, the
+    # week's themes down the right.
+    left = [html.Div("Warmup", className="stage"),
+            html.Div("Sort", className="stage")] if card["sort"] else []
     if card["sort"]:
-        sort = [html.Div([
-            html.Span("Sort", className="stage"),
-            html.Span(" → ".join(card["sort"]), className="hint"),
-        ], className="week-sort")]
+        left.append(html.Ol([html.Li(s) for s in card["sort"]]))
+    for stage, drills in card["work"]:
+        left.append(html.Div(stage, className="stage"))
+        left.append(html.Ol([html.Li(d) for d in drills]))
+    left.append(html.Div("Stretchdown", className="stage"))
 
-    return html.Div([head, *sort, html.Div(columns, className="week-cols")],
+    right = []
+    if card["targets"]:
+        right.append(html.Div("Shot targets", className="theme-label"))
+        right.append(html.Ol([html.Li(x) for x in card["targets"]]))
+    if card["keys"]:
+        right.append(html.Div("Technique keys", className="theme-label"))
+        right.append(html.Ol([html.Li(x) for x in card["keys"]]))
+
+    columns = [html.Div(left, className="week-col"),
+               html.Div(right, className="week-col themes")]
+
+    return html.Div([head, html.Div(columns, className="week-cols")],
                     className="card week-card")
 
 
@@ -151,8 +146,19 @@ def attention_card(coach_id: str):
 
 
 def coach_today(coach_id: str, theme_msg: str | None = None):
+    mine = analysis.my_players(coach_id)
+    lessons = sum(p["lessons"] for p in mine)
     return html.Div([
         week_card(coach_id, theme_msg),
+        html.Div([
+            html.Div([
+                html.Div("My lessons", className="label"),
+                html.Div(f"{_plural(lessons, 'lesson', 'lessons')} with "
+                         f"{_plural(len(mine), 'player', 'players')}",
+                         className="hint"),
+            ]),
+            html.Button("Open my lessons", id="open-lessons", className="primary"),
+        ], className="card row-card"),
         html.Div([squad_card(), attention_card(coach_id)], className="two-col"),
     ])
 
@@ -229,51 +235,93 @@ def finding_card(finding):
 
 def player_detail(player_id: str, review: dict | None, running: bool,
                   focus_msg: str | None = None):
-    player = db.person(player_id)
-    focus = db.current_focus(player_id)
+    """A player's page, written for a coach standing next to a court.
+
+    The question it answers is "what should I be watching for", not "what is
+    on file". Focus, the last thing they were told, what the coaches keep
+    saying, what the player keeps saying — then the heavier things below.
+    """
+    g = analysis.glance(player_id)
+    person = g["person"]
+
+    tiles = []
+    if g["from_coaches"]:
+        tiles.append(html.Div([
+            html.Div("Coaches keep saying", className="label"),
+            *[html.Div([html.Span(c["cue"], className="glance-cue"),
+                        html.Span(f"×{c['count']}", className="count-pill")],
+                       className="glance-row") for c in g["from_coaches"]],
+        ], className="card"))
+    if g["from_player"]:
+        tiles.append(html.Div([
+            html.Div(f"{person['name'].split()[0]} keeps saying", className="label"),
+            *[html.Div([html.Span(c["cue"], className="glance-cue"),
+                        html.Span(f"×{c['count']}", className="count-pill")],
+                       className="glance-row") for c in g["from_player"]],
+        ], className="card"))
+
+    head = [
+        html.Div([
+            html.Button("‹ All players", id="back-roster", className="ghost"),
+            html.Div([
+                html.Span(person["name"], className="profile-name"),
+                html.Span(f"age {person['age']}", className="hint"),
+            ]),
+            html.Button("Their lessons", id="open-lessons", className="ghost"),
+        ], className="card-head"),
+        html.Div([
+            html.Div("Working on", className="label"),
+            html.Div(g["focus"]["text"] if g["focus"] else "No focus set",
+                     className="focus-text"),
+            *([html.Div([html.Span("also ", className="hint"),
+                         html.Span(" · ".join(f["text"] for f in g["minor"]),
+                                   className="hint")])] if g["minor"] else []),
+        ], className="card focus-card"),
+    ]
+
+    if g["stuck"]:
+        run = g["stuck"][0]
+        head.append(html.Div([
+            html.Strong("Stuck. "),
+            f"{run.canonical} has come back {run.count} times across "
+            f"{run.span_weeks} weeks and has not moved up the ladder.",
+        ], className="timing-box"))
+
+    if g["latest"]:
+        head.append(html.Div([
+            html.Div("Last thing they were told", className="label"),
+            html.Div(g["latest"]["raw_text"], className="body"),
+            html.Div(f"{db.person(g['latest']['author_id'])['name']} · "
+                     f"{g['latest']['occurred_on']}", className="byline"),
+        ], className="card"))
 
     if running:
-        findings = [html.Div([html.Span(className="spinner"),
-                              html.Span("  Reading every coach's notes…",
-                                        className="hint")])]
+        findings = [html.Span(className="spinner"),
+                    html.Span("  Reading every coach's notes…", className="hint")]
     elif review:
         findings = ([finding_card(f) for f in review["findings"]]
-                    or [html.Div("Nothing to flag. This player is on track.",
-                                 className="empty")])
-        findings.append(html.Div(review["summary"], className="hint",
-                                 style={"marginTop": "12px"}))
+                    or [html.Div("Nothing to flag.", className="empty")])
     else:
         findings = [html.Div("Not run yet — this one costs a model call.",
                              className="empty")]
 
     return html.Div([
-        html.Div([
-            html.Button("‹ All players", id="back-roster", className="tab-btn"),
-            html.Span("Their Calendar and Recap are in the sidebar under Journal.",
-                      className="hint"),
-        ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
-        html.Div(f"{player['name']} · age {player['age']}", className="hint",
-                 style={"margin": "10px 0 4px"}),
+        *head,
+        html.Div(tiles, className="two-col") if tiles else html.Span(),
         focus_control(player_id, focus_msg),
-
         html.Div([
-            html.H2("Where the evidence sits"),
-            html.Div("Low rungs rehearse, high rungs test.", className="hint",
-                     style={"marginBottom": "12px"}),
+            html.Div([html.H2("Where the evidence sits"),
+                      html.Span("Low rungs rehearse, high rungs test.",
+                                className="hint")], className="card-head"),
             matrix_table(player_id),
         ], className="card"),
-
         html.Div([
-            html.Div([
-                html.H2("What no single coach can see"),
-                html.Button("Run comparison", id="run-comparison", className="primary"),
-            ], style={"display": "flex", "justifyContent": "space-between",
-                      "alignItems": "center"}),
-            html.Div(findings, style={"marginTop": "12px"}),
+            html.Div([html.H2("What no single coach can see"),
+                      html.Button("Run comparison", id="run-comparison",
+                                  className="primary")], className="card-head"),
+            html.Div(findings),
         ], className="card"),
-
         by_coach(player_id),
-        recent_notes(player_id),
     ])
 
 
@@ -1052,30 +1100,169 @@ def lessons_view(player_id: str, viewer_role: str, open_on: str | None,
 
 # ------------------------------------------------------------------ coach's own
 
-def coach_lesson_picker():
-    """Lessons, for a coach: pick whose."""
-    rows = []
-    for person in db.people("player"):
-        items = analysis.lessons(person["id"], viewer="coach")
-        last = items[0]["on"] if items else None
-        focus = db.current_focus(person["id"])
-        rows.append(html.Button([
-            html.Div([
-                html.Span(person["name"], className="roster-name"),
-                html.Span(f"age {person['age']}", className="hint"),
-            ]),
-            html.Div(focus["text"] if focus else "No focus set",
-                     className="roster-focus"),
-            html.Div(f"{_plural(len(items), 'lesson', 'lessons')}"
-                     + (f" · last {last}" if last else ""), className="hint"),
-        ], id={"type": "open-player", "id": person["id"]}, className="roster-row"))
+def coach_lesson_picker(coach_id: str):
+    """Whose lessons. Only the players this coach teaches, and nothing else."""
+    mine = analysis.my_players(coach_id)
+    if not mine:
+        return html.Div([
+            html.H2("My lessons"),
+            html.Div("You have not written up a lesson yet. Start one from a "
+                     "player's page.", className="empty"),
+        ], className="card")
+
+    rows = [html.Button([
+        html.Div([
+            html.Span(p["name"], className="roster-name"),
+            html.Span(f"age {p['age']}", className="hint"),
+        ]),
+        html.Div(p["focus"] or "No focus set", className="roster-focus"),
+        html.Div(f"{_plural(p['lessons'], 'lesson', 'lessons')} · "
+                 f"last {_date.fromisoformat(p['last_on']).strftime('%-d %b')}",
+                 className="hint"),
+    ], id={"type": "open-player", "id": p["id"]}, className="roster-row")
+        for p in mine]
 
     return html.Div([
-        html.H2("Lessons"),
-        html.Div("Pick a player to see their lesson history and write up a new one.",
-                 className="hint", style={"marginBottom": "12px"}),
+        html.H2("My lessons"),
         html.Div(rows, className="roster"),
     ], className="card")
+
+
+def lesson_months(player_id: str, coach_id: str | None, viewer_role: str,
+                  open_month: str | None, year: int | None,
+                  open_on: str | None, saving: bool):
+    """A player's lessons, by month, newest first.
+
+    A year is about fifty lessons and a career is several hundred, so they
+    collapse into months and the months collapse into a year. Twelve months
+    fit on a screen; anything older is a year away rather than a scroll.
+    """
+    items = analysis.lessons(player_id, viewer="player" if viewer_role == "player"
+                             else "coach")
+    if coach_id:
+        items = [i for i in items
+                 if any(e["author_id"] == coach_id for e in i["coach"])] or items
+
+    years = sorted({i["on"][:4] for i in items}, reverse=True)
+    chosen_year = str(year) if year else (years[0] if years else None)
+    in_year = [i for i in items if i["on"].startswith(chosen_year or "")]
+
+    buckets: dict[str, list] = {}
+    for lesson in in_year:
+        buckets.setdefault(lesson["on"][:7], []).append(lesson)
+    months = sorted(buckets.items(), reverse=True)
+    current = open_month or (months[0][0] if months else None)
+
+    blocks = []
+    for month, lessons in months:
+        label = _date.fromisoformat(month + "-01").strftime("%B")
+        blocks.append(html.Details([
+            html.Summary([
+                html.Span(label, className="month-name"),
+                html.Span(_plural(len(lessons), "lesson", "lessons"),
+                          className="hint"),
+            ]),
+            html.Div([
+                html.Button([
+                    html.Span(_date.fromisoformat(l["on"]).strftime("%a %-d"),
+                              className="lesson-day"),
+                    html.Span(l["week"]["theme_name"] if l["week"] else "",
+                              className="tag"),
+                    html.Span(f"{len(l['coach'])} coach · {len(l['player'])} player",
+                              className="hint"),
+                ], id={"type": "open-lesson", "d": l["on"]},
+                    className=f"lesson-row{' active' if l['on'] == open_on else ''}")
+                for l in lessons
+            ], className="bucket-body"),
+        ], className="bucket month", open=(month == current)))
+
+    header = [
+        html.Div([
+            html.Button("‹ All players", id="back-roster", className="ghost"),
+            html.Div([
+                html.Span(db.person(player_id)["name"], className="profile-name"),
+                html.Span(_plural(len(items), "lesson", "lessons"), className="hint"),
+            ]),
+            dcc.Dropdown(id="lesson-year",
+                         options=[{"label": y, "value": int(y)} for y in years],
+                         value=int(chosen_year) if chosen_year else None,
+                         clearable=False, style={"width": "110px"}),
+        ], className="card-head"),
+    ]
+    if viewer_role == "coach":
+        header.append(html.Button("Write up a lesson", id="goto-note",
+                                  className="primary"))
+
+    return html.Div([
+        html.Div(header, className="card"),
+        html.Div(blocks or [html.Div("No lessons this year.", className="empty")],
+                 className="card"),
+        lesson_detail(player_id, open_on, viewer_role, saving) if open_on
+        else html.Span(),
+    ])
+
+
+def lesson_detail(player_id: str, day: str, viewer_role: str, saving: bool):
+    """One lesson: the coach's side and the player's side, both editable."""
+    items = analysis.lessons(player_id, viewer="player" if viewer_role == "player"
+                             else "coach")
+    lesson = next((i for i in items if i["on"] == day), None)
+    if not lesson:
+        return html.Span()
+
+    def side(entries, who, editable):
+        blocks = []
+        for entry in entries:
+            text = db.render_for(entry, viewer_role)
+            if text is None:
+                continue
+            blocks.append(html.Div([
+                html.Div([
+                    html.Span(who, className=f"who-chip {who}"),
+                    html.Span(db.person(entry["author_id"])["name"], className="hint"),
+                    html.Button("Edit", id={"type": "edit-entry", "i": entry["id"]},
+                                className="link") if editable else html.Span(),
+                ], className="meta"),
+                html.Div(text, className="body"),
+            ], className=f"entry from-{who}"))
+        return blocks
+
+    coach_side = side(lesson["coach"], "coach", viewer_role == "coach")
+    player_side = side(lesson["player"], "player", viewer_role == "player")
+
+    composer_id = "lesson-add"
+    add = html.Div([
+        dcc.Textarea(id={"type": composer_id, "d": day}),
+        html.Div([
+            html.Button("🎤", id={"type": "lesson-mic", "d": day}, className="mic"),
+            html.Button("Add", id={"type": "lesson-save", "d": day},
+                        className="primary"),
+            html.Span([html.Span(className="spinner"),
+                       html.Span("  Filing it…", className="hint")] if saving else ""),
+        ], className="composer-row"),
+    ], className="composer")
+
+    return html.Div([
+        html.Div([
+            html.H2(_date.fromisoformat(day).strftime("%A %-d %B %Y")),
+            html.Div(lesson["week"]["theme_name"] if lesson["week"] else "",
+                     className="tag"),
+        ], className="card-head"),
+        html.Div([
+            html.Div([
+                html.Div("Coach", className="label"),
+                *(coach_side or [html.Div("Nothing written.", className="empty")]),
+            ], className="card"),
+            html.Div([
+                html.Div("Player", className="label"),
+                *(player_side or [html.Div("Nothing written.", className="empty")]),
+            ], className="card"),
+        ], className="two-col"),
+        html.Div([html.Div("Add to this lesson", className="label"), add],
+                 className="card"),
+    ], className="lesson-detail")
+
+
 
 def coach_log_view(coach_id: str, offset: int = 0):
     """A coach's own teaching log, their lessons and notes, grouped by month."""
