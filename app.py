@@ -951,11 +951,14 @@ def add_player(n, name, age, who):
     while db.person(pid):
         n_try += 1
         pid = f"{slug}{n_try}"
+    # Read everything the write needs *before* opening the transaction.
+    # Calling anything that touches the database from inside one deadlocks.
+    joined = clock.today_iso()
     with db.connect() as conn:
         conn.execute(
             "INSERT INTO people (id, name, role, age, joined_on) "
             "VALUES (?,?,'player',?,?)",
-            (pid, name.strip(), int(age) if age else None, clock.today_iso()))
+            (pid, name.strip(), int(age) if age else None, joined))
     return f"Added {name.strip()}.", False
 
 

@@ -128,9 +128,11 @@ CREATE TABLE IF NOT EXISTS settings (
 
 def _open() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, isolation_level=None)
+    # timeout, so brief contention waits its turn instead of failing outright.
+    conn = sqlite3.connect(DB_PATH, isolation_level=None, timeout=10.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
 
 
@@ -138,16 +140,34 @@ def _open() -> sqlite3.Connection:
 def connect() -> Iterator[sqlite3.Connection]:
     """A transaction. Everything inside commits together or not at all.
 
-    Do not run `executescript` in here — it commits implicitly, which ends the
-    transaction underneath us. Use `init_db()`, which opens its own connection.
+    Two things to know before using this.
+
+    Do not run `executescript` in here — it commits implicitly, which ends
+    the transaction underneath us. Use `init_db()`, which opens its own
+    connection.
+
+    And do not call anything that touches the database from inside the
+    block. A second connect() while this one holds the write lock deadlocks
+    against itself: "database is locked". Read what you need first, then
+    open the transaction. That is a real bug this caught — adding a player
+    called clock.today_iso() mid-write, which reads a setting, and the whole
+    insert failed silently behind a misleading rollback error.
     """
     conn = _open()
+    began = False
     try:
         conn.execute("BEGIN IMMEDIATE")
+        began = True
         yield conn
         conn.execute("COMMIT")
     except Exception:
-        conn.execute("ROLLBACK")
+        # Only roll back something that started. Rolling back a transaction
+        # that never began raises its own error and buries the real one.
+        if began:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.OperationalError:
+                pass
         raise
     finally:
         conn.close()
