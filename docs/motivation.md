@@ -1,7 +1,7 @@
 # Motivation, in Jamie's words
 
 Source material for the report's Motivation and Impact sections. Jamie
-co-founded and coached in the program this models. Lightly cleaned from
+helped start and coached in the program this models. Lightly cleaned from
 speech; the claims and the framing are his, not reconstructed.
 
 **This is evidence, not doctrine.** It is one practitioner's account, and the
@@ -250,8 +250,8 @@ most about this still could not do it**:
 > keep track of things over time. I was just doing it in the Notes app on my
 > phone.
 
-A co-founder, highly motivated, keeping notes in Apple Notes — and still
-losing the thread. That rules out the lazy reading of the problem ("coaches
+One of the people who started the place, highly motivated, keeping notes in
+Apple Notes — and still losing the thread. That rules out the lazy reading of the problem ("coaches
 should just take better notes") and makes it structural, which is what
 justifies building anything at all.
 
@@ -356,3 +356,15 @@ not an inconsistency-from-churn problem, which would be a weaker argument. It is
 that the lesson record is siloed per coaching relationship while the clinic
 floor is shared, and the notebook model assumes the person writing and the
 person teaching are the same person.
+
+### "Founding member", not "co-founder"
+
+His own correction, and take it literally:
+
+> Co-founder buys some equity I didn't have.
+
+Use **founding member**, **helped found**, or **helped start**. The distinction
+is real — co-founder implies an ownership stake — and overstating a role in a
+document with his name on it is a worse error than understating one. Nothing
+about the argument depends on the bigger word: what makes the source credible
+is five years on the floor, not a title.
