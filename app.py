@@ -263,10 +263,6 @@ def player_reflections(player_id: str, tab: str, job_id: str | None,
                             title="Your coaches will not see this one"),
                 html.Span(status),
             ], className="composer-row"),
-            html.Div("Private entries are yours alone — no coach sees them or is told "
-                     "they exist. If you write something that worries us, a designated "
-                     "adult and your parent are told, and so are you.",
-                     className="hint", style={"marginTop": "8px"}),
             html.Hr(style={"border": 0, "borderTop": "1px solid var(--line)",
                            "margin": "18px 0"}),
             *body,
@@ -372,6 +368,7 @@ app.layout = html.Div([
     dcc.Store(id="f-author", data=""),
     dcc.Store(id="adding-player", data=False),
     dcc.Store(id="added-msg", data=None),
+    dcc.Store(id="plan-edit", data=False),
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
@@ -861,29 +858,51 @@ def save_edit(clicks, texts, who):
     return None
 
 
+# One callback per button. Bundling buttons that live on different render
+# states is what broke this: a Dash callback is dead while any of its Inputs
+# is missing, and the cancel buttons only exist once you are already editing,
+# so the change button could never fire.
+
 @app.callback(Output("focus-edit", "data"),
-              Input("coach-change", "n_clicks"), Input("own-change", "n_clicks"),
-              Input("coach-cancel", "n_clicks"), Input("own-cancel", "n_clicks"),
-              prevent_initial_call=True)
-def open_focus_editor(coach_c, own_c, coach_x, own_x):
-    which = ctx.triggered_id
-    if which == "coach-change" and clicked(coach_c):
-        return "coach"
-    if which == "own-change" and clicked(own_c):
-        return "own"
-    if which in ("coach-cancel", "own-cancel") and clicked(coach_x, own_x):
-        return None
-    return no_update
+              Input("coach-change", "n_clicks"), prevent_initial_call=True)
+def edit_coach_focus(n):
+    return "coach" if clicked(n) else no_update
+
+
+@app.callback(Output("focus-edit", "data", allow_duplicate=True),
+              Input("own-change", "n_clicks"), prevent_initial_call=True)
+def edit_own_focus(n):
+    return "own" if clicked(n) else no_update
+
+
+@app.callback(Output("focus-edit", "data", allow_duplicate=True),
+              Input("coach-cancel", "n_clicks"), prevent_initial_call=True)
+def cancel_coach_focus(n):
+    return None if clicked(n) else no_update
+
+
+@app.callback(Output("focus-edit", "data", allow_duplicate=True),
+              Input("own-cancel", "n_clicks"), prevent_initial_call=True)
+def cancel_own_focus(n):
+    return None if clicked(n) else no_update
 
 
 @app.callback(Output("focus-history", "data"),
-              Input("coach-history", "n_clicks"), Input("own-history", "n_clicks"),
-              State("focus-history", "data"), prevent_initial_call=True)
-def toggle_focus_history(coach_h, own_h, current):
-    if not clicked(coach_h, own_h):
+              Input("coach-history", "n_clicks"), State("focus-history", "data"),
+              prevent_initial_call=True)
+def show_coach_history(n, current):
+    if not clicked(n):
         return no_update
-    which = "coach" if ctx.triggered_id == "coach-history" else "own"
-    return None if current == which else which
+    return None if current == "coach" else "coach"
+
+
+@app.callback(Output("focus-history", "data", allow_duplicate=True),
+              Input("own-history", "n_clicks"), State("focus-history", "data"),
+              prevent_initial_call=True)
+def show_own_history(n, current):
+    if not clicked(n):
+        return no_update
+    return None if current == "own" else "own"
 
 
 @app.callback(Output("f-setting", "data"), Output("recap", "data", allow_duplicate=True),
@@ -940,6 +959,42 @@ def add_player(n, name, age, who):
     return f"Added {name.strip()}.", False
 
 
+@app.callback(Output("plan-edit", "data"),
+              Input("edit-plan", "n_clicks"), prevent_initial_call=True)
+def open_plan_editor(n):
+    return True if clicked(n) else no_update
+
+
+@app.callback(Output("plan-edit", "data", allow_duplicate=True),
+              Input("cancel-plan", "n_clicks"), prevent_initial_call=True)
+def close_plan_editor(n):
+    return False if clicked(n) else no_update
+
+
+@app.callback(Output("plan-edit", "data", allow_duplicate=True),
+              Input("save-plan", "n_clicks"),
+              State("plan-work", "value"), State("plan-targets", "value"),
+              State("plan-keys", "value"), prevent_initial_call=True)
+def save_plan(n, work, targets, keys):
+    if not clicked(n):
+        return no_update
+    cv.save_week_plan(db.ensure_week(clock.today_iso()), work, targets, keys)
+    return False
+
+
+@app.callback(Output("sel-player", "data", allow_duplicate=True),
+              Input("remove-player", "n_clicks"), State("sel-player", "data"),
+              State("who", "value"), prevent_initial_call=True)
+def drop_player(n, player_id, who):
+    person = db.person(who)
+    if not clicked(n) or not player_id or person is None:
+        return no_update
+    if person["role"] != "admin":
+        return no_update
+    db.remove_player(player_id)
+    return None
+
+
 @app.callback(
     Output("page", "children"),
     Input("who", "value"), Input("nav", "data"),
@@ -956,6 +1011,7 @@ def add_player(n, name, age, who):
     Input("focus-edit", "data"), Input("focus-history", "data"),
     Input("f-setting", "data"), Input("f-author", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
+    Input("plan-edit", "data"),
     State("job", "data"),
 )
 def render_page(who, nav, sel_player, pb_sec, _label, _polling,
@@ -963,7 +1019,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
                 focus_edit, focus_hist, f_setting, f_author, adding,
-                added_msg, job_id):
+                added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
         return html.Div("Unknown person.", className="card")
@@ -1002,12 +1058,14 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         if nav == "players":
             if sel_player:
                 return html.Div([
-                    cv.player_detail(sel_player, review, running, focus_msg),
+                    cv.player_detail(sel_player, review, running, focus_msg,
+                                     focus_edit, focus_hist,
+                                     person['role'] == 'admin'),
                     cv.recap_panel(sel_player, "coach", recap_range, recap, running,
                                    show_entries, f_setting, f_author),
                 ])
             return cv.roster(search, adding, added_msg)
-        return cv.coach_today(who, theme_msg)
+        return cv.coach_today(who, theme_msg, plan_edit)
 
     return html.Div("Nothing here.", className="card")
 

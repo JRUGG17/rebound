@@ -656,3 +656,22 @@ def summary_savings() -> dict:
                FROM summaries"""
         ).fetchone()
     return dict(row)
+
+
+def remove_player(player_id: str) -> None:
+    """Take a player off the roster.
+
+    Their entries and focuses go with them. A player who has left should
+    leave, not linger as a name with a history attached — and a coach should
+    not have to think about whether removing someone loses a record they
+    needed. If it ever has to be reversible, that is an archive flag, not a
+    half-deletion.
+    """
+    with connect() as conn:
+        conn.execute("DELETE FROM entries WHERE player_id = ?", (player_id,))
+        conn.execute("DELETE FROM focuses WHERE player_id = ?", (player_id,))
+        conn.execute("DELETE FROM summaries WHERE player_id = ?", (player_id,))
+        conn.execute("UPDATE people SET child_id = NULL WHERE child_id = ?",
+                     (player_id,))
+        conn.execute("DELETE FROM people WHERE id = ? AND role = 'player'",
+                     (player_id,))

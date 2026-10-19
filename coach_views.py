@@ -24,11 +24,18 @@ RUNG_LABELS = {
 
 # ------------------------------------------------------------------ today
 
-def week_card(coach_id: str, saved_msg: str | None = None):
-    """What this week is, and the card to walk on court with."""
-    week = db.week_of(clock.today_iso())
-    card = card_for(week["theme_shot"] if week else None,
-                    week["theme_name"] if week else "")
+def week_card(coach_id: str, saved_msg: str | None = None,
+              editing: bool = False):
+    """What this week is, and the card to walk on court with.
+
+    The card starts from the curriculum deck and is editable, because a week
+    is planned by a coach and the deck is where that planning starts, not
+    where it ends.
+    """
+    week = db.ensure_week(clock.today_iso())
+    card = week_plan(week) or card_for(
+        week["theme_shot"] if week else None,
+        week["theme_name"] if week else "")
 
     options = [{"label": f"{s.title()} Week", "value": s} for s in db.SHOTS] + [
         {"label": "Reset Week", "value": "reset"},
@@ -50,9 +57,35 @@ def week_card(coach_id: str, saved_msg: str | None = None):
                          value=week["theme_shot"] if week else None,
                          clearable=False, style={"width": "220px"}),
             html.Button("Change", id="set-theme", className="ghost"),
+            html.Button("Edit the card", id="edit-plan", className="ghost"),
             html.Span(saved_msg or "", className="hint"),
         ], className="composer-row", style={"margin": 0}),
     ], className="week-head")
+
+    if editing:
+        return html.Div([head, html.Div([
+            html.Div("One line each. Blank lines are ignored.", className="hint"),
+            html.Div([
+                html.Div([
+                    html.Div("Session", className="label"),
+                    dcc.Textarea(id="plan-work", value=_plan_text(card, "work"),
+                                 style={"height": "150px"}),
+                ], className="week-col"),
+                html.Div([
+                    html.Div("Shot targets", className="label"),
+                    dcc.Textarea(id="plan-targets",
+                                 value="\n".join(card["targets"]),
+                                 style={"height": "150px"}),
+                    html.Div("Technique keys", className="label"),
+                    dcc.Textarea(id="plan-keys", value="\n".join(card["keys"]),
+                                 style={"height": "150px"}),
+                ], className="week-col"),
+            ], className="week-cols"),
+            html.Div([
+                html.Button("Save the week", id="save-plan", className="primary"),
+                html.Button("Cancel", id="cancel-plan", className="ghost"),
+            ], className="composer-row"),
+        ], className="composer")], className="card week-card")
 
     if not card:
         return html.Div([head], className="card week-card")
@@ -83,6 +116,51 @@ def week_card(coach_id: str, saved_msg: str | None = None):
                     className="card week-card")
 
 
+def _plan_text(card: dict, key: str) -> str:
+    if key == "work":
+        return "\n".join(f"{stage}: {d}" for stage, drills in card["work"]
+                          for d in drills)
+    return "\n".join(card.get(key, []))
+
+
+def week_plan(week) -> dict | None:
+    """A coach's own version of this week's card, if they have written one."""
+    import json
+
+    if not week:
+        return None
+    raw = db.get_setting(f"plan:{week['id']}")
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+
+def save_week_plan(week, work: str, targets: str, keys: str) -> None:
+    import json
+
+    lines = [ln.strip() for ln in (work or "").splitlines() if ln.strip()]
+    grouped: list = []
+    for line in lines:
+        stage, _, drill = line.partition(":")
+        stage = stage.strip() or "Work"
+        drill = drill.strip() or stage
+        if grouped and grouped[-1][0] == stage:
+            grouped[-1][1].append(drill)
+        else:
+            grouped.append([stage, [drill]])
+    plan = {
+        "title": week["theme_name"],
+        "sort": (week_plan(week) or {}).get("sort", []),
+        "work": [(s, d) for s, d in grouped],
+        "targets": [x.strip() for x in (targets or "").splitlines() if x.strip()],
+        "keys": [x.strip() for x in (keys or "").splitlines() if x.strip()],
+    }
+    db.set_setting(f"plan:{week['id']}", json.dumps(plan))
+
+
 def squad_card():
     """What most of the squad is working on — the two minutes on the bleachers."""
     overview = analysis.squad_overview()
@@ -104,10 +182,7 @@ def squad_card():
                 html.Span(s["canonical"], className="shared-cue"),
                 html.Span(", ".join(s["players"]), className="hint"),
             ], className="shared-row") for s in overview["shared"][1:]],
-            html.Div("Worth naming someone if they did it well, or if their work "
-                     "applies to the rest. Harder conversations one-to-one.",
-                     className="hint", style={"marginTop": "12px"}),
-        ]
+            ]
     return html.Div([html.H2("Lead the group with"), *inner], className="card")
 
 
@@ -145,11 +220,12 @@ def attention_card(coach_id: str):
     return html.Div([html.H2("Needs you"), *rows], className="card")
 
 
-def coach_today(coach_id: str, theme_msg: str | None = None):
+def coach_today(coach_id: str, theme_msg: str | None = None,
+                plan_edit: bool = False):
     mine = analysis.my_players(coach_id)
     lessons = sum(p["lessons"] for p in mine)
     return html.Div([
-        week_card(coach_id, theme_msg),
+        week_card(coach_id, theme_msg, plan_edit),
         html.Div([
             html.Div([
                 html.Div("My lessons", className="label"),
@@ -234,7 +310,8 @@ def finding_card(finding):
 
 
 def player_detail(player_id: str, review: dict | None, running: bool,
-                  focus_msg: str | None = None):
+                  focus_msg: str | None = None, focus_edit: str | None = None,
+                  focus_hist: str | None = None, can_remove: bool = False):
     """A player's page, written for a coach standing next to a court.
 
     The question it answers is "what should I be watching for", not "what is
@@ -267,7 +344,11 @@ def player_detail(player_id: str, review: dict | None, running: bool,
                 html.Span(person["name"], className="profile-name"),
                 html.Span(f"age {person['age']}", className="hint"),
             ]),
-            html.Button("Lessons →", id="player-lessons", className="ghost"),
+            html.Div([
+                html.Button("Lessons →", id="player-lessons", className="ghost"),
+                html.Button("Remove", id="remove-player", className="link danger")
+                if can_remove else html.Span(),
+            ], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
         ], className="card-head"),
         focus_pair(player_id, "coach", focus_msg),
     ]
@@ -539,10 +620,6 @@ def parent_page(parent_id: str):
         html.Div([html.H2(f"Everything else · {len(rest)}"),
                   *grouped(rest, "Nothing yet.")], className="card"),
 
-        html.Div("Your child also has a private space for their own reflections, "
-                 "which nobody reads. If anything written there suggests they need "
-                 "support, you and a designated adult are told — and so are they.",
-                 className="banner"),
     ])
 
 

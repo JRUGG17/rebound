@@ -790,3 +790,61 @@ button.chip.on {
 }
 .focus-head { display: flex; align-items: baseline; justify-content: space-between; }
 .focus-history { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+button.link.danger { color: #9c2c2c; }
+button.link.danger:hover { color: #c0392b; }
+
+/* ====================================================================
+   Pass three: use the width.
+   The content sat in a narrow column with the right half of the screen
+   empty. Pages that have two things to say now say them side by side,
+   the shell is darker so the paper reads as paper, and each area gets a
+   heading big enough to tell you where you are.
+   ==================================================================== */
+
+:root {
+  --shell: #2b2f33;
+  --wash: #eceef1;
+}
+
+body { background: var(--wash); }
+
+.topbar {
+  background: var(--shell);
+  border-bottom: 3px solid var(--orange);
+  height: 56px;
+}
+.brand { font-size: 20px; letter-spacing: -0.4px; }
+
+.sidebar {
+  background: var(--shell);
+  border-right: 0;
+  width: 186px; flex: 0 0 186px;
+  min-height: calc(100vh - 56px);
+  top: 56px;
+  padding: 20px 12px;
+}
+.side-heading { color: #7f878f; }
+.side-btn { color: #c3c9cf; }
+.side-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.side-btn.active { background: var(--orange); color: #fff; }
+.side-note { color: #8d949b; border-top-color: rgba(255,255,255,0.1); }
+
+/* the page uses the room it has */
+.shell .page { max-width: 1180px; padding: 24px 28px 70px; }
+
+/* two-up wherever a page has two things to say */
+.two-col { grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 1040px) { .two-col { grid-template-columns: 1fr; } }
+
+.card {
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(20,24,28,0.07), 0 6px 18px rgba(20,24,28,0.04);
+  border-color: #e4e7ea;
+}
+
+/* the roster reads as a table, not a stack of buttons */
+.roster { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+@media (max-width: 980px) { .roster { grid-template-columns: 1fr; } }
+
+/* entry lists breathe */
+.bucket-body .entry:last-child { padding-bottom: 4px; }

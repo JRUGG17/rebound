@@ -119,6 +119,9 @@ def main() -> int:
     check("recap filtered to nothing at all",
           lambda: cv.recap_panel(player, "player", "7", None, False, True, "solo"))
     check("week card", lambda: cv.week_card(coach))
+    check("week card, editing", lambda: cv.week_card(coach, None, True))
+    check("player detail, admin can remove",
+          lambda: cv.player_detail(player, None, False, None, None, None, True))
     check("needs-you card", lambda: cv.attention_card(coach))
     check("roster search finds nothing",
           lambda: cv.roster("zzzznothing"))
