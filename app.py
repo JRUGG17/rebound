@@ -385,16 +385,17 @@ app.layout = html.Div([
     dcc.Interval(id="poll", interval=400, disabled=True),
 
     html.Div([
-        # The club's own mark and wordmark, taken from squashtigers.com:
-        # the ST monogram they use as their favicon, and Squash|Tigers set
-        # in Exo 2 italic the way their navbar sets it.
-        html.A([
-            html.Img(src=app.get_asset_url("squash-tigers.svg"),
-                     className="mark", alt="Squash Tigers"),
-            html.Span(["Squash", html.Span("Tigers")], className="mark-words"),
-        ], href="https://www.squashtigers.com/", target="_blank",
-            rel="noopener noreferrer", className="brand",
-            title="Squash Tigers Academy"),
+        # The club's mark and the app's name. The monogram is theirs, taken
+        # from squashtigers.com, and clicking it goes there. The wordmark is
+        # set in their typeface and split where the pun is: re-bound, which
+        # is what a player does with the week and what a tiger does anyway.
+        html.Div([
+            html.A(html.Img(src=app.get_asset_url("squash-tigers.svg"),
+                            className="mark", alt="Squash Tigers"),
+                   href="https://www.squashtigers.com/", target="_blank",
+                   rel="noopener noreferrer", title="Squash Tigers Academy"),
+            html.Span(["Re", html.Span("bound")], className="mark-words"),
+        ], className="brand"),
         html.Label("I am"),
         dcc.Dropdown(id="who", options=people_options(), value="maya",
                      clearable=False, style={"width": "250px"}),

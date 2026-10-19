@@ -49,7 +49,8 @@ body {
   margin-right: auto;
   text-decoration: none;
 }
-.brand:hover .mark { transform: rotate(-8deg); }
+.brand a { display: block; line-height: 0; }
+.brand a:hover .mark { transform: rotate(-8deg); }
 
 .mark {
   width: 28px;
@@ -59,8 +60,8 @@ body {
   transition: transform 0.18s ease;
 }
 
-/* The club's own setting: Exo 2, italic, heavy, tracked out and
-   upper-cased, Squash in white and Tigers in their orange. */
+/* Their setting — Exo 2, italic, heavy, tracked out, upper-cased —
+   on the app's name, split at the pun. */
 .mark-words {
   font-family: "Exo 2", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 17px;
