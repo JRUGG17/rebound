@@ -1223,62 +1223,80 @@ PRIVATE_PROMPT = (
 
 
 def coach_lesson_picker(coach_id: str, query: str | None = None):
-    """Whose lessons. Only the players this coach teaches, and nothing else."""
-    mine = analysis.my_players(coach_id)
+    """Your players first, then the rest of the roster.
 
-    # Start a lesson with anyone on the roster, not only the players this
-    # coach has taught before — covering a colleague's session is the normal
-    # case, not the exception. Putting somebody new on the roster is a
-    # different job and lives on the Players page.
-    needle = (query or "").strip().lower()
+    One search box narrows both. The list you want is almost always your
+    own — a coach giving fifty lessons a week should type three letters and
+    see their own player, not scroll a roster. But covering a colleague's
+    session is normal too, so the rest of the club stays reachable from the
+    same box, below, and clearly marked as not yours.
+    """
+    mine = analysis.my_players(coach_id)
     taught = {p["id"] for p in mine}
-    matches = [p for p in db.people("player") if needle in p["name"].lower()][:8] \
-        if needle else []
-    found = html.Div([
-        html.Div([
-            html.Button([
+    needle = (query or "").strip().lower()
+
+    def matches(name, focus=None):
+        return not needle or needle in name.lower() or needle in (focus or "").lower()
+
+    yours = [p for p in mine if matches(p["name"], p.get("focus"))]
+    others = ([p for p in db.people("player")
+               if p["id"] not in taught and matches(p["name"])][:8]
+              if needle else [])
+
+    def mine_row(p):
+        return html.Button([
+            html.Div([
                 html.Span(p["name"], className="roster-name"),
-                html.Span(f"age {p['age']}" if p["age"] else "", className="hint"),
-                html.Span("" if p["id"] in taught else "not yours",
-                          className="tag"),
-            ], id={"type": "start-lesson", "id": p["id"]}, className="roster-row")
-            for p in matches
-        ], className="roster") if matches else
-        html.Div(f"Nobody on the roster matches “{query}”. New players are added "
-                 "on the Players page.", className="empty"),
-    ], className="card") if needle else html.Span()
+                html.Span(f"age {p['age']}", className="hint"),
+            ]),
+            html.Div(p["focus"] or "No focus set", className="roster-focus"),
+            html.Div(f"{_plural(p['lessons'], 'lesson', 'lessons')} · "
+                     f"last {_date.fromisoformat(p['last_on']).strftime('%-d %b')}",
+                     className="hint"),
+        ], id={"type": "open-player", "id": p["id"]}, className="roster-row")
+
+    def other_row(p):
+        return html.Button([
+            html.Span(p["name"], className="roster-name"),
+            html.Span(f"age {p['age']}" if p["age"] else "", className="hint"),
+            html.Span("not yours", className="tag"),
+        ], id={"type": "start-lesson", "id": p["id"]}, className="roster-row")
 
     head = html.Div([
         html.H2("My lessons"),
         dcc.Input(id="lesson-search", value=query or "", debounce=False,
-                  placeholder="Start a lesson — type a name", className="search"),
+                  placeholder="Find a player", className="search"),
     ], className="card-head")
 
+    blocks = [head]
+
     if not mine:
-        return html.Div([
-            head,
-            found,
-            html.Div("You have not written up a lesson yet. Type a name above "
-                     "to start one.", className="empty"),
-        ], className="card")
+        blocks.append(html.Div(
+            "You have not written up a lesson yet. Find a player below to "
+            "start one.", className="empty"))
+    elif yours:
+        blocks.append(html.Div([
+            html.Div(f"Your players · {len(yours)} of {len(mine)}"
+                     if needle else f"Your players · {len(mine)}",
+                     className="label"),
+            html.Div([mine_row(p) for p in yours], className="roster"),
+        ]))
+    else:
+        blocks.append(html.Div(
+            f"None of your players match “{query}”.", className="empty"))
 
-    rows = [html.Button([
-        html.Div([
-            html.Span(p["name"], className="roster-name"),
-            html.Span(f"age {p['age']}", className="hint"),
-        ]),
-        html.Div(p["focus"] or "No focus set", className="roster-focus"),
-        html.Div(f"{_plural(p['lessons'], 'lesson', 'lessons')} · "
-                 f"last {_date.fromisoformat(p['last_on']).strftime('%-d %b')}",
-                 className="hint"),
-    ], id={"type": "open-player", "id": p["id"]}, className="roster-row")
-        for p in mine]
+    if others:
+        blocks.append(html.Div([
+            html.Div("Elsewhere in the club", className="label",
+                     style={"marginTop": "16px"}),
+            html.Div([other_row(p) for p in others], className="roster"),
+        ]))
+    elif needle and not yours:
+        blocks.append(html.Div(
+            "Nobody else on the roster matches either. New players are added "
+            "on the Players page.", className="hint"))
 
-    return html.Div([
-        head,
-        found,
-        html.Div(rows, className="roster"),
-    ], className="card")
+    return html.Div(blocks, className="card")
 
 
 def month_buckets(rows, date_of, render, noun: tuple[str, str],
