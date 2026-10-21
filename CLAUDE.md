@@ -86,6 +86,25 @@ questions-for-coach round trip. The parent page stays as one read-only screen.
 **Remaining before submission: create the GitHub remote, push, make the repo public.**
 Nothing else blocks it. A demo video is optional and not made.
 
+## For next time — not started, not urgent
+
+Two things raised on the night of 20 October, to pick up after submission.
+
+**1. Habit-building, as an explicit goal.** The point is not a complete
+training diary on day one — it is getting a kid to start at all, even badly,
+and then letting the habit build. A simple first entry that becomes a longer
+one in a month is the success case, not a weak version of it. This belongs in
+the report (Impact, or its own short section) and it probably has product
+consequences too: what the app does for a player in week one should differ
+from what it does in month six. Nothing about this is written down yet.
+
+**2. Make it feel less plain.** The interface is clean and a bit flat. The
+specific thing asked for was *something happening when you submit* — some
+acknowledgement that an entry landed, rather than it silently appearing in the
+list. Worth looking at more broadly: a little motion, a little more life. The
+constraint is that it must not make logging feel heavier, since the entire
+premise is that it costs almost nothing to start.
+
 ## Open blockers
 
 1. ~~Token prices~~ **Done.** gpt-6-luna is $0.10 input, $0.01 cached, $0.125
