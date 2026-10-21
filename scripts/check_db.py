@@ -224,6 +224,13 @@ def main() -> int:
     findings_report()
     print("\n" + "=" * 64)
     print("ALL PASS" if not check.failed else f"{check.failed} FAILED")
+    # A coach can now open any player's monthly report, not only their own
+    # players, so the boundary matters for players they have never taught.
+    for pid in [r["id"] for r in db.people("player")]:
+        leaked = [e for e in db.entries_for_coach(pid)
+                  if e["author_role"] == "player" and e["visibility"] == "private"]
+        check(f"no player-private entry reaches a coach · {pid}", lambda l=leaked: not l)
+
     return 1 if check.failed else 0
 
 

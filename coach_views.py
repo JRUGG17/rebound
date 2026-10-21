@@ -983,6 +983,47 @@ def _month_note(note: dict):
     ], className="entry")
 
 
+def report_picker(coach_id: str, query: str | None = None):
+    """Whose monthly report. Anyone in the club, not only your own players.
+
+    Deliberately wider than the lessons picker. A monthly report is a read,
+    not a write — there is nothing to get wrong by looking, and a coach
+    covering a clinic needs to know what the kid in front of them has been
+    working on whether or not they give that kid lessons. Visibility is still
+    the coach view: a player's private entries never reach it, here or
+    anywhere.
+    """
+    mine = {p["id"] for p in analysis.my_players(coach_id)}
+    needle = (query or "").strip().lower()
+    players = [p for p in db.people("player")
+               if not needle or needle in p["name"].lower()]
+    # Your own first, then everybody else, each alphabetical.
+    players.sort(key=lambda p: (p["id"] not in mine, p["name"]))
+
+    rows = [html.Button([
+        html.Div([
+            html.Span(p["name"], className="roster-name"),
+            html.Span(f"age {p['age']}" if p["age"] else "", className="hint"),
+        ]),
+        html.Div("" if p["id"] in mine else "not one of yours",
+                 className="hint"),
+    ], id={"type": "open-player", "id": p["id"]}, className="roster-row")
+        for p in players]
+
+    return html.Div([
+        html.Div([
+            html.H2("Monthly report"),
+            dcc.Input(id="lesson-search", value=query or "", debounce=False,
+                      placeholder="Find a player", className="search"),
+        ], className="card-head"),
+        html.Div("Anyone in the club. Reports are written once a month ends.",
+                 className="hint", style={"marginBottom": "10px"}),
+        html.Div(rows if rows else
+                 [html.Div(f"Nobody matches “{query}”.", className="empty")],
+                 className="roster"),
+    ], className="card")
+
+
 def month_report_body(review: dict):
     """One month's report, in the fixed shape."""
     out = [html.Div(review["overview"], className="recap-overview")]

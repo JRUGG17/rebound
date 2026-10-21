@@ -1349,7 +1349,7 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                                   show_entries, f_setting, f_author, recap_year)
         if nav == "monthly":
             if not sel_player:
-                return cv.coach_lesson_picker(who, lesson_query)
+                return cv.report_picker(who, lesson_query)
             return cv.month_review(sel_player, "coach", writing_month,
                                    month_review, writing_month)
         if nav == "players":
