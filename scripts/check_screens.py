@@ -61,6 +61,10 @@ ARC = {
 }
 
 
+def _fail():
+    raise AssertionError("expected the other way round")
+
+
 def main() -> int:
     print("=" * 64)
     print("Rebound — every screen renders")
@@ -117,16 +121,17 @@ def main() -> int:
     check("lesson thread with nothing carried over",
           lambda: cv.lesson_arc_card({**ARC, "carried_over": [],
                                       "never_answered": []}, False, "coach"))
-    check("month review, nothing run yet",
-          lambda: cv.month_review(player, "player", None, None, False))
-    check("month review, running",
-          lambda: cv.month_review(player, "player", "2026-09", None, True))
-    check("month review, read back",
-          lambda: cv.month_review(player, "player", "2026-09", MONTH, False))
-    check("month review, a month with no entries",
-          lambda: cv.month_review(player, "player", "2020-01", None, False))
-    check("months with entries",
-          lambda: cv.months_with_entries(player, "player"))
+    check("monthly report", lambda: cv.month_review(player, "player", None, None, None))
+    check("monthly report, one month writing",
+          lambda: cv.month_review(player, "player", "2026-09", None, None))
+    check("monthly report, a fresh one just back",
+          lambda: cv.month_review(player, "player", None, MONTH, "2026-10"))
+    check("monthly report, coach side",
+          lambda: cv.month_review(player, "coach", None, None, None))
+    check("months with entries", lambda: cv.months_with_entries(player, "player"))
+    check("a closed month is closed", lambda: cv.month_is_closed("2026-08") or _fail())
+    check("the current month is not", lambda: not cv.month_is_closed(
+        __import__("core.clock", fromlist=["x"]).today().isoformat()[:7]) or _fail())
     check("recap summary", lambda: cv.recap_summary(player, "player", "30", None, False))
     check("recap summary with a result",
           lambda: cv.recap_summary(player, "player", "30",

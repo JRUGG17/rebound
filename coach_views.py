@@ -924,6 +924,54 @@ def months_with_entries(player_id: str, viewer_role: str):
     return sorted({e["occurred_on"][:7] for e in rows}, reverse=True)
 
 
+def month_bounds_for(month: str) -> tuple[str, str]:
+    """First and last day of a month, never past the simulated today."""
+    first = _date.fromisoformat(month + "-01")
+    a, b = _month_bounds(first)
+    return a, min(b, clock.today().isoformat())
+
+
+def month_is_closed(month: str) -> bool:
+    """True once the month is over. The current month is still being lived
+    in, so a report on it would be a report on half a month."""
+    return month < clock.today().isoformat()[:7]
+
+
+def cached_month(player_id: str, month: str, viewer_role: str) -> dict | None:
+    """The stored report for a month, if one is written and still true.
+
+    Free — this is a row lookup, not a model call. The page uses it to know
+    which months are ready without asking for any of them.
+    """
+    audience = "player" if viewer_role == "player" else "coach"
+    start, end = month_bounds_for(month)
+    stats = analysis.period_stats(player_id, start, end, viewer=audience)
+    if not stats["total"]:
+        return None
+    hit = db.get_summary(player_id, f"month:{month}", audience,
+                         start, end, stats["total"])
+    return hit["payload"] if hit else None
+
+
+def newest_unwritten_month(player_id: str, viewer_role: str) -> str | None:
+    """The most recent finished month that has no report yet.
+
+    This is what makes the page populate itself. Nothing can fire on the 1st
+    of the month in a process that is not running, so the report is written
+    the first time somebody opens the tab after the month ends — which from
+    the reader's side is the same thing.
+    """
+    for month in months_with_entries(player_id, viewer_role):
+        if not month_is_closed(month):
+            continue
+        if cached_month(player_id, month, viewer_role) is None:
+            return month
+        # Only ever the newest one, so opening the tab costs one call and
+        # not one per month on record.
+        return None
+    return None
+
+
 def _month_note(note: dict):
     return html.Div([
         html.Div([
@@ -935,82 +983,112 @@ def _month_note(note: dict):
     ], className="entry")
 
 
-def month_review(player_id: str, viewer_role: str, month: str | None,
-                 review: dict | None, running: bool):
-    """A month at a time, in the same shape every time.
+def month_report_body(review: dict):
+    """One month's report, in the fixed shape."""
+    out = [html.Div(review["overview"], className="recap-overview")]
+    for key, title in (("going_well", "Going well"),
+                       ("working_on", "Working on"),
+                       ("kept_coming_back", "Kept coming back")):
+        notes = review.get(key) or []
+        if not notes:
+            continue
+        out.append(html.Div([
+            html.Div(title, className="band-head"),
+            *[_month_note(n) for n in notes],
+        ], className=f"band {key.replace('_', '-')}"))
+    if review.get("quiet"):
+        out.append(html.Div(review["quiet"], className="timing-box"))
+    return out
 
-    The period recap returns whatever themes the model finds, which reads well
-    and makes two months impossible to compare. This page has one skeleton —
-    the counts, then going well, working on, kept coming back — so you can put
-    September next to October and see what changed.
+
+def month_review(player_id: str, viewer_role: str, writing: str | None,
+                 fresh: dict | None, fresh_month: str | None):
+    """Every month on record, each with its own report.
+
+    Not a picker. The months are simply here, newest first, and each one
+    either has its report or a button to write it. Once a month ends its
+    report is written on the next visit and stays written, so what a reader
+    sees a few days into October is September, already done.
+
+    Only the newest finished month writes itself. The rest are a click, so
+    opening this page costs one model call rather than one per month on
+    record — which matters on a clone with a term of history in it.
+
+    `writing` is the month currently being generated, if any. `fresh` is a
+    report that has just come back and is not yet in the cache the page
+    reads from.
     """
     months = months_with_entries(player_id, viewer_role)
     if not months:
-        return html.Div([html.H2("By month"),
-                         html.Div("Nothing recorded yet.", className="empty")],
-                        className="card")
+        return html.Div([
+            html.H2("Monthly report"),
+            html.Div("Nothing recorded yet. Reports appear here once there is "
+                     "a month to report on.", className="empty"),
+        ], className="card")
 
-    current = month if month in months else months[0]
-    first = _date.fromisoformat(current + "-01")
-    start, end = _month_bounds(first)
-    end = min(end, clock.today().isoformat())
-    stats = analysis.period_stats(
-        player_id, start, end,
-        viewer="player" if viewer_role == "player" else "coach")
+    # Open the newest month that actually has a report. Opening index 0
+    # blindly means landing on the current month, which is the one least
+    # likely to be written.
+    opened = False
+    blocks = []
+    for month in months:
+        first = _date.fromisoformat(month + "-01")
+        start, end = month_bounds_for(month)
+        stats = analysis.period_stats(
+            player_id, start, end,
+            viewer="player" if viewer_role == "player" else "coach")
+        review = (fresh if (fresh and fresh_month == month)
+                  else cached_month(player_id, month, viewer_role))
+        live = not month_is_closed(month)
+        busy = writing == month
 
-    picker = html.Div([
-        html.Button(_date.fromisoformat(m + "-01").strftime("%b %Y"),
-                    id={"type": "pick-month", "m": m},
-                    className=f"tab-btn{' active' if m == current else ''}")
-        for m in months[:12]
-    ], className="tab-row")
+        counts = html.Div([
+            html.Span(_plural(stats["total"], "entry", "entries"), className="hint"),
+            html.Span(" · ", className="hint"),
+            html.Span(_plural(stats["sessions"], "day", "days"), className="hint"),
+            *[html.Span(f" · {c} {stats['counts'][c]}", className="hint")
+              for c in CATEGORY_ORDER if stats["counts"][c]],
+        ])
 
-    tiles = html.Div([
-        html.Div([html.Div("Entries", className="label"),
-                  html.Div(str(stats["total"]), className="value")], className="stat"),
-        html.Div([html.Div("Days", className="label"),
-                  html.Div(str(stats["sessions"]), className="value")], className="stat"),
-        *[html.Div([html.Div(c, className="label"),
-                    html.Div(str(stats["counts"][c]), className="value")],
-                   className=f"stat{'' if stats['counts'][c] else ' stat-zero'}")
-          for c in CATEGORY_ORDER],
-    ], className="stat-row")
+        if busy:
+            body = [html.Div([html.Span(className="spinner"),
+                              html.Span("  Writing the report…", className="hint")])]
+        elif review:
+            body = month_report_body(review)
+        else:
+            body = [html.Div([
+                html.Div(f"{first.strftime('%B')} is still going. The report is "
+                         "written once the month ends — or read it early."
+                         if live else "No report written for this month yet.",
+                         className="empty"),
+                html.Button("Read it early" if live else f"Write {first.strftime('%B')}'s report",
+                            id={"type": "write-month", "m": month},
+                            className="primary"),
+            ])]
 
-    if running:
-        body = [html.Div([html.Span(className="spinner"),
-                          html.Span("  Reading the month…", className="hint")])]
-    elif not stats["total"]:
-        body = [html.Div("Nothing recorded this month.", className="empty")]
-    elif not review:
-        body = [html.Div(f"{_plural(stats['total'], 'entry', 'entries')} across "
-                         f"{_plural(stats['sessions'], 'day', 'days')}. "
-                         "Summarize to read the month back.", className="empty")]
-    else:
-        body = [html.Div(review["overview"], className="recap-overview")]
-        for key, title in (("going_well", "Going well"),
-                           ("working_on", "Working on"),
-                           ("kept_coming_back", "Kept coming back")):
-            notes = review.get(key) or []
-            if not notes:
-                continue
-            body.append(html.Div([
-                html.Div(title, className="band-head"),
-                *[_month_note(n) for n in notes],
-            ], className=f"band {key.replace('_', '-')}"))
-        if review.get("quiet"):
-            body.append(html.Div(review["quiet"], className="timing-box"))
+        show = busy or (bool(review) and not opened)
+        if show and review:
+            opened = True
+        blocks.append(html.Details([
+            html.Summary([
+                html.Div([
+                    html.Span(first.strftime("%B %Y"), className="month-name"),
+                    html.Span("this month" if live else
+                              ("ready" if review else "not written"),
+                              className=f"tag{' chronic' if not review and not live else ''}"),
+                ]),
+                counts,
+            ]),
+            html.Div(body, className="bucket-body"),
+        ], className="bucket month", open=show))
 
     return html.Div([
         html.Div([
-            html.Div([
-                html.H2(first.strftime("%B %Y")),
-                html.Button("Summarize", id="run-month", className="primary"),
-            ], className="card-head"),
-            picker,
-            tiles,
-            html.Div(body, style={"marginTop": "10px"}),
-        ], className="card"),
-    ])
+            html.H2("Monthly report"),
+            html.Span("Each month, written once it ends.", className="hint"),
+        ], className="card-head"),
+        *blocks,
+    ], className="card")
 
 
 def recap_summary(player_id: str, viewer_role: str, range_key: str,

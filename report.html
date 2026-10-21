@@ -297,8 +297,19 @@ reads across coaches and months, a <strong>Recap</strong> agent that reads a
 stretch back, and a <strong>Methodology</strong> agent that answers from the
 playbook or refuses. Section 5 takes each in turn.</p>
 
-<p>There are five places to stand. A player gets My training, My lessons and
-Recap. A coach gets Today, Players, My lessons, Coach resources and Usage. A
+<p>One of those reads is not asked for. <strong>Monthly report</strong> is a
+page of months, each with its own report in a fixed shape — the counts, then
+<em>going well</em>, <em>working on</em>, <em>kept coming back</em>. Once a
+month ends, its report is written the first time anybody opens the tab and
+then stays written, so a few days into October a player finds September
+already done. The fixed shape is the point: the period recap returns whatever
+themes the model finds, which reads well and makes two months impossible to
+lay side by side. This has the same skeleton every time, so September and
+October can be compared at a glance and the four trainables stay visible
+whether or not a month had anything in them.</p>
+
+<p>There are six places to stand. A player gets My training, My lessons,
+Monthly report and Recap. A coach gets Today, Players, My lessons, Coach resources and Usage. A
 parent gets one read-only page. Everything else is reached by drilling in,
 because the first version had eleven parallel destinations and was impossible
 to navigate.</p>
@@ -806,6 +817,16 @@ do coaches file notes on the day, and of the four agent outputs, which ones get
 read twice? I would expect at least one feature in this report to turn out to
 be something nobody opens. Finding out costs two weeks and no engineering, and
 every item below should be reprioritised afterwards.</p>
+
+<p><strong>Write the monthly reports on a schedule rather than on arrival.</strong>
+Today a month's report is written the first time somebody opens the tab after
+that month ends, because nothing can fire on the first of the month in a
+process that is not running. Lazy generation is indistinguishable from the
+reader's side and needs no infrastructure, which is why it is what ships. Once
+this is deployed, a job on the first of each month would write every player's
+report overnight — the page would then be warm for everybody rather than for
+whoever opens it first, and it would make a monthly report something the club
+can rely on existing rather than something that happens to get generated.</p>
 
 <p><strong>Summarize the room, not the player — wire it to the clinic
 register.</strong> The club already has a registration system: fifteen kids

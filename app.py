@@ -398,9 +398,10 @@ app.layout = html.Div([
     dcc.Store(id="lesson-query", data=""),
     dcc.Store(id="arc-wait", data=False),
     dcc.Store(id="arc-range", data="block"),
-    dcc.Store(id="sel-month", data=None),
     dcc.Store(id="month-review", data=None),
-    dcc.Store(id="month-wait", data=False),
+    # Which month is being written right now, so the page can
+    # spin on that one block rather than all of them.
+    dcc.Store(id="writing-month", data=None),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
@@ -478,14 +479,15 @@ def move_clock(_b, _f, _r, _nav, _theme):
 # of them, because eleven parallel destinations is how this got lost.
 PLAYER_NAV = [
     (None, [("training", "My training"), ("lessons", "My lessons"),
-            ("recap", "Recap")]),
+            ("monthly", "Monthly report"), ("recap", "Recap")]),
     (None, [("usage", "Usage")]),
 ]
 PARENT_NAV = [
     (None, [("training", "Training record")]),
 ]
 COACH_NAV = [
-    (None, [("today", "Today"), ("players", "Players"), ("lessons", "My lessons")]),
+    (None, [("today", "Today"), ("players", "Players"), ("lessons", "My lessons"),
+            ("monthly", "Monthly report")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
 ]
 
@@ -512,7 +514,8 @@ def render_sidebar(who, nav, sel_player):
                                    className=f"side-btn{' active' if nav == key else ''}"))
     # Whose journal a coach is reading has to be visible, or the Calendar and
     # Recap tabs silently mean a different player than the one they picked.
-    if person["role"] in ("coach", "admin") and nav in ("calendar", "recap", "lessons"):
+    if person["role"] in ("coach", "admin") and nav in ("calendar", "recap",
+                                                       "lessons", "monthly"):
         subject = db.person(sel_player) if sel_player else None
         if subject:
             out.append(html.Div(f"Showing {subject['name']}", className="side-note"))
@@ -783,47 +786,69 @@ def leave_note(n):
     return "lessons" if clicked(n) else no_update
 
 
+def _month_subject(who, sel_player):
+    person = db.person(who)
+    if person is None:
+        return None, None
+    if person["role"] == "player":
+        return who, "player"
+    return sel_player, "coach"
+
+
 @app.callback(
     Output("job", "data", allow_duplicate=True),
     Output("poll", "disabled", allow_duplicate=True),
-    Output("month-wait", "data"),
-    Input("run-month", "n_clicks"),
-    State("who", "value"), State("sel-player", "data"), State("sel-month", "data"),
+    Output("writing-month", "data"),
+    Input({"type": "write-month", "m": ALL}, "n_clicks"),
+    State("who", "value"), State("sel-player", "data"),
     prevent_initial_call=True,
 )
-def start_month(n, who, sel_player, month):
-    person = db.person(who)
-    if not clicked(n) or person is None:
+def write_month(clicks, who, sel_player):
+    """One month, because somebody asked for it."""
+    if not ctx.triggered_id or not any(c for c in clicks if c):
         return no_update, no_update, no_update
-    is_player = person["role"] == "player"
-    subject = who if is_player else sel_player
+    subject, role = _month_subject(who, sel_player)
     if not subject:
         return no_update, no_update, no_update
-    role = "player" if is_player else "coach"
-    month = month or cv.months_with_entries(subject, role)[:1]
-    if isinstance(month, list):
-        if not month:
-            return no_update, no_update, no_update
-        month = month[0]
-    return run_month(subject, month, role), False, True
+    month = ctx.triggered_id["m"]
+    return run_month(subject, month, role), False, month
 
 
-@app.callback(Output("month-wait", "data", allow_duplicate=True),
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Output("writing-month", "data", allow_duplicate=True),
+    Input("nav", "data"), Input("sel-player", "data"),
+    State("who", "value"), State("job", "data"),
+    prevent_initial_call=True,
+)
+def autowrite_month(nav, sel_player, who, current_job):
+    """The page populating itself.
+
+    Nothing can fire on the first of the month in a process that is not
+    running, so the report is written the first time anybody opens the tab
+    after the month ends. From the reader's side those are the same thing.
+
+    Only the newest finished month, and only when nothing else is already
+    running — opening this page must cost one call, not one per month.
+    """
+    if nav != "monthly":
+        return no_update, no_update, no_update
+    if job(current_job)["state"] == "running":
+        return no_update, no_update, no_update
+    subject, role = _month_subject(who, sel_player)
+    if not subject:
+        return no_update, no_update, no_update
+    month = cv.newest_unwritten_month(subject, role)
+    if not month:
+        return no_update, no_update, no_update
+    return run_month(subject, month, role), False, month
+
+
+@app.callback(Output("writing-month", "data", allow_duplicate=True),
               Input("month-review", "data"), prevent_initial_call=True)
 def month_landed(_m):
-    return False
-
-
-@app.callback(Output("sel-month", "data"),
-              Output("month-review", "data", allow_duplicate=True),
-              Input({"type": "pick-month", "m": ALL}, "n_clicks"),
-              State("sel-month", "data"), prevent_initial_call=True)
-def pick_month(clicks, current):
-    if not any(c for c in clicks if c):
-        return current, no_update
-    # A month's readout belongs to that month, so switching clears it rather
-    # than leaving September's text under October's heading.
-    return ctx.triggered_id["m"], None
+    return None
 
 
 @app.callback(Output("recap-range", "data"), Output("recap", "data"),
@@ -1261,8 +1286,7 @@ def go_to_recap(n):
     Input("f-setting", "data"), Input("f-author", "data"),
     Input("recap-year", "data"), Input("lesson-query", "data"),
     Input("arc-wait", "data"), Input("arc-range", "data"),
-    Input("sel-month", "data"), Input("month-review", "data"),
-    Input("month-wait", "data"),
+    Input("month-review", "data"), Input("writing-month", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
     Input("plan-edit", "data"),
     State("job", "data"),
@@ -1271,8 +1295,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, arc_range, sel_month,
-                month_review, month_wait, adding,
+                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, arc_range,
+                month_review, writing_month, adding,
                 added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
@@ -1290,15 +1314,12 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                                     sel_day, running, editing,
                                     lesson_arc, bool(running and arc_wait),
                                     arc_range)
+        if nav == "monthly":
+            return cv.month_review(who, "player", writing_month,
+                                   month_review, writing_month)
         if nav == "recap":
-            # The month is the page you land on; the range picker is still
-            # there underneath for an ad-hoc stretch.
-            return html.Div([
-                cv.month_review(who, "player", sel_month, month_review,
-                                bool(running and month_wait)),
-                cv.recap_panel(who, "player", recap_range, recap, running,
-                               show_entries, f_setting, f_author, recap_year),
-            ])
+            return cv.recap_panel(who, "player", recap_range, recap, running,
+                                  show_entries, f_setting, f_author, recap_year)
         return html.Div([
             *player_today(who),
             cv.focus_pair(who, "player", focus_msg, focus_edit, focus_hist),
@@ -1324,12 +1345,13 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         if nav == "recap":
             if not sel_player:
                 return cv.coach_lesson_picker(who, lesson_query)
-            return html.Div([
-                cv.month_review(sel_player, "coach", sel_month, month_review,
-                                bool(running and month_wait)),
-                cv.recap_panel(sel_player, "coach", recap_range, recap, running,
-                               show_entries, f_setting, f_author, recap_year),
-            ])
+            return cv.recap_panel(sel_player, "coach", recap_range, recap, running,
+                                  show_entries, f_setting, f_author, recap_year)
+        if nav == "monthly":
+            if not sel_player:
+                return cv.coach_lesson_picker(who, lesson_query)
+            return cv.month_review(sel_player, "coach", writing_month,
+                                   month_review, writing_month)
         if nav == "players":
             if sel_player:
                 return html.Div([
