@@ -486,8 +486,7 @@ PARENT_NAV = [
     (None, [("training", "Training record")]),
 ]
 COACH_NAV = [
-    (None, [("today", "Today"), ("players", "Players"), ("lessons", "My lessons"),
-            ("monthly", "Monthly report")]),
+    (None, [("today", "Today"), ("players", "Players"), ("lessons", "My lessons")]),
     (None, [("resources", "Coach resources"), ("usage", "Usage")]),
 ]
 
@@ -981,6 +980,16 @@ def go_to_lessons(n):
               Input("player-lessons", "n_clicks"), prevent_initial_call=True)
 def go_to_player_lessons(n):
     return "lessons" if clicked(n) else no_update
+
+
+@app.callback(Output("nav", "data", allow_duplicate=True),
+              Input("player-monthly", "n_clicks"), prevent_initial_call=True)
+def go_to_player_monthly(n):
+    """A coach reaches a monthly report through the player, not through a
+    tab of their own. They are already standing on the player when they
+    want it, and a second picker was a second place to choose the same
+    person."""
+    return "monthly" if clicked(n) else no_update
 
 
 @app.callback(Output("sel-player", "data", allow_duplicate=True),

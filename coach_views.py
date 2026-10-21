@@ -346,6 +346,8 @@ def player_detail(player_id: str, review: dict | None, running: bool,
             ]),
             html.Div([
                 html.Button("Lessons →", id="player-lessons", className="ghost"),
+                html.Button("Monthly report →", id="player-monthly",
+                            className="ghost"),
                 html.Button("Remove", id="remove-player", className="link danger")
                 if can_remove else html.Span(),
             ], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
