@@ -8,17 +8,17 @@
       --line:#e2e5e8;--wash:#f6f7f8;--green:#2e7d52;--amber:#b26a00;}
 *{box-sizing:border-box}
 body{margin:0;background:#eceef0;color:var(--ink);
-     font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+     font:14px/1.36 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
      -webkit-font-smoothing:antialiased}
 .page{max-width:50em;margin:0 auto;background:#fff;padding:2.4em 3em 2.6em}
 h1{font-size:1.9em;line-height:1.12;letter-spacing:-.02em;margin:0 0 .2em}
-h2{font-size:1.18em;margin:1.15em 0 .4em;padding-top:.35em;
+h2{font-size:1.16em;margin:1em 0 .35em;padding-top:.3em;
    border-top:2px solid var(--ink);letter-spacing:-.01em}
 h3{font-size:.99em;margin:.95em 0 .3em;color:var(--slate)}
-p{margin:0 0 .7em}
+p{margin:0 0 .62em}
 .sub{font-size:1.06em;color:var(--muted);margin:0 0 .35em}
 .by{color:var(--muted);font-size:.88em;margin:0 0 1.3em}
-blockquote{margin:.7em 0;padding:.03em 0 .03em 1em;
+blockquote{margin:.6em 0;padding:.02em 0 .02em .95em;
            border-left:3px solid var(--orange);color:var(--slate);font-style:italic}
 blockquote p:last-child{margin-bottom:0}
 code{font:.88em ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -237,15 +237,36 @@ actually happened. And writing tends to prime itself: you open the box
 intending one sentence about the backhand, and the second sentence is the one
 worth having. The barrier is deliberately low; the ceiling is not there at
 all.</p>
+<h3>The first entry is not the point</h3>
+
+<p>There is an obvious objection to all of this, which is that a one-line entry
+is not reflection. A kid writing <em>worked on my drive, felt alright</em> has
+not examined anything. That is true, and it does not matter, because the thing
+being built is not the entry — it is the habit.</p>
+
+<p>Starting is what has never happened. Every coach in the program has told
+players to reflect and keep a record, and the instruction has never once
+survived contact with a fourteen-year-old who wants to hit a ball. So the first
+win is not a good entry, it is <em>any</em> entry, and then another one next
+week. A one-liner in October that has become a paragraph by December is the
+success case, and the paragraph is only reachable through the one-liner. Asking
+for the paragraph in October gets nothing at all.</p>
+
+<p>This is why there is no streak counter and nothing that scolds: a child who
+misses a week and is told so is a child who stops. The pull has to come from
+the record being worth reading, which is the real job of the four agents in
+section 5 — writing something turns into getting something back, and that
+exchange is what makes a player open the app again next week. The reflection
+the program wants develops out of the habit rather than being demanded at the
+start.</p>
 
 <h3>Where reflection sits</h3>
 
-<p>The curriculum the club teaches is already a deliberate practice structure in
-Ericsson's sense: well-defined tasks with specific goals, focused attention,
-immediate informative feedback, and repetition with error correction. The drill
-ladder — solo, block, routine, pattern, conditioned game, match — is exactly
-that, and the coach standing on the court is the feedback loop. The academy does
-this part well. It is the part it was built to do.</p>
+<p>The curriculum is already a deliberate practice structure in Ericsson's
+sense: well-defined tasks with specific goals, focused attention, immediate
+informative feedback, repetition with error correction. The drill ladder is
+exactly that and the coach on the court is the feedback loop. The academy does
+this part well — it is the part it was built to do.</p>
 
 <p>What the program does not supply is what happens after the session. In
 Zimmerman's self-regulated learning cycle — forethought, performance,
@@ -649,14 +670,14 @@ clearest answer to "why does this need an agent rather than a query".</p></div>
 
 <h3>What the build cost in bugs, honestly</h3>
 
-<p>The interesting failures were not model failures. They were:
-a callback that bundled unrelated buttons and silently died whenever one was
-absent from the DOM — which, in its worst instance, sent coach notes to children
-before the coach confirmed; two components sharing an ID, which deadlocked
-navigation; 892 lines of duplicated code where Python was running the second
-definition and my edits were landing in the copy that never ran; and a nested
-transaction that deadlocked against itself. Each one produced a permanent check
-in the test suite. The model was the reliable part of this system.</p>
+<p>The interesting failures were not model failures. A callback bundling
+unrelated buttons died silently whenever one was absent from the page — which
+once sent coach notes to children before the coach had confirmed them. Two
+components shared an ID and deadlocked navigation. 892 lines were silently
+duplicated, so Python ran the second copy and some edits landed in the one that
+never executed. A nested transaction deadlocked against itself. Each produced a
+permanent check in the suite, and the model was the reliable part of this
+system.</p>
 
 <h2 id="impact">9. Impact: four constituencies</h2>
 
@@ -665,8 +686,9 @@ for one group. It serves four, and the fourth is the one that justifies half the
 architecture.</p>
 
 <p><strong>1. The player.</strong> They reflect, they see it written down, and
-they are made to think about the session. Thirty seconds, and the next lesson
-starts from somewhere instead of from a blank stare.</p>
+the next lesson starts from somewhere instead of from a blank stare. Over a
+season the habit is the part that outlasts any particular entry — and it is
+the one thing here that keeps paying after a player leaves the program.</p>
 
 <p><strong>2. The parent.</strong> This answers the complaint in section 1 —
 fifty kids, seven courts, three coaches, and parents who felt their child had
