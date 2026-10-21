@@ -42,6 +42,16 @@ def check(label: str, fn) -> None:
 check.failed = 0
 
 
+MONTH = {
+    "overview": "September was mostly technical.",
+    "going_well": [{"headline": "The boast is holding up", "detail": "Your coaches wrote…",
+                    "category": "technical", "evidence": "2 entries"}],
+    "working_on": [],
+    "kept_coming_back": [{"headline": "Prep fades", "detail": "18 times…",
+                          "category": "technical", "evidence": "18x"}],
+    "quiet": "Nothing physical was recorded.",
+}
+
 ARC = {
     "overview": "Three terms on the backhand drive.",
     "phases": [{"span": "Aug 3 – Sep 1", "focus": "length off the back wall",
@@ -107,6 +117,16 @@ def main() -> int:
     check("lesson thread with nothing carried over",
           lambda: cv.lesson_arc_card({**ARC, "carried_over": [],
                                       "never_answered": []}, False, "coach"))
+    check("month review, nothing run yet",
+          lambda: cv.month_review(player, "player", None, None, False))
+    check("month review, running",
+          lambda: cv.month_review(player, "player", "2026-09", None, True))
+    check("month review, read back",
+          lambda: cv.month_review(player, "player", "2026-09", MONTH, False))
+    check("month review, a month with no entries",
+          lambda: cv.month_review(player, "player", "2020-01", None, False))
+    check("months with entries",
+          lambda: cv.months_with_entries(player, "player"))
     check("recap summary", lambda: cv.recap_summary(player, "player", "30", None, False))
     check("recap summary with a result",
           lambda: cv.recap_summary(player, "player", "30",

@@ -369,3 +369,156 @@ async def recap_lessons(player_id: str, *, audience: Audience = "player",
     db.put_summary(player_id, "lessons", audience, span[0], span[1],
                    output.model_dump(), total, usage)
     return output, usage
+
+
+# ---------------------------------------------------------------- the month
+
+class MonthNote(BaseModel):
+    """One thing worth saying about a month, with the detail to back it."""
+
+    headline: str = Field(
+        description="The point in six or seven words, as a coach would say it out "
+        "loud. Not a date and not a quote."
+    )
+    detail: str = Field(
+        description="Three or four full sentences. This is the part that gets read, "
+        "so write it properly rather than gesturing at it. Say what happened, where "
+        "it showed up — which settings, which rungs of the ladder, early or late in "
+        "the month — and what changed across the weeks if anything did. Attribute "
+        "every claim: what the coaches wrote is one kind of statement and what the "
+        "player wrote is another, and they must never be blended. Synthesise across "
+        "entries rather than recounting sessions one by one, and do not quote "
+        "entries verbatim."
+    )
+    category: Category
+    evidence: str = Field(
+        description="The counts behind it, taken exactly from the digest. For "
+        "example: 7 entries, 3 sessions, 2 coaches."
+    )
+
+
+class MonthReview(BaseModel):
+    """One month, in a fixed shape, so two months can be compared."""
+
+    overview: str = Field(
+        description="Four or five sentences on the month as a whole. What it was "
+        "mostly about, how it opened and how it ended, and whether it looks like a "
+        "month where things moved. Use only counts that appear in the digest. Write "
+        "it as a paragraph somebody would actually read, not a summary line."
+    )
+    going_well: list[MonthNote] = Field(
+        default_factory=list,
+        description="One to three. Things that are working — a shot holding up, a "
+        "cue that has climbed the ladder, something the player has got on top of. "
+        "Real ones only. If the month was a grind, say so in the overview and leave "
+        "this short rather than inventing encouragement.",
+    )
+    working_on: list[MonthNote] = Field(
+        default_factory=list,
+        description="One to three. The live problems of the month: what is being "
+        "worked at and has not landed yet. Not a telling-off and not a prescription "
+        "— describe the state of it, do not say what to do about it.",
+    )
+    kept_coming_back: list[MonthNote] = Field(
+        default_factory=list,
+        description="Things that recurred often enough in this month to be a pattern "
+        "rather than an incident, using the recurrence counts in the digest. Empty "
+        "if nothing did — do not pad it.",
+    )
+    quiet: str | None = Field(
+        default=None,
+        description="One sentence naming any trainable with nothing recorded at all "
+        "this month. A fact worth seeing, not an accusation. Null if all four have "
+        "something.",
+    )
+
+
+MONTH_PLAYER = """
+You are writing one month of a player's training record back to them. They are
+between 8 and 18 — match the language to their age.
+
+This page is the month. It is the thing they will look at to remember what
+September was, so it has to stand on its own and it has to be worth the visit.
+Write in full sentences and give each note enough substance that reading it
+tells them something. A page of four-word fragments is a worse page.
+
+AMALGAMATE. You are given every entry; you are not summarising them one at a
+time. Find what ran through the month and write that.
+
+ATTRIBUTE EVERYTHING. The digest marks each entry (coach) or (player):
+  a coach's note    -> "your coaches wrote...", "Nia noticed..."
+  their own         -> "you wrote that...", "you said it felt..."
+Never hand a player their own reflection back as a finding about them.
+
+Use the ladder trend to say which way something went. You do not coach, you do
+not prescribe drills, and you do not tell them what to do next month.
+"""
+
+MONTH_COACH = """
+You are writing one month of a player's record for a coach. Terse where terse
+is right, but complete: this is a page a coach reads before a session, and
+each note should carry enough detail to act on without opening the entries.
+
+AMALGAMATE into the shape of the month — settings, rungs, what moved. Name the
+shot and the rung. Use the ladder trend: a cue still being raised at the same
+rung after a month has not been learned.
+
+ATTRIBUTE EVERYTHING. You are writing to a coach about somebody else's record,
+so "you" is the coach reading it and never the player. Use the player's name
+from the digest:
+  a coach's note    -> "Nia wrote...", "two coaches noted..."
+  the player's own  -> "Maya wrote that...", "she said it felt..."
+
+You do not prescribe. The coach decides what to do about it.
+"""
+
+
+async def review_month(player_id: str, month: str, *,
+                       audience: Audience = "player", force: bool = False):
+    """One calendar month, in a fixed shape.
+
+    The period recap returns whatever two-to-four themes the model finds, which
+    reads well and makes two months impossible to lay side by side. This has
+    the same skeleton every time — going well, working on, kept coming back —
+    so September and October can be compared at a glance, and the curriculum's
+    four trainables stay visible rather than being implied.
+
+    `month` is "YYYY-MM". Cached on the month and its entry count, so looking
+    at September twice costs one call, and a new September entry invalidates it.
+    """
+    from datetime import date
+    from calendar import monthrange
+    from core import clock, db
+
+    year, mon = int(month[:4]), int(month[5:7])
+    start = date(year, mon, 1).isoformat()
+    end = min(date(year, mon, monthrange(year, mon)[1]).isoformat(),
+              clock.today().isoformat())
+    if end < start:
+        return None, None
+
+    viewer = "player" if audience == "player" else "coach"
+    stats = analysis.period_stats(player_id, start, end, viewer=viewer)
+    if not stats["total"]:
+        return None, None
+
+    if not force:
+        hit = db.get_summary(player_id, f"month:{month}", audience,
+                             start, end, stats["total"])
+        if hit:
+            return MonthReview.model_validate(hit["payload"]), hit
+
+    instructions = MONTH_PLAYER if audience == "player" else MONTH_COACH
+    agent = make_agent(instructions, MonthReview)
+    label = date(year, mon, 1).strftime("%B %Y")
+    prompt = (
+        f"{analysis.period_digest(stats)}\n\n"
+        f"This is {label}, read as one month.\n"
+        "Every number above is counted, not estimated. Do not state a count that "
+        "is not in it, and do not round one that is.\n"
+        "Write the month."
+    )
+    output, usage = await run(agent, prompt, name=f"month:{audience}")
+    db.put_summary(player_id, f"month:{month}", audience, start, end,
+                   output.model_dump(), stats["total"], usage)
+    return output, usage

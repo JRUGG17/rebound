@@ -917,6 +917,102 @@ FILTERS = [("", "Everything"), ("lesson", "Lessons"), ("squad", "Squad"),
            ("reflection", "Reflections")]
 
 
+def months_with_entries(player_id: str, viewer_role: str):
+    """Every month that has something in it, newest first."""
+    rows = (db.entries_for_player(player_id) if viewer_role == "player"
+            else db.entries_for_coach(player_id))
+    return sorted({e["occurred_on"][:7] for e in rows}, reverse=True)
+
+
+def _month_note(note: dict):
+    return html.Div([
+        html.Div([
+            html.Span(note["category"], className=f"tag {note['category']}"),
+            html.Span(note["evidence"], className="hint"),
+        ], className="meta"),
+        html.Div(note["headline"], className="theme-title"),
+        html.Div(note["detail"], className="theme-body"),
+    ], className="entry")
+
+
+def month_review(player_id: str, viewer_role: str, month: str | None,
+                 review: dict | None, running: bool):
+    """A month at a time, in the same shape every time.
+
+    The period recap returns whatever themes the model finds, which reads well
+    and makes two months impossible to compare. This page has one skeleton —
+    the counts, then going well, working on, kept coming back — so you can put
+    September next to October and see what changed.
+    """
+    months = months_with_entries(player_id, viewer_role)
+    if not months:
+        return html.Div([html.H2("By month"),
+                         html.Div("Nothing recorded yet.", className="empty")],
+                        className="card")
+
+    current = month if month in months else months[0]
+    first = _date.fromisoformat(current + "-01")
+    start, end = _month_bounds(first)
+    end = min(end, clock.today().isoformat())
+    stats = analysis.period_stats(
+        player_id, start, end,
+        viewer="player" if viewer_role == "player" else "coach")
+
+    picker = html.Div([
+        html.Button(_date.fromisoformat(m + "-01").strftime("%b %Y"),
+                    id={"type": "pick-month", "m": m},
+                    className=f"tab-btn{' active' if m == current else ''}")
+        for m in months[:12]
+    ], className="tab-row")
+
+    tiles = html.Div([
+        html.Div([html.Div("Entries", className="label"),
+                  html.Div(str(stats["total"]), className="value")], className="stat"),
+        html.Div([html.Div("Days", className="label"),
+                  html.Div(str(stats["sessions"]), className="value")], className="stat"),
+        *[html.Div([html.Div(c, className="label"),
+                    html.Div(str(stats["counts"][c]), className="value")],
+                   className=f"stat{'' if stats['counts'][c] else ' stat-zero'}")
+          for c in CATEGORY_ORDER],
+    ], className="stat-row")
+
+    if running:
+        body = [html.Div([html.Span(className="spinner"),
+                          html.Span("  Reading the month…", className="hint")])]
+    elif not stats["total"]:
+        body = [html.Div("Nothing recorded this month.", className="empty")]
+    elif not review:
+        body = [html.Div(f"{_plural(stats['total'], 'entry', 'entries')} across "
+                         f"{_plural(stats['sessions'], 'day', 'days')}. "
+                         "Summarize to read the month back.", className="empty")]
+    else:
+        body = [html.Div(review["overview"], className="recap-overview")]
+        for key, title in (("going_well", "Going well"),
+                           ("working_on", "Working on"),
+                           ("kept_coming_back", "Kept coming back")):
+            notes = review.get(key) or []
+            if not notes:
+                continue
+            body.append(html.Div([
+                html.Div(title, className="band-head"),
+                *[_month_note(n) for n in notes],
+            ], className=f"band {key.replace('_', '-')}"))
+        if review.get("quiet"):
+            body.append(html.Div(review["quiet"], className="timing-box"))
+
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.H2(first.strftime("%B %Y")),
+                html.Button("Summarize", id="run-month", className="primary"),
+            ], className="card-head"),
+            picker,
+            tiles,
+            html.Div(body, style={"marginTop": "10px"}),
+        ], className="card"),
+    ])
+
+
 def recap_summary(player_id: str, viewer_role: str, range_key: str,
                   result: dict | None, running: bool):
     """The short version, for the page you land on.

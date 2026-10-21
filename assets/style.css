@@ -880,3 +880,32 @@ body { background: var(--wash); }
 
 /* entry lists breathe */
 .bucket-body .entry:last-child { padding-bottom: 4px; }
+
+
+/* ------------------------------------------------- the month, in bands */
+
+/* Three fixed bands so two months can be laid side by side. The colour is
+   the only thing that differs; the shape is the same every time. */
+.band { margin-top: 16px; }
+.band-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--muted);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--line);
+}
+.band.going-well .band-head { color: var(--green); border-bottom-color: #cfe6da; }
+.band.working-on .band-head { color: var(--amber); border-bottom-color: #f0dcc0; }
+.band.kept-coming-back .band-head { color: var(--orange); border-bottom-color: #f6ddc0; }
+
+.band .entry { border-left: 3px solid var(--line); }
+.band.going-well .entry { border-left-color: var(--green); }
+.band.working-on .entry { border-left-color: var(--amber); }
+.band.kept-coming-back .entry { border-left-color: var(--orange); }
+
+/* A trainable with nothing in it is information, so it is shown greyed
+   rather than hidden. */
+.stat.stat-zero .value { color: #c3c8cd; }

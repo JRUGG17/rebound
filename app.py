@@ -145,6 +145,14 @@ def save_dated(player_id: str, text: str, visibility: str, day: str,
     return _run_job(work)
 
 
+def run_month(player_id: str, month: str, audience: str):
+    def work():
+        out, _usage = aio.run(
+            recap_agent.review_month(player_id, month, audience=audience))
+        return {"month": out.model_dump() if out else None}
+    return _run_job(work)
+
+
 def run_lesson_arc(player_id: str, audience: str,
                    start: str | None = None, end: str | None = None):
     def work():
@@ -390,6 +398,9 @@ app.layout = html.Div([
     dcc.Store(id="lesson-query", data=""),
     dcc.Store(id="arc-wait", data=False),
     dcc.Store(id="arc-range", data="block"),
+    dcc.Store(id="sel-month", data=None),
+    dcc.Store(id="month-review", data=None),
+    dcc.Store(id="month-wait", data=False),
     dcc.Store(id="kind", data="squad"),
     dcc.Store(id="editing", data=None),
     dcc.Store(id="focus-edit", data=None),
@@ -631,28 +642,32 @@ def start_ask(n, question):
     Output("recap", "data", allow_duplicate=True),
     Output("day-summary", "data", allow_duplicate=True),
     Output("lesson-arc", "data", allow_duplicate=True),
+    Output("month-review", "data", allow_duplicate=True),
     Input("poll", "n_intervals"), State("job", "data"), State("draft", "data"),
     prevent_initial_call=True,
 )
 def collect(_n, job_id, draft):
+    N = no_update
     state = job(job_id)
     if state["state"] == "running":
-        return False, no_update, no_update, no_update, no_update, no_update, no_update
+        return False, N, N, N, N, N, N, N
     result = state.get("result")
     if state["state"] == "done" and isinstance(result, dict):
         if "findings" in result:
-            return True, result, no_update, no_update, no_update, no_update, no_update
+            return True, result, N, N, N, N, N, N
         if "answer" in result:
-            return True, no_update, result, no_update, no_update, no_update, no_update
+            return True, N, result, N, N, N, N, N
         if "coach_note" in result and draft:
-            return True, no_update, no_update, {**draft, "organized": result["coach_note"]}, no_update, no_update, no_update
+            return True, N, N, {**draft, "organized": result["coach_note"]}, N, N, N, N
         if "recap" in result:
-            return True, no_update, no_update, no_update, result["recap"], no_update, no_update
+            return True, N, N, N, result["recap"], N, N, N
         if "day" in result:
-            return True, no_update, no_update, no_update, no_update, result["day"], no_update
+            return True, N, N, N, N, result["day"], N, N
         if "arc" in result:
-            return True, no_update, no_update, no_update, no_update, no_update, result["arc"]
-    return True, no_update, no_update, no_update, no_update, no_update, no_update
+            return True, N, N, N, N, N, result["arc"], N
+        if "month" in result:
+            return True, N, N, N, N, N, N, result["month"]
+    return True, N, N, N, N, N, N, N
 
 
 # --------------------------------------------------- writing a lesson note
@@ -766,6 +781,49 @@ def leave_note(n):
     """Out of the composer without filing. The draft store keeps what was
     typed, so coming back does not lose it."""
     return "lessons" if clicked(n) else no_update
+
+
+@app.callback(
+    Output("job", "data", allow_duplicate=True),
+    Output("poll", "disabled", allow_duplicate=True),
+    Output("month-wait", "data"),
+    Input("run-month", "n_clicks"),
+    State("who", "value"), State("sel-player", "data"), State("sel-month", "data"),
+    prevent_initial_call=True,
+)
+def start_month(n, who, sel_player, month):
+    person = db.person(who)
+    if not clicked(n) or person is None:
+        return no_update, no_update, no_update
+    is_player = person["role"] == "player"
+    subject = who if is_player else sel_player
+    if not subject:
+        return no_update, no_update, no_update
+    role = "player" if is_player else "coach"
+    month = month or cv.months_with_entries(subject, role)[:1]
+    if isinstance(month, list):
+        if not month:
+            return no_update, no_update, no_update
+        month = month[0]
+    return run_month(subject, month, role), False, True
+
+
+@app.callback(Output("month-wait", "data", allow_duplicate=True),
+              Input("month-review", "data"), prevent_initial_call=True)
+def month_landed(_m):
+    return False
+
+
+@app.callback(Output("sel-month", "data"),
+              Output("month-review", "data", allow_duplicate=True),
+              Input({"type": "pick-month", "m": ALL}, "n_clicks"),
+              State("sel-month", "data"), prevent_initial_call=True)
+def pick_month(clicks, current):
+    if not any(c for c in clicks if c):
+        return current, no_update
+    # A month's readout belongs to that month, so switching clears it rather
+    # than leaving September's text under October's heading.
+    return ctx.triggered_id["m"], None
 
 
 @app.callback(Output("recap-range", "data"), Output("recap", "data"),
@@ -1203,6 +1261,8 @@ def go_to_recap(n):
     Input("f-setting", "data"), Input("f-author", "data"),
     Input("recap-year", "data"), Input("lesson-query", "data"),
     Input("arc-wait", "data"), Input("arc-range", "data"),
+    Input("sel-month", "data"), Input("month-review", "data"),
+    Input("month-wait", "data"),
     Input("adding-player", "data"), Input("added-msg", "data"),
     Input("plan-edit", "data"),
     State("job", "data"),
@@ -1211,7 +1271,8 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                 review, answer, theme_msg, draft, recap, recap_range,
                 cal_offset, sel_day, day_summary, lesson_arc, focus_msg,
                 search, year, open_month, show_entries, kind, editing,
-                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, arc_range, adding,
+                focus_edit, focus_hist, f_setting, f_author, recap_year, lesson_query, arc_wait, arc_range, sel_month,
+                month_review, month_wait, adding,
                 added_msg, plan_edit, job_id):
     person = db.person(who)
     if person is None:
@@ -1230,8 +1291,14 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
                                     lesson_arc, bool(running and arc_wait),
                                     arc_range)
         if nav == "recap":
-            return cv.recap_panel(who, "player", recap_range, recap, running,
-                                  show_entries, f_setting, f_author, recap_year)
+            # The month is the page you land on; the range picker is still
+            # there underneath for an ad-hoc stretch.
+            return html.Div([
+                cv.month_review(who, "player", sel_month, month_review,
+                                bool(running and month_wait)),
+                cv.recap_panel(who, "player", recap_range, recap, running,
+                               show_entries, f_setting, f_author, recap_year),
+            ])
         return html.Div([
             *player_today(who),
             cv.focus_pair(who, "player", focus_msg, focus_edit, focus_hist),
@@ -1257,8 +1324,12 @@ def render_page(who, nav, sel_player, pb_sec, _label, _polling,
         if nav == "recap":
             if not sel_player:
                 return cv.coach_lesson_picker(who, lesson_query)
-            return cv.recap_panel(sel_player, "coach", recap_range, recap, running,
-                                  show_entries, f_setting, f_author, recap_year)
+            return html.Div([
+                cv.month_review(sel_player, "coach", sel_month, month_review,
+                                bool(running and month_wait)),
+                cv.recap_panel(sel_player, "coach", recap_range, recap, running,
+                               show_entries, f_setting, f_author, recap_year),
+            ])
         if nav == "players":
             if sel_player:
                 return html.Div([
