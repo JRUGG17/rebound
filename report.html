@@ -8,17 +8,17 @@
       --line:#e2e5e8;--wash:#f6f7f8;--green:#2e7d52;--amber:#b26a00;}
 *{box-sizing:border-box}
 body{margin:0;background:#eceef0;color:var(--ink);
-     font:14px/1.36 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+     font:14px/1.32 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
      -webkit-font-smoothing:antialiased}
 .page{max-width:50em;margin:0 auto;background:#fff;padding:2.4em 3em 2.6em}
 h1{font-size:1.9em;line-height:1.12;letter-spacing:-.02em;margin:0 0 .2em}
-h2{font-size:1.16em;margin:1em 0 .35em;padding-top:.3em;
+h2{font-size:1.14em;margin:.85em 0 .3em;padding-top:.25em;
    border-top:2px solid var(--ink);letter-spacing:-.01em}
-h3{font-size:.99em;margin:.95em 0 .3em;color:var(--slate)}
-p{margin:0 0 .62em}
+h3{font-size:.98em;margin:.8em 0 .26em;color:var(--slate)}
+p{margin:0 0 .55em}
 .sub{font-size:1.06em;color:var(--muted);margin:0 0 .35em}
 .by{color:var(--muted);font-size:.88em;margin:0 0 1.3em}
-blockquote{margin:.6em 0;padding:.02em 0 .02em .95em;
+blockquote{margin:.5em 0;padding:.02em 0 .02em .9em;
            border-left:3px solid var(--orange);color:var(--slate);font-style:italic}
 blockquote p:last-child{margin-bottom:0}
 code{font:.88em ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -26,14 +26,14 @@ code{font:.88em ui-monospace,SFMono-Regular,Menlo,monospace;
 pre{background:#22262a;color:#e6e9ec;padding:.65em .9em;border-radius:5px;
     overflow-x:auto;font:.78em/1.45 ui-monospace,SFMono-Regular,Menlo,monospace}
 pre code{background:none;padding:0;color:inherit;font-size:1em}
-table{border-collapse:collapse;width:100%;margin:.75em 0;font-size:.84em}
-th,td{text-align:left;padding:.32em .6em;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;margin:.65em 0;font-size:.83em}
+th,td{text-align:left;padding:.26em .55em;border-bottom:1px solid var(--line)}
 th{font-size:.76em;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
    border-bottom:2px solid var(--line)}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .lede{font-size:1.06em;color:var(--slate)}
 .box{background:var(--wash);border-left:3px solid var(--slate);
-     padding:.65em .9em;margin:.85em 0;font-size:.93em}
+     padding:.55em .85em;margin:.7em 0;font-size:.92em}
 .box.warn{border-left-color:var(--amber);background:#fdf6ea}
 .box.key{border-left-color:var(--orange);background:#fdf3e8}
 .box p:last-child{margin-bottom:0}
@@ -49,6 +49,10 @@ hr{border:0;border-top:1px solid var(--line);margin:3em 0}
 .toc ol{margin:0;padding-left:1.3em}
 .toc a{color:var(--ink);text-decoration:none}
 .toc a:hover{color:var(--orange)}
+p a, .box a { color: #b25c00; text-decoration: none;
+              border-bottom: 1px solid #e8c9a4; }
+p a:hover, .box a:hover { border-bottom-color: #b25c00; }
+.toc a, .foot a { border-bottom: none; }
 .repo{background:#fdf3e8;border:1px solid #f0cfa4;border-radius:5px;
       padding:.55em .85em;margin:.5em 0 1.1em;font-size:.95em}
 .repo a{color:#b25c00;font-weight:700;text-decoration:none;
@@ -73,7 +77,7 @@ Management · October 2026</p>
 Setup is in the README; it goes from <code>git clone</code> to a served page in
 about twelve seconds.</p>
 
-<p class="lede">Squash Tigers Academy opened in January 2022 with two coaches
+<p class="lede"><a href="https://www.squashtigers.com/">Squash Tigers Academy</a> opened in January 2022 with two coaches
 who knew what every player was working on, because they talked to each other
 every day. It now runs four coaches at its first club and is hiring at two
 more. The record of what each child is working on was never written down —
@@ -106,7 +110,8 @@ enforced in SQL rather than asked for in a prompt.</p>
 
 <h2 id="motivation">1. Motivation: the club outgrew the conversation</h2>
 
-<p>I was a founding member of Squash Tigers Academy. Planning began in early
+<p>I was a founding member of <a href="https://www.squashtigers.com/">Squash Tigers Academy</a>.
+Planning began in early
 2021; we opened the doors in January 2022, mid-season and later than intended,
 because of COVID supply-chain delays, and I coached there from then until the
 middle of 2026, when I came to business school. We opened with a few kids.
