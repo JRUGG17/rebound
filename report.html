@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Rebound — a shared training diary for a junior squash academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@1,800&display=swap" rel="stylesheet">
 <style>
 :root{--orange:#f08a24;--slate:#4a4f54;--ink:#1d2124;--muted:#6d757d;
       --line:#e2e5e8;--wash:#f6f7f8;--green:#2e7d52;--amber:#b26a00;}
@@ -12,6 +13,15 @@ body{margin:0;background:#eceef0;color:var(--ink);
      -webkit-font-smoothing:antialiased}
 .page{max-width:50em;margin:0 auto;background:#fff;padding:2.4em 3em 2.6em}
 h1{font-size:1.9em;line-height:1.12;letter-spacing:-.02em;margin:0 0 .2em}
+
+/* The club's mark and the app's name, set as they are in the app itself:
+   their monogram, their typeface, split where the pun is. */
+.lockup{display:flex;align-items:center;gap:11px;margin:0 0 .45em}
+.lockup img{width:38px;height:38px;display:block}
+.lockup .word{font-family:"Exo 2",-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:2em;font-weight:800;font-style:italic;letter-spacing:.055em;
+  text-transform:uppercase;color:var(--ink);line-height:1}
+.lockup .word i{color:var(--orange);font-style:normal}
 h2{font-size:1.12em;margin:.7em 0 .26em;padding-top:.2em;
    border-top:2px solid var(--ink);letter-spacing:-.01em}
 h3{font-size:.97em;margin:.65em 0 .22em;color:var(--slate)}
@@ -73,7 +83,10 @@ pre.term .ok{color:#6fcf97}
 <body>
 <div class="page">
 
-<h1>Rebound</h1>
+<div class="lockup">
+  <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA2NCA2NCc+PGNpcmNsZSBjeD0nMzInIGN5PSczMicgcj0nMzInIGZpbGw9JyNGRkZGRkYnLz48Y2lyY2xlIGN4PSczMicgY3k9JzMyJyByPSczMCcgZmlsbD0nbm9uZScgc3Ryb2tlPScjRkY2NTIwJyBzdHJva2Utd2lkdGg9JzInLz48dGV4dCB4PSczMicgeT0nNDMnIGZvbnQtZmFtaWx5PSdBcmlhbCBCbGFjayxzYW5zLXNlcmlmJyBmb250LXNpemU9JzI4JyBmb250LXdlaWdodD0nOTAwJyBmb250LXN0eWxlPSdpdGFsaWMnIHRleHQtYW5jaG9yPSdtaWRkbGUnPjx0c3BhbiBmaWxsPScjMEQwRDBEJz5TPC90c3Bhbj48dHNwYW4gZmlsbD0nI0ZGNjUyMCc+VDwvdHNwYW4+PC90ZXh0Pjwvc3ZnPgo=" alt="Squash Tigers">
+  <span class="word">Re<i>bound</i></span>
+</div>
 <p class="sub">A shared training diary for a junior squash academy, and four
 agents that read it.</p>
 <p class="by">Jamie Ruggiero · MGT&nbsp;409 AI Foundations · Yale School of
