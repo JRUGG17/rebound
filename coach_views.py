@@ -724,27 +724,6 @@ def note_composer(draft: dict | None, running: bool):
     # The coach chose the setting. The model may infer a different one from the
     # wording — "blocked drives" reads like squad even in a lesson note — and
     # when they disagree the coach is right, so show theirs.
-    tags = [html.Span(organized["category"], className=f"tag {organized['category']}"),
-            html.Span(dict(SETTINGS)[draft.get("setting", "lesson")].lower(),
-                      className="tag")]
-    for key in ("rung", "shot"):
-        if organized.get(key):
-            tags.append(html.Span(str(organized[key]).replace("_", " "), className="tag"))
-    if organized.get("cue_id"):
-        tags.append(html.Span(organized["cue_id"].replace("_", " "), className="tag"))
-
-    warnings = []
-    if organized.get("dropped_qualifier"):
-        warnings.append(html.Div([
-            html.Strong("Check this. "),
-            "Something in your note — a caveat, a number, a condition — could not be "
-            "carried into the player's version. Edit it before releasing.",
-        ], className="timing-box"))
-    if organized.get("mentions_injury"):
-        warnings.append(html.Div([html.Strong("Injury mentioned. "),
-                                  "This will be routed to the player's parent."],
-                                 className="timing-box"))
-
     warning = organized.get("send_warning")
 
     tags = [html.Span(organized["category"], className=f"tag {organized['category']}"),

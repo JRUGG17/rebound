@@ -28,6 +28,8 @@ from pydantic import BaseModel, Field
 from core import analysis, clock, db
 from core.agents.base import make_agent, run
 
+Rung = Literal["solo", "block", "routine", "pattern", "conditioned_game", "match"]
+
 FindingKind = Literal[
     "transfer_gap", "chronic_cue", "coach_conflict", "blind_spot", "progress"
 ]
@@ -43,7 +45,11 @@ class Finding(BaseModel):
         description="The specific entries this rests on, with their counts and weeks. "
         "Use the numbers from the digest exactly — never round or estimate them."
     )
-    rung: str | None = Field(
+    # A Literal, not a str. The model returned "conditioned game" with a space
+    # and the finding read fine to a human while failing every comparison
+    # against the ladder. Let the schema enforce the vocabulary instead of
+    # hoping the prose matches.
+    rung: Rung | None = Field(
         default=None, description="For a transfer gap, the rung where it stops holding."
     )
     shot: str | None = None
@@ -88,9 +94,15 @@ What you are looking for, in priority order:
    and dies high has not been learned, only performed. Name the rung where it
    stops — that is the useful part, not the fact that something is wrong.
 
-2. CHRONIC CUE. The digest marks these. A cue back across three theme weeks is
-   twelve weeks of the same problem on a four-week rotation. Say how long, and
-   say plainly that it has stopped being a reminder. Do not suggest the fix.
+2. CHRONIC CUE. Chronic is a computed label, not a judgement for you to make.
+   The digest marks a chronic cue with "<-- CHRONIC, and not moving". Nothing
+   else is chronic, however often it recurs. A cue can appear seventeen times
+   across twelve weeks and still not be chronic, because it is climbing the
+   ladder — recurrence while the work moves to higher rungs is learning, not a
+   blocker, and calling it a blocker tells a coach to fix something that is
+   already fixing itself. Report chronic_cue only for a cue the digest has
+   marked. Where one is marked, say how long it has been back and say plainly
+   that it has stopped being a reminder. Do not suggest the fix.
 
 3. COACH CONFLICT. Where two coaches wrote about the same shot in the same
    week, read both. The test is not whether the two are logically

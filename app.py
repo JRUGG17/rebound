@@ -72,12 +72,37 @@ def job(job_id: str | None) -> dict:
         return dict(_JOBS.get(job_id, {"state": "idle"}))
 
 
+def _save_unfiled(player_id: str, text: str, visibility: str, setting: str,
+                  on: str, reason: str) -> None:
+    """Keep what somebody wrote when the model could not file it.
+
+    The filing is the model's job. The writing is the player's, and it is the
+    single hardest thing to get out of a fourteen-year-old — so it is never
+    the thing that gets thrown away. Azure's content filter, a rate limit, a
+    dropped connection: any of them used to raise before add_entry ran, and
+    the entry vanished with the error.
+
+    An unfiled entry has no category, rung or summary. It is in the record,
+    it is visible, and it can be filed later.
+    """
+    db.add_entry(
+        player_id=player_id, author_id=player_id, author_role="player",
+        setting=setting, raw_text=text, summary=None, category=None,
+        visibility=visibility, occurred_on=on,
+    )
+    print(f"!! entry saved unfiled for {player_id}: {reason[:120]}")
+
+
 def save_reflection(player_id: str, text: str, visibility: str,
                     kind: str = "squad"):
     def work():
         on = clock.today_iso()
-        organized, _usage = aio.run(
-            organizer.organize_player_entry(player_id, text, on))
+        try:
+            organized, _usage = aio.run(
+                organizer.organize_player_entry(player_id, text, on))
+        except Exception as exc:  # noqa: BLE001 — the entry matters more
+            _save_unfiled(player_id, text, visibility, kind or "squad", on, str(exc))
+            return {"ok": True, "unfiled": True}
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
             # The player said what kind of session it was. The model only
@@ -129,8 +154,12 @@ def run_day_summary(player_id: str, day: str, audience: str):
 def save_dated(player_id: str, text: str, visibility: str, day: str,
                setting: str | None = None):
     def work():
-        organized, _usage = aio.run(
-            organizer.organize_player_entry(player_id, text, day))
+        try:
+            organized, _usage = aio.run(
+                organizer.organize_player_entry(player_id, text, day))
+        except Exception as exc:  # noqa: BLE001 — the entry matters more
+            _save_unfiled(player_id, text, visibility, setting or "squad", day, str(exc))
+            return {"dated": True, "unfiled": True}
         db.add_entry(
             player_id=player_id, author_id=player_id, author_role="player",
             setting=setting or organized.setting,
@@ -166,8 +195,19 @@ def file_lesson_note(player_id: str, coach_id: str, text: str, day: str):
     """A coach adding to a lesson. Filed and released in one step — they are
     writing it to the player, and there is no rewrite to review."""
     def work():
-        organized, _usage = aio.run(
-            organizer.organize_coach_note(player_id, text, day))
+        try:
+            organized, _usage = aio.run(
+                organizer.organize_coach_note(player_id, text, day))
+        except Exception as exc:  # noqa: BLE001 — the note matters more
+            # Same rule as a player's entry: a coach who has written up a
+            # lesson does not lose it because the filing step failed.
+            db.add_entry(
+                player_id=player_id, author_id=coach_id, author_role="coach",
+                setting="lesson", raw_text=text, summary=None, category=None,
+                approved_by=coach_id, visibility="shared", occurred_on=day,
+            )
+            print(f"!! lesson note saved unfiled for {player_id}: {str(exc)[:120]}")
+            return {"lesson_added": True, "unfiled": True}
         db.add_entry(
             player_id=player_id, author_id=coach_id, author_role="coach",
             setting="lesson", rung=organized.rung, shot=organized.shot,

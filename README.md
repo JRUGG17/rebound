@@ -113,7 +113,9 @@ Two suites are **free** and run in about a second:
 ./venv/bin/python scripts/check_screens.py   # 61 checks: every screen renders for every role
 ```
 
-Five suites **call the live model and cost money** (a few cents each):
+Five suites **call the live model and cost money** (a few cents each). Note
+that `check_organizer.py` reseeds the database, so run it before you start
+adding your own entries, not after:
 
 ```bash
 ./venv/bin/python scripts/check_model.py         # the Portkey connection works

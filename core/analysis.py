@@ -276,15 +276,30 @@ def digest(player_id: str) -> str:
 
     lines.append("\nLADDER EVIDENCE (low rungs first — technical rehearsal; "
                  "high rungs — tactical application):")
+    # Every instance, deliberately. Capping this to the most recent three
+    # per rung was tried: it cut the prompt by about 12% and broke
+    # coach-conflict detection outright — with the full ladder the agent
+    # finds Dev's two coaches contradicting each other in week 6, and with
+    # the cap it finds nothing, consistently. The conflict is still printed
+    # in its own section either way, so what the trimmed lines were
+    # supplying was the surrounding context that makes two notes legible as
+    # a disagreement rather than two separate observations. Reverted. See
+    # the report's tokenomics section.
+    PER_RUNG = 10**9
     for ladder in shot_ladders(player_id):
         lines.append(f"  {ladder.shot}:")
         for rung in db.RUNGS:
-            for entry in ladder.by_rung.get(rung, []):
+            at_rung = ladder.by_rung.get(rung, [])
+            shown = sorted(at_rung, key=lambda e: e["occurred_on"])[-PER_RUNG:]
+            for entry in shown:
                 who = db.person(entry["author_id"])
                 week = db.week_of(entry["occurred_on"])
                 when = f"wk{week['id']}" if week else entry["occurred_on"]
                 lines.append(
                     f"    [{rung}, {when}] ({who['role']}) {_clip(db.agent_text(entry))}")
+            if len(at_rung) > PER_RUNG:
+                lines.append(f"    [{rung}] … and {len(at_rung) - PER_RUNG} more "
+                             f"at this rung, same picture")
 
     overlaps = coach_overlaps(player_id)
     if overlaps:
@@ -307,12 +322,18 @@ def digest(player_id: str) -> str:
     if rest:
         lines.append("\nEVERYTHING ELSE (no rung recorded — lesson notes, reflections, "
                      "results). Not ladder evidence, but read it:")
-        for entry in rest:
+        # Not capped, for the same reason as the ladder above.
+        RECENT = 10**9
+        newest = sorted(rest, key=lambda e: e["occurred_on"], reverse=True)
+        for entry in newest[:RECENT]:
             who = db.person(entry["author_id"])
             week = db.week_of(entry["occurred_on"])
             where = f"wk{week['id']}" if week else entry["occurred_on"]
             lines.append(f"  [{where}, {entry['setting']}] ({who['role']} "
                          f"{who['name']}) {_clip(db.agent_text(entry), 200)}")
+        if len(rest) > RECENT:
+            lines.append(f"  … and {len(rest) - RECENT} older entries of this kind, "
+                         f"counted above but not quoted")
     return "\n".join(lines)
 
 

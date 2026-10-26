@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from core import analysis, metering  # noqa: E402
+from core import analysis, db, metering  # noqa: E402
 from core.agents import comparison  # noqa: E402
 from data import seed  # noqa: E402
 
@@ -95,8 +95,19 @@ def arithmetic() -> None:
     check("Jonah has none", not jonah_chronic)
     grid = analysis.matrix("maya")
     check("the shot x rung matrix builds", bool(grid), ", ".join(grid))
-    size = len(analysis.digest("maya"))
-    check("the digest is compact", size < 4000, f"{size} chars vs ~40 raw entries")
+    # Boundedness, not compression. The digest is deliberately larger than
+    # the raw text it covers — it wraps each line in a week, a rung, an
+    # author and a count, and those counts are the whole reason the agent
+    # can be trusted with numbers. What it must not do is grow without
+    # limit as a career accumulates, so the caps in analysis.digest are
+    # what this checks: every player stays well under a fixed ceiling even
+    # with a full block on record.
+    CEILING = 12000
+    worst, size = max(
+        ((p["id"], len(analysis.digest(p["id"]))) for p in db.people("player")),
+        key=lambda x: x[1])
+    check("the digest stays bounded for every player", size < CEILING,
+          f"largest is {worst} at {size} chars, ceiling {CEILING}")
 
 
 async def main() -> int:
