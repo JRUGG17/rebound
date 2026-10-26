@@ -49,6 +49,10 @@ hr{border:0;border-top:1px solid var(--line);margin:3em 0}
 .toc ol{margin:0;padding-left:1.3em}
 .toc a{color:var(--ink);text-decoration:none}
 .toc a:hover{color:var(--orange)}
+.repo{background:#fdf3e8;border:1px solid #f0cfa4;border-radius:5px;
+      padding:.55em .85em;margin:.5em 0 1.1em;font-size:.95em}
+.repo a{color:#b25c00;font-weight:700;text-decoration:none;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .foot{color:var(--muted);font-size:.84em;margin-top:2em;
       border-top:1px solid var(--line);padding-top:.8em}
 @media print{body{background:#fff}.page{max-width:none;padding:0}
@@ -63,6 +67,11 @@ hr{border:0;border-top:1px solid var(--line);margin:3em 0}
 agents that read it.</p>
 <p class="by">Jamie Ruggiero · MGT&nbsp;409 AI Foundations · Yale School of
 Management · October 2026</p>
+
+<p class="repo"><strong>Code:</strong>
+<a href="https://github.com/JRUGG17/rebound">https://github.com/JRUGG17/rebound</a> — public, clone and run.
+Setup is in the README; it goes from <code>git clone</code> to a served page in
+about twelve seconds.</p>
 
 <p class="lede">Squash Tigers Academy opened in January 2022 with two coaches
 who knew what every player was working on, because they talked to each other
@@ -331,6 +340,26 @@ order matters and it is the argument of the whole project in one word: you
 reflect first, and <em>then</em> you move, because the player who cannot say
 what they worked on last week is the player who repeats last week. Reflection
 is not the opposite of progress, it is the thing that stops a plateau.</p>
+
+<h3>How it is built</h3>
+
+<p>Four dependencies and no build step. <strong>pydantic-ai</strong> runs every
+agent, and each one declares a Pydantic model as its <code>output_type</code>,
+so the model returns a validated object rather than prose to be parsed — a
+<code>MonthReview</code> with its three bands, an <code>Organized</code> entry
+with its category, rung and cue. Anything that fails validation fails loudly
+instead of arriving as a malformed string. The model is
+<strong>gpt-6-luna</strong>, reached through a <strong>Portkey</strong> gateway
+on the OpenAI Responses API, and <code>python-dotenv</code> finds the key by
+walking up from the repository. Storage is SQLite through the standard library.</p>
+
+<p>The interface is <strong>Dash</strong>, and that was a decision rather than
+a default. A React and Vite front end would have meant a second toolchain, an
+<code>npm install</code> and a build step between a grader and a running app,
+for an interface that is a sidebar and some cards. Dash is one process and one
+<code>pip install</code>, which is what gets a fresh clone serving in twelve
+seconds. The agent code in <code>core/agents/</code> knows nothing about the
+web layer and would move to any other front end unchanged.</p>
 
 <h2 id="novelty">3. Novelty: why this does not exist for squash</h2>
 
@@ -899,8 +928,8 @@ benefit.</p>
 
 <h2 id="run">Appendix: running it</h2>
 
-<p>Full instructions are in the repository README, verified by cloning into an
-empty folder and following them: <strong>twelve seconds from
+<p>The repository is public at <a href="https://github.com/JRUGG17/rebound">https://github.com/JRUGG17/rebound</a>. Full instructions
+are in its README, verified by cloning into an empty folder and following them: <strong>twelve seconds from
 <code>git clone</code> to a served page</strong>, with the <code>.env</code> one
 folder above the repo as the grading layout expects. The database seeds itself
 on first run.</p>
@@ -916,7 +945,7 @@ on first run.</p>
 </table>
 
 <p class="foot">Rebound · Jamie Ruggiero · MGT&nbsp;409, Yale School of
-Management · October 2026. Squash Tigers Academy is a real club the author
+Management · October 2026. Code: <a href="https://github.com/JRUGG17/rebound">https://github.com/JRUGG17/rebound</a> (public). Squash Tigers Academy is a real club the author
 helped start and coached at from 2021 to 2026. All player data in this repository
 is synthetic.</p>
 
