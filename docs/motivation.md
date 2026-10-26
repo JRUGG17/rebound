@@ -46,7 +46,7 @@ Four coaches at Plainsboro now, clubs in Exton, Pennsylvania and Hartford,
 Connecticut both hiring, and several hundred children through the door across
 five years.
 
-> As we scaled, just trying to keep touches on the ball and make sure — because
+> As we scaled, we were just trying to keep touches on the ball and make sure — because
 > it got more difficult to keep track of what people were working on. We're
 > running the clinics, but you don't have a great sense of what everyone's
 > working on individually.
